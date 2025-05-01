@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="DeviceServer\Connection.cpp">
+      <Filter>DeviceServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceServer\DeviceServer.cpp">
+      <Filter>DeviceServer</Filter>
+    </ClCompile>
+    <ClCompile Include="DeviceServer\Transport.cpp">
+      <Filter>DeviceServer</Filter>
+    </ClCompile>
+    <ClCompile Include="SimCom\SimCom.cpp">
+      <Filter>SimCom</Filter>
+    </ClCompile>
+    <ClCompile Include="SimCom\SimConnect.cpp">
+      <Filter>SimCom</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Logger.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\StringUtils.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Time.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="App\AirplaneRadar.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\DeviceManager.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\LocalAircraft.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\Radio.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\RealTimeThread.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\GlobalScope.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="DeviceServer">
+      <UniqueIdentifier>{dc8107e4-12b7-4fd4-ad75-1407e55cca2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SimCom">
+      <UniqueIdentifier>{664e362d-ce30-4cea-a48d-64ca64a14a08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils">
+      <UniqueIdentifier>{3c01c5dc-f89e-436d-9fbe-c74103438672}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TrackerClient">
+      <UniqueIdentifier>{37ea08a6-d222-430a-94a7-25b4bdf9b9ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="App">
+      <UniqueIdentifier>{95ca680e-3e26-43fb-83ea-b0294cd7ec82}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="DeviceServer\Connection.h">
+      <Filter>DeviceServer</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceServer\DeviceServer.h">
+      <Filter>DeviceServer</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceServer\NetProto.h">
+      <Filter>DeviceServer</Filter>
+    </ClInclude>
+    <ClInclude Include="DeviceServer\Transport.h">
+      <Filter>DeviceServer</Filter>
+    </ClInclude>
+    <ClInclude Include="SimCom\SimCom.h">
+      <Filter>SimCom</Filter>
+    </ClInclude>
+    <ClInclude Include="SimCom\SimConnect.h">
+      <Filter>SimCom</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Function.hpp">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Future.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Logger.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\StringUtils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Time.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\version.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="App\RealTimeThread.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\AirplaneRadar.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\DeviceManager.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\LocalAircraft.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\Radio.h">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\GlobalScope.h" />
+  </ItemGroup>
+</Project>
