@@ -1,4 +1,4 @@
-import { SimulatorStatus } from "../HostState";
+import { SimulatorStatus } from "../Host/HostState";
 import MapPlane from "./MapPlane";
 
 interface FlightAddEventArgs {
@@ -91,7 +91,7 @@ export class PlaneInfo {
     model: string;
     callsign: string;
 
-    params?: PlaneParams; //this should be snapshot of interpolated data from animator
+    params?: PlaneParams;
     animator: AnimatorState;
 
     inMap: boolean;
@@ -128,6 +128,7 @@ export class PlaneInfo {
     }
 
     updateRealtimeData(params: PlaneParams) {
+        this.params = params;
         this.plane.setPosition(params);
 
         if (!this.inMap) {

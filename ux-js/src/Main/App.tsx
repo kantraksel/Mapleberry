@@ -4,6 +4,9 @@ import MenuIcon from '@mui/icons-material/Menu';
 import MapIcon from '@mui/icons-material/MapOutlined';
 import DesktopIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import FlightIcon from '@mui/icons-material/Flight';
+import ReplayIcon from '@mui/icons-material/Replay';
+import FiberDvrIcon from '@mui/icons-material/FiberDvr';
+import FrontHandIcon from '@mui/icons-material/FrontHand';
 import 'ol/ol.css';
 import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
@@ -79,6 +82,7 @@ function App() {
 	const [mapVisible, setMapVisible] = useState(true);
 	const [systemVisible, setSystemVisible] = useState(false);
 	const [flightVisible, setFlightVisible] = useState(false);
+	const [playbackActive, setPlaybackActive] = useState(hostBridge.playbackActive);
 	
 	useEffect(() => {
 		map.setParent(mapNode.current!);
@@ -118,6 +122,26 @@ function App() {
 						</ListItem>
 					</List>
 					<List sx={{ position: 'absolute', bottom: '0px', right: '0px', left: '0px' }}>
+						{ playbackActive ? (
+							<ListItem key='stop_playlist' disablePadding>
+								<ListItemButton onClick={() => { hostBridge.abortPlayback(); }}>
+									<MainListIcon><FrontHandIcon color='error' /></MainListIcon>
+									<MainListText primary='Stop playback' />
+								</ListItemButton>
+							</ListItem>
+						) : <></> }
+						<ListItem key='record_playlist' disablePadding>
+							<ListItemButton disabled={ playbackActive } onClick={() => { hostBridge.abortPlayback(); }}>
+								<MainListIcon><FiberDvrIcon color='error' /></MainListIcon>
+								<MainListText primary='Record' />
+							</ListItemButton>
+						</ListItem>
+						<ListItem key='play_playlist' disablePadding>
+							<ListItemButton disabled={ playbackActive } onClick={() => { hostBridge.playbackDefault(setPlaybackActive); }}>
+								<MainListIcon><ReplayIcon color='error' /></MainListIcon>
+								<MainListText primary='Play back' />
+							</ListItemButton>
+						</ListItem>
 						<ListItem key='navigate_dev' disablePadding>
 							<ListItemButton disabled={ window.location.href === 'http://localhost:5173/' } onClick={() => { window.location.href = 'http://localhost:5173/'; }}>
 								<MainListIcon><MapIcon color='info' /></MainListIcon>
@@ -151,9 +175,7 @@ export default App;
 
 /*
 TODO:
-- zoom to cover area of interest (needs TESTing, looks fine)
 - details when airplane is selected
-- position predictor
 
 - Find the way to disable map completely - is it still interactable? test with point clicks; also it may download tiles if getting moved by script
 - settings: vatsim id+refresh frequency, callsign override, auto server on/off, hide map switch, sim reconnect on/off

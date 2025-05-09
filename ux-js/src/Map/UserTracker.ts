@@ -1,4 +1,4 @@
-import { SimulatorStatus } from "../HostState";
+import { SimulatorStatus } from "../Host/HostState";
 import { PlaneInfo } from "./PlaneRadar";
 
 class LocalPlaneInfo {

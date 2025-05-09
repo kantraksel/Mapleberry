@@ -7,7 +7,7 @@ import WifiIcon from '@mui/icons-material/Wifi';
 import WifiOffIcon from '@mui/icons-material/WifiOff';
 import SyncIcon from '@mui/icons-material/Sync';
 import SyncDisabledIcon from '@mui/icons-material/SyncDisabled';
-import { ServerStatus, SimulatorStatus, StatusCmd } from '../HostState';
+import { ServerStatus, SimulatorStatus, StatusCmd } from '../Host/HostState';
 import InfoBox from './InfoBox';
 import Comment from './Comment';
 
