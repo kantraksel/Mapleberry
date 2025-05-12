@@ -4,9 +4,11 @@ import VectorLayer from 'ol/layer/Vector';
 import OsmSource from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector'
 import { fromLonLat } from 'ol/proj';
-import { FlatStyle } from 'ol/style/flat';
+import { StyleLike } from 'ol/style/Style';
 import { FeatureLike } from 'ol/Feature';
 import { ObjectEvent } from 'ol/Object';
+import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Icon as OlIcon } from 'ol/style';
+import { PhysicParams } from './PlaneRadar';
 
 interface EntityLike {
 	addToMap: (map: MapLayers) => void;
@@ -28,8 +30,10 @@ class GlobalMap {
 	private pointSource: VectorSource;
 	private labelLayer: VectorLayer;
 	private labelSource: VectorSource;
-	private pointStyle: FlatStyle;
-	private labelStyle: FlatStyle;
+	private pointStyle: OlStyle;
+	private labelStyle: OlStyle;
+	private mainPointStyle: StyleLike;
+	private mainLabelStyle: StyleLike;
 
 	private isPointerDragging: boolean;
 	private isInteracting: boolean;
@@ -44,32 +48,46 @@ class GlobalMap {
 		this.moveStartEvent = new Set();
 		this.changeResEvent = new Set();
 
-		this.pointStyle = {
-			'icon-src': '/flight_24dp_FFFFFF.svg',
-			'icon-rotation': [ 'get', 'hdg_rad' ],
-		};
-		this.labelStyle = {
-			'text-value': [ 'get', 'callsign_text' ],
-			'text-padding': [ 3, 3, 3, 7 ], // top, right, bottom, left
-			'text-offset-y': -20,
-			'text-font': '14px cascadia-code',
-			'text-background-fill-color': 'lightgray',
-			'text-background-stroke-color': 'black',
-			'text-background-stroke-width': 1,
-			'text-align': 'center',
-		};
+		this.pointStyle = new OlStyle({
+			image: new OlIcon({
+				src: '/flight_24dp_FFFFFF.svg',
+				color: '#0000AA',
+			}),
+		});
+		this.labelStyle = new OlStyle({
+			text: new OlText({
+				padding: [ 3, 3, 3, 7], // top, right, bottom, left
+				offsetY: -30, // one-liner: -20
+				font: '14px cascadia-code',
+				backgroundFill: new OlFill({
+					color: 'lightgray',
+				}),
+				backgroundStroke: new OlStroke({
+					color: 'black',
+					width: 1,
+				}),
+				textAlign: 'center',
+			}),
+		});
+		this.mainPointStyle = this.createPointLayerStyle(new OlStyle({
+			image: new OlIcon({
+				src: '/flight_24dp_FFFFFF.svg',
+				color: '#AA0000',
+			}),
+			zIndex: 1,
+		}));
+		const mainLabelStyle = this.labelStyle.clone();
+		mainLabelStyle.setZIndex(1);
+		this.mainLabelStyle = this.createLabelLayerStyle(mainLabelStyle);
 
 		this.pointSource = new VectorSource();
 		this.labelSource = new VectorSource();
 		this.pointLayer = new VectorLayer({
-			style: {
-				...this.pointStyle,
-				'icon-color': '#0000AA',
-			},
+			style: this.createPointLayerStyle(this.pointStyle),
 			source: this.pointSource,
 		});
 		this.labelLayer = new VectorLayer({
-			style: this.labelStyle,
+			style: this.createLabelLayerStyle(this.labelStyle),
 			source: this.labelSource,
 		});
 
@@ -148,12 +166,37 @@ class GlobalMap {
 		entity.removeFromMap(map);
 	}
 
-	public get pointLayerStyle() {
-		return this.pointStyle;
+	public get mainPointLayerStyle() {
+		return this.mainPointStyle;
 	}
 
-	public get labelLayerStyle() {
-		return this.labelStyle;
+	public get mainLabelLayerStyle() {
+		return this.mainLabelStyle;
+	}
+
+	private createLabelLayerStyle(base: OlStyle) {
+		return (feature: FeatureLike) => {
+			const style = base.clone();
+			const params = feature.get('params') as PhysicParams | undefined;
+
+			let callsign = feature.get('callsign') ?? '#UFO';
+			let altitude = params ? Math.round(params.altitude) : '-';
+			let speed = params ? Math.round(params.groundSpeed) : '-';
+
+			const str = `${callsign}\n${altitude}ft ${speed}kts`;
+			style.getText()!.setText(str);
+			return style;
+		};
+	}
+
+	private createPointLayerStyle(base: OlStyle) {
+		return (feature: FeatureLike) => {
+			const style = base.clone();
+			const rot = feature.get('hdg_rad') ?? 0;
+
+			style.getImage()!.setRotation(rot);
+			return style;
+		};
 	}
 
 	public setCenterZoom(longitude: number, latitude: number, resolution?: number) {

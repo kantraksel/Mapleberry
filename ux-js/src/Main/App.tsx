@@ -180,4 +180,5 @@ TODO:
 - Find the way to disable map completely - is it still interactable? test with point clicks; also it may download tiles if getting moved by script
 - settings: vatsim id+refresh frequency, callsign override, auto server on/off, hide map switch, sim reconnect on/off
 - device control panel
+- reduce epilepsy after resolution 6-7 - stop/less fequent->stop interpolating pos/values
 */

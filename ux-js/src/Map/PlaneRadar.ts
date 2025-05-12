@@ -11,7 +11,7 @@ interface FlightRemoveEventArgs {
     id: number;
 }
 
-interface PhysicParams {
+export interface PhysicParams {
     longitude: number;
     latitude: number;
     heading: number;
@@ -91,7 +91,6 @@ export class PlaneInfo {
     model: string;
     callsign: string;
 
-    params?: PlaneParams;
     animator: AnimatorState;
 
     inMap: boolean;
@@ -128,8 +127,7 @@ export class PlaneInfo {
     }
 
     updateRealtimeData(params: PlaneParams) {
-        this.params = params;
-        this.plane.setPosition(params);
+        this.plane.setParams(params);
 
         if (!this.inMap) {
             this.inMap = true;

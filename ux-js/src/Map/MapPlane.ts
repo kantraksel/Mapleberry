@@ -1,14 +1,8 @@
 import { Feature } from 'ol';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
-import { flatStylesToStyleFunction } from 'ol/render/canvas/style';
 import { MapLayers } from './GlobalMap';
-
-interface Position {
-    longitude: number;
-    latitude: number;
-    heading: number;
-}
+import { PhysicParams } from './PlaneRadar';
 
 class MapPlane {
     private point: Point;
@@ -19,9 +13,6 @@ class MapPlane {
         this.point = new Point([ 0, 0 ]);
         this.dot = new Feature(this.point);
         this.label = new Feature(this.point);
-
-        this.label.set('callsign_text', '');
-        this.dot.set('hdg_rad', 0);
     }
 
     public addToMap(map: MapLayers) {
@@ -35,33 +26,24 @@ class MapPlane {
     }
 
     public setCallsign(callsign: string) {
-        this.label.set('callsign_text', callsign);
+        this.label.set('callsign', callsign);
     }
 
-    public setPosition(pos: Position) {
-        this.point.setCoordinates(fromLonLat([ pos.longitude, pos.latitude ]));
+    public setParams(params: PhysicParams) {
+        this.point.setCoordinates(fromLonLat([ params.longitude, params.latitude ]));
 
-        const rad = pos.heading * (Math.PI / 180);
+        const rad = params.heading * (Math.PI / 180);
         this.dot.set('hdg_rad', rad);
+
+        this.label.set('params', params);
     }
 
     public setUserStyle(user: boolean) {
         let dotStyle;
         let labelStyle;
         if (user) {
-            dotStyle = flatStylesToStyleFunction([
-                {
-                    ...map.pointLayerStyle,
-                    'icon-color': '#AA0000',
-                    'z-index': 1,
-                }
-            ]);
-            labelStyle = flatStylesToStyleFunction([
-                {
-                    ...map.labelLayerStyle,
-                    'z-index': 1,
-                }
-            ]);
+            dotStyle = map.mainPointLayerStyle;
+            labelStyle = map.mainLabelLayerStyle;
         }
         this.dot.setStyle(dotStyle);
         this.label.setStyle(labelStyle);
