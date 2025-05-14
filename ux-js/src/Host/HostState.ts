@@ -1,12 +1,14 @@
+import Event from '../Event';
+
 export enum SimulatorStatus {
-	Disconnected = 1,
-	Connected,
+    Disconnected = 1,
+    Connected,
 }
 
 export enum ServerStatus {
-	Stopped = 1,
-	Listening,
-	Connected,
+    Stopped = 1,
+    Listening,
+    Connected,
 }
 
 export interface HostStatus {
@@ -27,11 +29,11 @@ type StatusEvent = (status: HostStatus) => void;
 class HostState {
     private status: HostStatus;
 
-    private statusEvent: Set<StatusEvent>;
+    public readonly statusEvent: Event<StatusEvent>;
 
     public constructor() {
         this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
-        this.statusEvent = new Set();
+        this.statusEvent = new Event();
 
         hostBridge.registerHandler('SRV_STATE', (data: object) => {
             const status = data as HostStatus;
@@ -45,18 +47,8 @@ class HostState {
                 simName = status.simName;
 
             this.status = { simStatus: status.simStatus, srvStatus: status.srvStatus, simName: simName };
-            this.statusEvent.forEach((value) => {
-                value(this.status);
-            });
+            this.statusEvent.invoke(this.status);
         });
-    }
-
-    public addStatusUpdateEvent(callback: StatusEvent) {
-        this.statusEvent.add(callback);
-    }
-
-    public removeStatusUpdateEvent(callback: StatusEvent) {
-        this.statusEvent.delete(callback);
     }
 
     public notifyAppReady() {

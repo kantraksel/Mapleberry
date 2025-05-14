@@ -1,61 +1,82 @@
 import { Feature } from 'ol';
+import { FeatureLike } from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
-import { MapLayers } from './GlobalMap';
-import { PhysicParams } from './PlaneRadar';
 
 class MapPlane {
-    private point: Point;
-    private dot: Feature;
-    private label: Feature;
+    private pos: Point;
+    public readonly point: Feature;
+    public readonly label: Feature;
 
     public constructor() {
-        this.point = new Point([ 0, 0 ]);
-        this.dot = new Feature(this.point);
-        this.label = new Feature(this.point);
-    }
-
-    public addToMap(map: MapLayers) {
-        map.points.addFeature(this.dot);
-        map.labels.addFeature(this.label);
-    }
-
-    public removeFromMap(map: MapLayers) {
-        map.points.removeFeature(this.dot);
-        map.labels.removeFeature(this.label);
+        this.pos = new Point([ 0, 0 ]);
+        this.point = new Feature(this.pos);
+        this.label = new Feature(this.pos);
     }
 
     public setCallsign(callsign: string) {
         this.label.set('callsign', callsign);
     }
 
+    public static getCallsign(feature: FeatureLike): string | null {
+        const value = feature.get('callsign');
+        if (typeof value !== 'string') {
+            return null;
+        }
+        return value;
+    }
+
     public setParams(params: PhysicParams) {
-        this.point.setCoordinates(fromLonLat([ params.longitude, params.latitude ]));
+        this.pos.setCoordinates(fromLonLat([ params.longitude, params.latitude ]));
 
-        const rad = params.heading * (Math.PI / 180);
-        this.dot.set('hdg_rad', rad);
-
+        this.point.set('params', params);
         this.label.set('params', params);
     }
 
-    public setUserStyle(user: boolean) {
-        let dotStyle;
-        let labelStyle;
-        if (user) {
-            dotStyle = map.mainPointLayerStyle;
-            labelStyle = map.mainLabelLayerStyle;
+    public static getParams(feature: FeatureLike): PhysicParams | null {
+        const value = feature.get('params');
+        if (typeof value !== 'object') {
+            return null;
         }
-        this.dot.setStyle(dotStyle);
-        this.label.setStyle(labelStyle);
+        return value;
     }
 
-    public get userObject() {
-        return this.dot.get('user_object');
+    public setMainStyle() {
+        this.point.setStyle(planeLayers.mainPointStyle);
+        this.label.setStyle(planeLayers.mainLabelStyle);
     }
 
     public set userObject(object: unknown) {
-        this.dot.set('user_object', object, true);
+        this.point.set('user_object', object, true);
+    }
+
+    public static getUserObject(feature: FeatureLike): unknown {
+        return feature.get('user_object');
     }
 }
+
+export interface PhysicParams {
+    longitude: number;
+    latitude: number;
+    heading: number;
+    altitude: number;
+    groundSpeed: number;
+    groundAltitude: number;
+    indicatedSpeed: number;
+    verticalSpeed: number;
+}
+
+export function copyPhysicParams(other: PhysicParams): PhysicParams {
+    return {
+        longitude: other.longitude,
+        latitude: other.latitude,
+        heading: other.heading,
+        altitude: other.altitude,
+        groundSpeed: other.groundSpeed,
+        groundAltitude: other.groundAltitude,
+        indicatedSpeed: other.indicatedSpeed,
+        verticalSpeed: other.verticalSpeed,
+    };
+};
 
 export default MapPlane;

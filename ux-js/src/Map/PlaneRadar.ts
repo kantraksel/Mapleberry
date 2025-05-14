@@ -1,157 +1,30 @@
 import { SimulatorStatus } from "../Host/HostState";
-import MapPlane from "./MapPlane";
+import { PhysicParams } from "./MapPlane";
+import RadarPlane from "./RadarPlane";
+import RadarAnimator from "./RadarAnimator";
 
-interface FlightAddEventArgs {
+interface EventArgs {
     id: number;
+}
+
+interface FlightAddEventArgs extends EventArgs {
     model: string;
     callsign: string;
 }
-
-interface FlightRemoveEventArgs {
-    id: number;
-}
-
-export interface PhysicParams {
-    longitude: number;
-    latitude: number;
-    heading: number;
-    altitude: number;
-    groundSpeed: number;
-    groundAltitude: number;
-    indicatedSpeed: number;
-    verticalSpeed: number;
-}
-
-interface FlightUpdateEventArgs extends PhysicParams {
-    id: number;
-}
+type FlightRemoveEventArgs = EventArgs;
+type FlightUpdateEventArgs = EventArgs & PhysicParams;
 
 function MathClamp(value: number, min: number, max: number) : number {
     return Math.min(max, Math.max(min, value));
 }
 
-function MathLerp(first: number, second: number, fraction: number) : number {
-    return (second - first) * fraction + first;
-}
-
-class PlaneParams implements PhysicParams {
-    longitude: number;
-    latitude: number;
-    heading: number;
-    altitude: number;
-    groundSpeed: number;
-    groundAltitude: number;
-    indicatedSpeed: number;
-    verticalSpeed: number;
-
-    constructor() {
-        this.longitude = 0;
-        this.latitude = 0;
-        this.heading = 0;
-        this.altitude = 0;
-        this.groundSpeed = 0;
-        this.groundAltitude = 0;
-        this.indicatedSpeed = 0;
-        this.verticalSpeed = 0;
-    }
-
-    copy(other: PhysicParams) {
-        this.longitude = other.longitude;
-        this.latitude = other.latitude;
-        this.heading = other.heading;
-        this.altitude = other.altitude;
-        this.groundSpeed = other.groundSpeed;
-        this.groundAltitude = other.groundAltitude;
-        this.indicatedSpeed = other.indicatedSpeed;
-        this.verticalSpeed = other.verticalSpeed;
-    }
-
-    lerp(first: PhysicParams, second: PhysicParams, fraction: number) {
-        this.longitude = MathLerp(first.longitude, second.longitude, fraction);
-        this.latitude = MathLerp(first.latitude, second.latitude, fraction);
-        this.heading = MathLerp(first.heading, second.heading, fraction);
-        this.altitude = MathLerp(first.altitude, second.altitude, fraction);
-        this.groundSpeed = MathLerp(first.groundSpeed, second.groundSpeed, fraction);
-        this.groundAltitude = MathLerp(first.groundAltitude, second.groundAltitude, fraction);
-        this.indicatedSpeed = MathLerp(first.indicatedSpeed, second.indicatedSpeed, fraction);
-        this.verticalSpeed = MathLerp(first.verticalSpeed, second.verticalSpeed, fraction);
-    }
-}
-
-interface AnimatorState {
-    first: PlaneParams | null;
-    second: PlaneParams | null;
-    start: number;
-
-    stepLog: PlaneParams[];
-}
-
-export class PlaneInfo {
-    id: number;
-    model: string;
-    callsign: string;
-
-    animator: AnimatorState;
-
-    inMap: boolean;
-    plane: MapPlane;
-
-    public constructor(id: number, model: string, callsign: string) {
-        this.id = id;
-        this.model = model;
-        this.callsign = callsign;
-
-        this.animator = {
-            first: null,
-            second: null,
-            start: 0,
-            stepLog: [],
-        };
-
-        this.inMap = false;
-        this.plane = new MapPlane();
-        this.plane.userObject = this;
-        this.plane.setCallsign(callsign);
-    }
-
-    public setIdent(model: string, callsign: string) {
-        this.model = model;
-        this.callsign = callsign;
-        this.plane.setCallsign(callsign);
-    }
-
-    public updatePos(data: FlightUpdateEventArgs) {
-        const params = new PlaneParams();
-        params.copy(data);
-        this.animator.stepLog.push(params);
-    }
-
-    updateRealtimeData(params: PlaneParams) {
-        this.plane.setParams(params);
-
-        if (!this.inMap) {
-            this.inMap = true;
-            map.addPlane(this.plane);
-        }
-    }
-
-    public removePos() {
-        if (this.inMap) {
-            map.removePlane(this.plane);
-        }
-    }
-}
-
 class PlaneRadar {
-    private planes: Map<number, PlaneInfo>;
-    private trackedId: number;
-    private lastAutoRes: number;
-    private animatorId?: number;
+    private planes: Map<number, RadarPlane>;
+    private animator: RadarAnimator;
 
     public constructor() {
         this.planes = new Map();
-        this.trackedId = -1;
-        this.lastAutoRes = NaN;
+        this.animator = new RadarAnimator();
 
         hostBridge.registerHandler('FLT_ADD', (data: object) => {
             const args = data as Partial<FlightAddEventArgs>;
@@ -200,34 +73,7 @@ class PlaneRadar {
             this.update(args as FlightUpdateEventArgs);
         });
 
-        map.addClickEvent((e) => {
-            const obj = e.get('user_object');
-            if (!obj || !(obj instanceof PlaneInfo)) {
-                return;
-            }
-
-            const info = obj as PlaneInfo;
-            this.trackPlane(info);
-        });
-
-        map.addMoveStartEvent(() => {
-            this.trackedId = -1;
-        });
-
-        map.addChangeResEvent((value) => {
-            if (Number.isNaN(this.lastAutoRes)) {
-                return;
-            }
-
-            const epsilon = 0.5;
-            const min = value - epsilon;
-            const max = value + epsilon;
-            if (this.lastAutoRes < min || this.lastAutoRes > max) {
-                this.lastAutoRes = NaN;
-            }
-        });
-
-        hostState.addStatusUpdateEvent((status) => {
+        hostState.statusEvent.add((status) => {
             if (status.simStatus == SimulatorStatus.Disconnected) {
                 this.removeAll();
             }
@@ -239,7 +85,7 @@ class PlaneRadar {
         if (info) {
             info.setIdent(model, callsign);
         } else {
-            info = new PlaneInfo(id, model, callsign);
+            info = new RadarPlane(id, model, callsign);
             this.planes.set(id, info);
         }
         return info;
@@ -253,26 +99,21 @@ class PlaneRadar {
         this.removePlane(info);
     }
 
-    public removePlane(info: PlaneInfo) {
-        info.removePos();
+    public removePlane(info: RadarPlane) {
+        info.deleteFromMap();
         this.planes.delete(info.id);
 
-        if (this.planes.size == 0 && this.animatorId !== undefined) {
-            cancelAnimationFrame(this.animatorId);
-            delete this.animatorId;
+        if (this.planes.size == 0) {
+            this.animator.stop();
         }
     }
 
     private removeAll() {
         this.planes.forEach((info) => {
-            this.removePlane(info);
+            info.deleteFromMap();
         });
         this.planes.clear();
-
-        if (this.animatorId !== undefined) {
-            cancelAnimationFrame(this.animatorId);
-            delete this.animatorId;
-        }
+        this.animator.stop();
     }
 
     public update(data: FlightUpdateEventArgs) {
@@ -283,124 +124,19 @@ class PlaneRadar {
         this.updatePlane(info, data);
     }
 
-    public updatePlane(info: PlaneInfo, data: FlightUpdateEventArgs) {
-        info.updatePos(data);
-        /*
-        if (info.id == this.trackedId) {
-            this.moveMapWithPlane(info);
-        }
-        */
-        if (this.animatorId === undefined) {
-            this.animateMap();
-        }
+    public updatePlane(info: RadarPlane, data: FlightUpdateEventArgs) {
+        info.update(data);
+        this.animator.start();
     }
 
-    public trackPlane(info: PlaneInfo) {
-        if (this.trackedId == info.id) {
-            return;
-        }
-
-        this.trackedId = info.id;
-        this.lastAutoRes = 0;
-        /*
-        if (info.inMap) {
-            this.moveMapWithPlane(info);
-        }
-        */
+    public followPlane(plane: RadarPlane) {
+        this.animator.followPlane(plane.id);
     }
 
-    private moveMapWithPlane(info: PlaneParams) {
-        /*
-        if (speed < 50) {
-            resolution = 7;
-        } else if (speed < 250) {
-            resolution = (speed - 50) / (250 - 50);
-            resolution = resolution * 93 + 7;
-        } else {
-            resolution = Math.min(speed - 250, 50) / 50;
-            resolution = resolution * 270 + 100;
-        }
-        */
-
-        const altitude = info.groundAltitude;
-        const absAlt = info.altitude;
-        const speed = info.groundSpeed;
-        const longitude = info.longitude;
-        const latitude = info.latitude;
-
-        let resolution;
-        if (Number.isNaN(this.lastAutoRes)) {
-            map.setCenterZoom(longitude, latitude);
-            return;
-        }
-        else if (speed < 20) {
-            resolution = 5;
-        } else if (speed < 50) {
-            resolution = ((speed - 20) / 30) * 5 + 5; // 5-10
-        } else if (altitude < 2000) {
-            resolution = (altitude / 2000) * 10 + 10; // 10-20
-        } else if (altitude < 5000) {
-            resolution = ((altitude - 2000) / 3000) * 20 + 20; // 20-40
-        } else if (altitude < 10000) {
-            resolution = ((altitude - 5000) / 5000) * 60 + 40; // 40-100
-        } else if (absAlt < 15000) {
-            resolution = 10000 - (altitude - absAlt);
-            resolution = ((absAlt - resolution) / (15000 - resolution)) * 100 + 100; // 100-200
-        } else {
-            resolution = 200;
-        }
-        this.lastAutoRes = resolution;
-
-        map.setCenterZoom(longitude, latitude, resolution);
-    }
-
-    private animateMap() {
-        let activeEntities = 0;
-        const fn = (timestamp: number) => {
-            this.planes.forEach((info) => {
-                const data = info.animator;
-                if (!data.first) {
-                    const stepLog = data.stepLog;
-                    if (stepLog.length < 2) {
-                        return;
-                    }
-
-                    const i = stepLog.length - 2;
-                    data.first = stepLog[i];
-                    data.second = stepLog[i + 1];
-                    data.start = timestamp;
-
-                    data.stepLog = [ data.second ];
-                }
-
-                const time = timestamp - data.start;
-                const first = data.first;
-                const second = data.second!;
-
-                const n = MathClamp(time / 1000, 0, 1);
-                const params = new PlaneParams();
-                params.lerp(first, second, n);
-                info.updateRealtimeData(params);
-
-                if (info.id == this.trackedId) {
-                    this.moveMapWithPlane(params);
-                }
-
-                if (time >= 1000) {
-                    data.first = null;
-                    data.second = null;
-                } else {
-                    activeEntities++;
-                }
-            });
-
-            if (activeEntities > 0) {
-                this.animatorId = requestAnimationFrame(fn);
-            } else {
-                delete this.animatorId;
-            }
-        };
-        this.animatorId = requestAnimationFrame(fn);
+    public forEach(callback: (plane: RadarPlane) => void) {
+        this.planes.forEach((value) => {
+            callback(value);
+        });
     }
 }
 

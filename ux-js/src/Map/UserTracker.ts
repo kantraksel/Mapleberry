@@ -1,22 +1,21 @@
+import { PhysicParams } from "./MapPlane";
 import { SimulatorStatus } from "../Host/HostState";
-import { PlaneInfo } from "./PlaneRadar";
+import RadarPlane from "./RadarPlane";
+import Event from "../Event";
 
 class LocalPlaneInfo {
-    info: PlaneInfo | null;
+    info: RadarPlane | null;
 
     indicatedAltitude: number;
-    indicatedSpeed: number;
 
     public constructor() {
         this.info = null;
         this.indicatedAltitude = 0;
-        this.indicatedSpeed = 0;
     }
 
     public reset() {
         this.info = null;
         this.indicatedAltitude = 0;
-        this.indicatedSpeed = 0;
     }
 }
 
@@ -25,16 +24,8 @@ interface UserAddEventArgs {
     model: string;
 }
 
-interface UserUpdateEventArgs {
-    longitude: number;
-    latitude: number;
-    heading: number;
-    altitude: number;
-    groundSpeed: number;
+interface UserUpdateEventArgs extends PhysicParams {
     indicatedAltitude: number;
-    indicatedSpeed: number;
-    groundAltitude: number;
-    verticalSpeed: number;
 }
 
 export interface Identity {
@@ -49,11 +40,11 @@ function MathClamp(value: number, min: number, max: number) : number {
 
 class UserTracker {
     private user: LocalPlaneInfo;
-    private identEvent: Set<IdentEvent>;
+    public readonly identEvent: Event<IdentEvent>;
 
     public constructor() {
         this.user = new LocalPlaneInfo();
-        this.identEvent = new Set();
+        this.identEvent = new Event();
 
         hostBridge.registerHandler('UAC_ADD', (data: object) => {
             const args = data as Partial<UserAddEventArgs>;
@@ -98,14 +89,14 @@ class UserTracker {
             this.updateUser(args as UserUpdateEventArgs);
         });
 
-        hostState.addStatusUpdateEvent((status) => {
+        hostState.statusEvent.add((status) => {
             if (status.simStatus == SimulatorStatus.Disconnected) {
                 this.removeUser();
             }
         });
     }
 
-    public addUser(data: UserAddEventArgs) {
+    private addUser(data: UserAddEventArgs) {
         const user = this.user;
         if (user.info) {
             this.removeUser();
@@ -113,9 +104,9 @@ class UserTracker {
 
         const info = radar.add(0, data.model, data.callsign);
         user.info = info;
-        info.plane.setUserStyle(true);
+        info.plane.setMainStyle();
 
-        this.invokeIdentEvent();
+        this.identEvent.invoke(this.getIdentity());
     }
 
     private removeUser() {
@@ -126,10 +117,10 @@ class UserTracker {
 
         radar.removePlane(user.info);
         user.reset();
-        this.invokeIdentEvent();
+        this.identEvent.invoke(this.getIdentity());
     }
 
-    public updateUser(data: UserUpdateEventArgs & { id?: number }) {
+    private updateUser(data: UserUpdateEventArgs & { id?: number }) {
         const user = this.user;
         const info = user.info;
         if (!info) {
@@ -137,37 +128,21 @@ class UserTracker {
         }
 
         user.indicatedAltitude = data.indicatedAltitude;
-        user.indicatedSpeed = data.indicatedSpeed;
         
         if (!info.inMap) {
-            radar.trackPlane(info);
+            radar.followPlane(info);
         }
 
         data.id = 0;
         radar.updatePlane(info, data as Required<typeof data>);
     }
 
-    public addIdentEvent(callback: IdentEvent) {
-        this.identEvent.add(callback);
-    }
-
-    public removeIdentEvent(callback: IdentEvent) {
-        this.identEvent.delete(callback);
-    }
-
     public getIdentity(): Identity {
         const info = this.user.info;
         if (!info) {
-            return { plane: '-_-_', callsign: '-_-_-_-' };
+            return { plane: '0000', callsign: 'UFO0000' };
         }
         return { plane: info.model, callsign: info.callsign };
-    }
-
-    private invokeIdentEvent() {
-        const ident = this.getIdentity();
-        this.identEvent.forEach((value) => {
-            value(ident);
-        });
     }
 }
 

@@ -15,10 +15,10 @@ function SystemInfoBox(props: { open: boolean }) {
 	const [status, setStatus] = useState(hostState.getHostStatus());
 
 	useEffect(() => {
-		hostState.addStatusUpdateEvent(setStatus);
+		hostState.statusEvent.add(setStatus);
 
 		return () => {
-			hostState.removeStatusUpdateEvent(setStatus);
+			hostState.statusEvent.delete(setStatus);
 		}
 	}, []);
 

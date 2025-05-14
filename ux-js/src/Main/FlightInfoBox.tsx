@@ -11,10 +11,10 @@ function FlightInfoBox(props: { open: boolean }) {
     const [flight, setFlight] = useState(tracker.getIdentity());
 
     useEffect(() => {
-        tracker.addIdentEvent(setFlight);
+        tracker.identEvent.add(setFlight);
 
         return () => {
-            tracker.removeIdentEvent(setFlight);
+            tracker.identEvent.delete(setFlight);
         }
     }, []);
 
