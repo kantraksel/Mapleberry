@@ -18,7 +18,7 @@ function MathClamp(value: number, min: number, max: number) : number {
     return Math.min(max, Math.max(min, value));
 }
 
-class PlaneRadar {
+class Radar {
     private planes: Map<number, RadarPlane>;
     private animator: RadarAnimator;
 
@@ -140,4 +140,4 @@ class PlaneRadar {
     }
 }
 
-export default PlaneRadar;
+export default Radar;

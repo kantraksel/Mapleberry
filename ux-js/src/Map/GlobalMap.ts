@@ -59,10 +59,7 @@ class GlobalMap {
         });
 
         this.map.on('click', (e: MapBrowserEvent<PointerEvent>) => {
-            e.stopPropagation();
-
-            const features = this.map.getFeaturesAtPixel(e.pixel);
-            features.forEach((feature) => {
+            this.map.forEachFeatureAtPixel(e.pixel, (feature) => {
                 this.clickEvent.invoke(feature);
             });
         });
@@ -76,6 +73,7 @@ class GlobalMap {
     public setParent(node: HTMLElement): void {
         if (this.map.getTargetElement())
             return;
+        node.focus();
         this.map.setTarget(node);
     }
 

@@ -10,7 +10,7 @@ import App from './Main/App.tsx';
 import HostBridge from './Host/HostBridge.ts';
 import HostState from './Host/HostState.ts';
 import GlobalMap from './Map/GlobalMap.ts';
-import PlaneRadar from './Map/PlaneRadar.ts';
+import Radar from './Map/Radar.ts';
 import UserTracker from './Map/UserTracker.ts';
 import PlaneLayers from './Map/PlaneLayers.ts';
 
@@ -19,14 +19,14 @@ declare global {
 	var hostState: HostState;
 	var map: GlobalMap;
 	var planeLayers: PlaneLayers;
-	var radar: PlaneRadar;
+	var radar: Radar;
 	var tracker: UserTracker;
 }
 window.hostBridge = new HostBridge();
 window.hostState = new HostState();
 window.map = new GlobalMap();
 window.planeLayers = new PlaneLayers();
-window.radar = new PlaneRadar();
+window.radar = new Radar();
 window.tracker = new UserTracker();
 
 const theme = createTheme({

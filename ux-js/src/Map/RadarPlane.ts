@@ -6,6 +6,7 @@ interface AnimatorState {
     start: number;
 
     stepLog: PhysicParams[];
+    lastStep: PhysicParams | null;
 }
 
 class RadarPlane {
@@ -32,6 +33,7 @@ class RadarPlane {
             second: null,
             start: 0,
             stepLog: [],
+            lastStep: null,
         };
     }
 

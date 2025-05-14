@@ -5,11 +5,13 @@ class RadarAnimator {
     private animatorId: number | null;
     private trackedId: number;
     private lastAutoRes: number;
+    private firstFocus: boolean;
 
     public constructor() {
         this.animatorId = null;
         this.trackedId = -1;
         this.lastAutoRes = NaN;
+        this.firstFocus = false;
 
         map.clickEvent.add((e) => {
             const obj = MapPlane.getUserObject(e);
@@ -72,12 +74,18 @@ class RadarAnimator {
                 info.updateAnimation(params);
 
                 if (info.id == this.trackedId) {
-                    this.moveMapWithPlane(params);
+                    // fixes scroll not working when following plane on high resolution map
+                    if (this.firstFocus || !data.lastStep || params.longitude != data.lastStep.longitude || params.latitude != data.lastStep.latitude) {
+                        this.firstFocus = false;
+                        this.moveMapWithPlane(params);
+                    }
                 }
+                data.lastStep = params;
 
                 if (time >= 1000) {
                     data.first = null;
                     data.second = null;
+                    data.lastStep = null;
                 }
                 activeEntities++;
             });
@@ -103,12 +111,15 @@ class RadarAnimator {
             map.setCenterZoom(longitude, latitude);
             return;
         }
-        else if (speed < 20) {
-            resolution = 5;
-        } else if (speed < 50) {
-            resolution = ((speed - 20) / 30) * 5 + 5; // 5-10
-        } else if (altitude < 2000) {
-            resolution = (altitude / 2000) * 10 + 10; // 10-20
+        
+        if (altitude < 2000) {
+            if (speed < 20) {
+                resolution = 5;
+            } else if (speed < 50) {
+                resolution = ((speed - 20) / 30) * 5 + 5; // 5-10
+            } else {
+                resolution = (altitude / 2000) * 10 + 10; // 10-20
+            }
         } else if (altitude < 5000) {
             resolution = ((altitude - 2000) / 3000) * 20 + 20; // 20-40
         } else if (altitude < 10000) {
@@ -138,6 +149,7 @@ class RadarAnimator {
 
         this.trackedId = id;
         this.lastAutoRes = 0;
+        this.firstFocus = true;
     }
 }
 

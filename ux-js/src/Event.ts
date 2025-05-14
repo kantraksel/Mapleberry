@@ -15,7 +15,7 @@ class Event<Func extends (...args: any[]) => void> {
 
     public invoke(...value: Parameters<Func>) {
         this.callbacks.forEach((callback) => {
-            callback(value);
+            callback(...value);
         });
     }
 }
