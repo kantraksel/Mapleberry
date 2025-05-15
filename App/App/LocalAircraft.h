@@ -34,13 +34,16 @@ public:
 		double longitude;
 		double latitude;
 		double heading;
-		int altitude;
-		int groundSpeed;
 
-		int indicatedAltitude;
-		int indicatedSpeed;
+		int altitude;
 		int groundAltitude;
+
+		int indicatedSpeed;
+		int groundSpeed;
 		int verticalSpeed;
+
+		int realAltitude;
+		double realHeading;
 	};
 
 	Function<void(const PlaneAddArgs& e)> OnAdd;

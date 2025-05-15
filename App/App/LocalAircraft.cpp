@@ -12,14 +12,15 @@ struct AircraftTrack_Model : DataModel
 		double longitude;
 		double latitude;
 		double heading;
-		int altitude;
-		int airSpeed;
-		int verticalSpeed;
+		double realHeading;
 
-		int trueAltitude;
-		int groundSpeed;
+		int altitude;
+		int realAltitude;
 		int groundAltitude;
-		double trueHeading;
+
+		int indicatedSpeed;
+		int groundSpeed;
+		int verticalSpeed;
 	};
 
 	static const VarDef vars[10];
@@ -39,14 +40,15 @@ const DataModel::VarDef AircraftTrack_Model::vars[] =
 	{ VarType::FLOAT64, "PLANE LONGITUDE", "degrees" },
 	{ VarType::FLOAT64, "PLANE LATITUDE", "degrees" },
 	{ VarType::FLOAT64, "PLANE HEADING DEGREES GYRO", "degrees" },
-	{ VarType::INT32, "INDICATED ALTITUDE", "feet" },
-	{ VarType::INT32, "AIRSPEED INDICATED", "knots" },
-	{ VarType::INT32, "VERTICAL SPEED", "feet/second" },
-
-	{ VarType::INT32, "PLANE ALTITUDE", "feet" },
-	{ VarType::INT32, "GROUND VELOCITY", "knots" },
-	{ VarType::INT32, "PLANE ALT ABOVE GROUND", "feet" },
 	{ VarType::FLOAT64, "PLANE HEADING DEGREES TRUE", "degrees" },
+
+	{ VarType::INT32, "INDICATED ALTITUDE", "feet" },
+	{ VarType::INT32, "PLANE ALTITUDE", "feet" },
+	{ VarType::INT32, "PLANE ALT ABOVE GROUND", "feet" },
+
+	{ VarType::INT32, "AIRSPEED INDICATED", "knots" },
+	{ VarType::INT32, "GROUND VELOCITY", "knots" },
+	{ VarType::INT32, "VERTICAL SPEED", "feet/second" },
 };
 
 struct AircraftIdent_Model : DataModel
@@ -178,13 +180,17 @@ void LocalAircraft::Track()
 				PlaneUpdateArgs e;
 				e.longitude = info.longitude;
 				e.latitude = info.latitude;
-				e.heading = info.trueHeading;
-				e.altitude = info.trueAltitude;
-				e.groundSpeed = info.groundSpeed;
-				e.indicatedAltitude = info.altitude;
-				e.indicatedSpeed = info.airSpeed;
+				e.heading = info.heading;
+
+				e.altitude = info.altitude;
 				e.groundAltitude = info.groundAltitude;
+
+				e.indicatedSpeed = info.indicatedSpeed;
+				e.groundSpeed = info.groundSpeed;
 				e.verticalSpeed = info.verticalSpeed;
+
+				e.realAltitude = info.realAltitude;
+				e.realHeading = info.realHeading;
 				OnUpdate(e);
 			}
 		}, RequestPeriod::SECOND);

@@ -44,11 +44,13 @@ struct RadarInfo_Model : DataModel
 		double longitude;
 		double latitude;
 		double heading;
+
 		int altitude;
-		int speed;
+		int groundAltitude;
+
+		int indicatedSpeed;
 		int groundSpeed;
 		int verticalSpeed;
-		int groundAltitude;
 	};
 	static const VarDef vars[8];
 
@@ -68,11 +70,13 @@ const DataModel::VarDef RadarInfo_Model::vars[] =
 	{ VarType::FLOAT64, "PLANE LONGITUDE", "degrees" },
 	{ VarType::FLOAT64, "PLANE LATITUDE", "degrees" },
 	{ VarType::FLOAT64, "PLANE HEADING DEGREES TRUE", "degrees" },
+
 	{ VarType::INT32, "PLANE ALTITUDE", "feet" },
+	{ VarType::INT32, "PLANE ALT ABOVE GROUND", "feet" },
+
 	{ VarType::INT32, "AIRSPEED INDICATED", "knots" },
 	{ VarType::INT32, "GROUND VELOCITY", "knots" },
 	{ VarType::INT32, "VERTICAL SPEED", "feet/second" },
-	{ VarType::INT32, "PLANE ALT ABOVE GROUND", "feet" },
 };
 static RadarInfo_Model infoModel;
 
@@ -293,10 +297,12 @@ void AirplaneRadar::Track(Airplane& airplane)
 						e.longitude = info.longitude;
 						e.latitude = info.latitude;
 						e.heading = info.heading;
+
 						e.altitude = info.altitude;
-						e.groundSpeed = info.groundSpeed;
 						e.groundAltitude = info.groundAltitude;
-						e.indicatedSpeed = info.speed;
+
+						e.indicatedSpeed = info.indicatedSpeed;
+						e.groundSpeed = info.groundSpeed;
 						e.verticalSpeed = info.verticalSpeed;
 						OnPlaneUpdate(e);
 					}

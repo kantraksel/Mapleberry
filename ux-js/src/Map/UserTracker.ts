@@ -1,4 +1,4 @@
-import { PhysicParams } from "./MapPlane";
+import { PhysicParams, validatePhysicParams } from "./MapPlane";
 import { SimulatorStatus } from "../Host/HostState";
 import RadarPlane from "./RadarPlane";
 import Event from "../Event";
@@ -6,26 +6,30 @@ import Event from "../Event";
 class LocalPlaneInfo {
     info: RadarPlane | null;
 
-    indicatedAltitude: number;
+    realAltitude: number;
+    realHeading: number;
 
     public constructor() {
         this.info = null;
-        this.indicatedAltitude = 0;
+        this.realAltitude = 0;
+        this.realHeading = 0;
     }
 
     public reset() {
         this.info = null;
-        this.indicatedAltitude = 0;
+        this.realAltitude = 0;
+        this.realHeading = 0;
     }
 }
 
 interface UserAddEventArgs {
     callsign: string;
-    model: string;
+    planeModel: string;
 }
 
 interface UserUpdateEventArgs extends PhysicParams {
-    indicatedAltitude: number;
+    realAltitude: number;
+    realHeading: number;
 }
 
 export interface Identity {
@@ -48,13 +52,13 @@ class UserTracker {
 
         hostBridge.registerHandler('UAC_ADD', (data: object) => {
             const args = data as Partial<UserAddEventArgs>;
-            if (typeof args.callsign !== 'string' || typeof args.model !== 'string')
+            if (typeof args.callsign !== 'string' || typeof args.planeModel !== 'string')
                 return;
 
             if (args.callsign.length > 16)
                 args.callsign = args.callsign.substring(0, 16);
-            if (args.model.length > 16)
-                args.model = args.model.substring(0, 16);
+            if (args.planeModel.length > 16)
+                args.planeModel = args.planeModel.substring(0, 16);
 
             this.addUser(args as UserAddEventArgs);
         });
@@ -65,26 +69,13 @@ class UserTracker {
 
         hostBridge.registerHandler('UAC_UPDATE', (data: object) => {
             const args = data as Partial<UserUpdateEventArgs>;
-            if (typeof args.longitude !== 'number' || !Number.isFinite(args.longitude) ||
-                typeof args.latitude !== 'number' || !Number.isFinite(args.latitude) ||
-                typeof args.heading !== 'number' || !Number.isFinite(args.heading) ||
-                typeof args.altitude !== 'number' || !Number.isFinite(args.altitude) ||
-                typeof args.groundSpeed !== 'number' || !Number.isFinite(args.groundSpeed) ||
-                typeof args.indicatedAltitude !== 'number' || !Number.isFinite(args.indicatedAltitude) ||
-                typeof args.indicatedSpeed !== 'number' || !Number.isFinite(args.indicatedSpeed) ||
-                typeof args.groundAltitude !== 'number' || !Number.isFinite(args.groundAltitude) ||
-                typeof args.verticalSpeed !== 'number' || !Number.isFinite(args.verticalSpeed))
+            if (!validatePhysicParams(args) ||
+                typeof args.realAltitude !== 'number' || !Number.isFinite(args.realAltitude) ||
+                typeof args.realHeading !== 'number' || !Number.isFinite(args.realHeading))
                 return;
 
-            args.longitude = MathClamp(args.longitude, -360, 360);
-            args.latitude = MathClamp(args.latitude, -360, 360);
-            args.heading = MathClamp(args.heading, 0, 360);
-            args.altitude = MathClamp(args.altitude, -10000, 100000);
-            args.groundSpeed = MathClamp(args.groundSpeed, 0, 1000);
-            args.indicatedAltitude = MathClamp(args.indicatedAltitude, -10000, 100000);
-            args.indicatedSpeed = MathClamp(args.indicatedSpeed, 0, 1000);
-            args.groundAltitude = MathClamp(args.groundAltitude, 0, 100000);
-            args.verticalSpeed = MathClamp(args.verticalSpeed, -100000, 100000);
+            args.realAltitude = MathClamp(args.realAltitude, -10000, 100000);
+            args.realHeading = MathClamp(args.realHeading, 0, 360);
 
             this.updateUser(args as UserUpdateEventArgs);
         });
@@ -102,7 +93,7 @@ class UserTracker {
             this.removeUser();
         }
 
-        const info = radar.add(0, data.model, data.callsign);
+        const info = radar.add(0, data.planeModel, data.callsign);
         user.info = info;
         info.plane.setMainStyle();
 
@@ -127,7 +118,7 @@ class UserTracker {
             return;
         }
 
-        user.indicatedAltitude = data.indicatedAltitude;
+        user.realAltitude = data.realAltitude;
         
         if (!info.inMap) {
             radar.followPlane(info);

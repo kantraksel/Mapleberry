@@ -245,7 +245,7 @@ void UxDriver::Initialize()
 		{
 			nlohmann::json json;
 			json["id"] = e.id;
-			json["model"] = e.model;
+			json["planeModel"] = e.model;
 			json["callsign"] = e.callsign;
 
 			PushMessage("FLT_ADD", json);
@@ -265,9 +265,9 @@ void UxDriver::Initialize()
 			json["latitude"] = e.latitude;
 			json["heading"] = e.heading;
 			json["altitude"] = e.altitude;
-			json["groundSpeed"] = e.groundSpeed;
 			json["groundAltitude"] = e.groundAltitude;
 			json["indicatedSpeed"] = e.indicatedSpeed;
+			json["groundSpeed"] = e.groundSpeed;
 			json["verticalSpeed"] = e.verticalSpeed;
 
 			PushMessage("FLT_UPDATE", json);
@@ -276,7 +276,7 @@ void UxDriver::Initialize()
 	aircraft.OnAdd = [this](const LocalAircraft::PlaneAddArgs& e)
 		{
 			nlohmann::json json;
-			json["model"] = e.model;
+			json["planeModel"] = e.model;
 			json["callsign"] = e.callsign;
 
 			PushMessage("UAC_ADD", json);
@@ -294,11 +294,12 @@ void UxDriver::Initialize()
 			json["latitude"] = e.latitude;
 			json["heading"] = e.heading;
 			json["altitude"] = e.altitude;
-			json["groundSpeed"] = e.groundSpeed;
-			json["indicatedAltitude"] = e.indicatedAltitude;
-			json["indicatedSpeed"] = e.indicatedSpeed;
 			json["groundAltitude"] = e.groundAltitude;
+			json["indicatedSpeed"] = e.indicatedSpeed;
+			json["groundSpeed"] = e.groundSpeed;
 			json["verticalSpeed"] = e.verticalSpeed;
+			json["realAltitude"] = e.realAltitude;
+			json["realHeading"] = e.realHeading;
 
 			PushMessage("UAC_UPDATE", json);
 		};
