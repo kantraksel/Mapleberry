@@ -110,7 +110,7 @@ class Radar {
     }
 
     public followPlane(plane: RadarPlane) {
-        this.animator.followPlane(plane.id);
+        this.animator.followPlane(plane);
     }
 
     public forEach(callback: (plane: RadarPlane) => void) {

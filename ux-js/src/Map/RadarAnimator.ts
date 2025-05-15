@@ -5,13 +5,17 @@ class RadarAnimator {
     private animatorId: number | null;
     private trackedId: number;
     private lastAutoRes: number;
-    private firstFocus: boolean;
+    private minimumDeltaTime: number;
+    private lastAnimationTimestamp: number;
 
     public constructor() {
         this.animatorId = null;
         this.trackedId = -1;
         this.lastAutoRes = NaN;
-        this.firstFocus = false;
+        this.minimumDeltaTime = 100;
+        this.lastAnimationTimestamp = 0;
+
+        this.adjustUpdateRate();
 
         map.clickEvent.add((e) => {
             const obj = MapPlane.getUserObject(e);
@@ -20,7 +24,7 @@ class RadarAnimator {
             }
 
             const info = obj as RadarPlane;
-            this.followPlane(info.id);
+            this.followPlane(info);
         });
 
         map.moveStartEvent.add(() => {
@@ -28,6 +32,8 @@ class RadarAnimator {
         });
 
         map.changeResEvent.add((value) => {
+            this.adjustUpdateRate(value);
+
             if (Number.isNaN(this.lastAutoRes)) {
                 return;
             }
@@ -49,6 +55,12 @@ class RadarAnimator {
         const fn = (timestamp: number) => {
             let activeEntities = 0;
 
+            if (timestamp - this.lastAnimationTimestamp < this.minimumDeltaTime) {
+                this.animatorId = requestAnimationFrame(fn);
+                return;
+            }
+            this.lastAnimationTimestamp = timestamp;
+
             radar.forEach((info) => {
                 const data = info.animator;
                 if (!data.first) {
@@ -65,18 +77,28 @@ class RadarAnimator {
                     data.stepLog = [ data.second ];
                 }
 
-                const time = timestamp - data.start;
-                const first = data.first;
-                const second = data.second!;
+                let time = timestamp - data.start;
+                if (time >= 1000) {
+                    const stepLog = data.stepLog;
+                    if (stepLog.length >= 2) {
+                        time = time - 1000;
+
+                        const i = stepLog.length - 2;
+                        data.first = stepLog[i];
+                        data.second = stepLog[i + 1];
+                        data.start = timestamp - time;
+
+                        data.stepLog = [ data.second ];
+                    }
+                }
 
                 const n = MathClamp(time / 1000, 0, 1);
-                const params = lerpParams(first, second, n);
+                const params = lerpParams(data.first, data.second!, n);
                 info.updateAnimation(params);
 
                 if (info.id == this.trackedId) {
                     // fixes scroll not working when following plane on high resolution map
-                    if (this.firstFocus || !data.lastStep || params.longitude != data.lastStep.longitude || params.latitude != data.lastStep.latitude) {
-                        this.firstFocus = false;
+                    if (!data.lastStep || params.longitude != data.lastStep.longitude || params.latitude != data.lastStep.latitude) {
                         this.moveMapWithPlane(params);
                     }
                 }
@@ -142,14 +164,30 @@ class RadarAnimator {
         }
     }
 
-    public followPlane(id: number) {
-        if (this.trackedId === id) {
+    public followPlane(plane: RadarPlane) {
+        if (this.trackedId === plane.id) {
             return;
         }
 
-        this.trackedId = id;
+        this.trackedId = plane.id;
         this.lastAutoRes = 0;
-        this.firstFocus = true;
+
+        const lastStep = plane.animator.lastStep;
+        if (lastStep) {
+            this.moveMapWithPlane(lastStep);
+        }
+    }
+
+    private adjustUpdateRate(resolution?: number) {
+        if (resolution === undefined) {
+            resolution = map.map.getView().getResolution();
+        }
+        
+        if (resolution === undefined || resolution > 7) {
+            this.minimumDeltaTime = 100;
+        } else {
+            this.minimumDeltaTime = 0;
+        }
     }
 }
 

@@ -150,6 +150,7 @@ class HostBridge {
 
         const finishFunc = () => {
             console.log(JSON.stringify(hostBridge.finishPlaylist()));
+            callback?.call(null, false);
             alert('Playlist recording stopped. Result has been printed to developer console. Sorry :/');
         };
         this.playbackController.signal.onabort = finishFunc;
