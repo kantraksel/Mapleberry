@@ -10,6 +10,8 @@ class PlaneLayers {
     private pointSource: VectorSource;
     private labelLayer: VectorLayer;
     private labelSource: VectorSource;
+    private farPointLayer: VectorLayer;
+    private farPointSource: VectorSource;
     
     public readonly mainPointStyle: StyleLike;
     public readonly mainLabelStyle: StyleLike;
@@ -18,7 +20,7 @@ class PlaneLayers {
         const pointStyle = new OlStyle({
             image: new OlIcon({
                 src: '/flight_24dp_FFFFFF.svg',
-                color: '#0000AA',
+                color: '#FF7900',
             }),
         });
         const labelStyle = new OlStyle({
@@ -46,9 +48,16 @@ class PlaneLayers {
         const mainLabelStyle = labelStyle.clone();
         mainLabelStyle.setZIndex(1);
         this.mainLabelStyle = this.createLabelLayerStyle(mainLabelStyle);
+        const farPointStyle = new OlStyle({
+            image: new OlIcon({
+                src: '/flight_24dp_FFFFFF.svg',
+                color: '#0000AA',
+            }),
+        });
 
         this.pointSource = new VectorSource();
         this.labelSource = new VectorSource();
+        this.farPointSource = new VectorSource();
         this.pointLayer = new VectorLayer({
             style: this.createPointLayerStyle(pointStyle),
             source: this.pointSource,
@@ -57,7 +66,12 @@ class PlaneLayers {
             style: this.createLabelLayerStyle(labelStyle),
             source: this.labelSource,
         });
+        this.farPointLayer = new VectorLayer({
+            style: this.createPointLayerStyle(farPointStyle),
+            source: this.farPointSource,
+        });
 
+        map.map.addLayer(this.farPointLayer);
         map.map.addLayer(this.pointLayer);
         map.map.addLayer(this.labelLayer);
     }
@@ -69,6 +83,16 @@ class PlaneLayers {
 
     public removePlane(plane: MapPlane) {
         this.pointSource.removeFeature(plane.point);
+        this.labelSource.removeFeature(plane.label);
+    }
+
+    public addFarPlane(plane: MapPlane) {
+        this.farPointSource.addFeature(plane.point);
+        this.labelSource.addFeature(plane.label);
+    }
+
+    public removeFarPlane(plane: MapPlane) {
+        this.farPointSource.removeFeature(plane.point);
         this.labelSource.removeFeature(plane.label);
     }
 

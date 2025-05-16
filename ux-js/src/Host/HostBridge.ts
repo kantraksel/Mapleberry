@@ -69,6 +69,7 @@ class HostBridge {
             console.log('Playback not possible - list is empty');
             return;
         }
+        vatsim.stop();
 
         let i = 0;
         // old version, suffers from queue chocking

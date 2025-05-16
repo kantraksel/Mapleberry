@@ -96,6 +96,10 @@ class RadarAnimator {
                 const params = lerpParams(data.first, data.second!, n);
                 info.updateAnimation(params);
 
+                if (!info.inMap) {
+                    radar.onPlaneAdd(info);
+                }
+
                 if (info.id == this.trackedId) {
                     // fixes scroll not working when following plane on high resolution map
                     if (!data.lastStep || params.longitude != data.lastStep.longitude || params.latitude != data.lastStep.latitude) {

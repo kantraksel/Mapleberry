@@ -50,17 +50,6 @@ class RadarPlane {
 
     updateAnimation(params: PhysicParams) {
         this.plane.setParams(params);
-
-        if (!this.inMap) {
-            this.inMap = true;
-            planeLayers.addPlane(this.plane);
-        }
-    }
-
-    deleteFromMap() {
-        if (this.inMap) {
-            planeLayers.removePlane(this.plane);
-        }
     }
 }
 

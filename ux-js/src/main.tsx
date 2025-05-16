@@ -13,6 +13,7 @@ import GlobalMap from './Map/GlobalMap.ts';
 import Radar from './Map/Radar.ts';
 import UserTracker from './Map/UserTracker.ts';
 import PlaneLayers from './Map/PlaneLayers.ts';
+import VATSIM from './Map/VATSIM.ts';
 
 declare global {
 	var hostBridge: HostBridge;
@@ -21,6 +22,7 @@ declare global {
 	var planeLayers: PlaneLayers;
 	var radar: Radar;
 	var tracker: UserTracker;
+	var vatsim: VATSIM;
 }
 window.hostBridge = new HostBridge();
 window.hostState = new HostState();
@@ -28,6 +30,7 @@ window.map = new GlobalMap();
 window.planeLayers = new PlaneLayers();
 window.radar = new Radar();
 window.tracker = new UserTracker();
+window.vatsim = new VATSIM();
 
 const theme = createTheme({
 	palette: {

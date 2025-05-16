@@ -2,6 +2,7 @@ import { SimulatorStatus } from "../Host/HostState";
 import { PhysicParams, validatePhysicParams } from "./MapPlane";
 import RadarPlane from "./RadarPlane";
 import RadarAnimator from "./RadarAnimator";
+import Event from "../Event";
 
 interface EventArgs {
     id: number;
@@ -13,14 +14,19 @@ interface FlightAddEventArgs extends EventArgs {
 }
 type FlightRemoveEventArgs = EventArgs;
 type FlightUpdateEventArgs = EventArgs & PhysicParams;
+type RadarPlaneEvent = (plane: RadarPlane) => void;
 
 class Radar {
     private planes: Map<number, RadarPlane>;
     private animator: RadarAnimator;
+    public readonly planeAdded: Event<RadarPlaneEvent>;
+    public readonly planeRemoved: Event<RadarPlaneEvent>;
 
     public constructor() {
         this.planes = new Map();
         this.animator = new RadarAnimator();
+        this.planeAdded = new Event();
+        this.planeRemoved = new Event();
 
         hostBridge.registerHandler('FLT_ADD', (data: object) => {
             const args = data as Partial<FlightAddEventArgs>;
@@ -80,7 +86,7 @@ class Radar {
     }
 
     public removePlane(info: RadarPlane) {
-        info.deleteFromMap();
+        this.onPlaneRemove(info);
         this.planes.delete(info.id);
 
         if (this.planes.size == 0) {
@@ -90,7 +96,7 @@ class Radar {
 
     private removeAll() {
         this.planes.forEach((info) => {
-            info.deleteFromMap();
+            this.onPlaneRemove(info);
         });
         this.planes.clear();
         this.animator.stop();
@@ -117,6 +123,30 @@ class Radar {
         this.planes.forEach((value) => {
             callback(value);
         });
+    }
+
+    public isVisible(callsign: string) {
+        for (const [_, value] of this.planes) {
+            if (value.callsign == callsign) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public onPlaneAdd(plane: RadarPlane) {
+        plane.inMap = true;
+        planeLayers.addPlane(plane.plane);
+        this.planeAdded.invoke(plane);
+    }
+
+    private onPlaneRemove(plane: RadarPlane) {
+        if (plane.inMap) {
+            plane.inMap = false;
+            planeLayers.removePlane(plane.plane);
+            this.planeRemoved.invoke(plane);
+        }
     }
 }
 
