@@ -14,6 +14,7 @@ import Radar from './Map/Radar.ts';
 import UserTracker from './Map/UserTracker.ts';
 import PlaneLayers from './Map/PlaneLayers.ts';
 import VATSIM from './Map/VATSIM.ts';
+import Options from './Options.ts';
 
 declare global {
 	var hostBridge: HostBridge;
@@ -23,7 +24,9 @@ declare global {
 	var radar: Radar;
 	var tracker: UserTracker;
 	var vatsim: VATSIM;
+	var options: Options;
 }
+window.options = new Options();
 window.hostBridge = new HostBridge();
 window.hostState = new HostState();
 window.map = new GlobalMap();

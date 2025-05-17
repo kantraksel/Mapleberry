@@ -12,6 +12,8 @@ type GenericEvent = () => void;
 
 class GlobalMap {
     public readonly map: Map;
+    private changeMapVisibility?: (value: boolean) => void;
+    private changeMapVisibilityOption?: (value: boolean) => void;
     
     private isPointerDragging: boolean;
     private isInteracting: boolean;
@@ -70,9 +72,13 @@ class GlobalMap {
         });
     }
 
-    public setParent(node: HTMLElement): void {
+    public setParent(node: HTMLElement, hook: (value: boolean) => void): void {
         if (this.map.getTargetElement())
             return;
+
+        hook(this.visible);
+        this.changeMapVisibility = hook;
+
         node.focus();
         this.map.setTarget(node);
     }
@@ -87,6 +93,21 @@ class GlobalMap {
         if (typeof resolution === 'number')
             view.setResolution(resolution);
         return true;
+    }
+
+    public set visible(value: boolean) {
+        options.set('map_visible', value);
+        this.changeMapVisibility?.call(null, value);
+        this.changeMapVisibilityOption?.call(null, value);
+    }
+
+    public get visible() {
+        return options.get('map_visible', true);
+    }
+
+    public setOptionHook(hook: (value: boolean) => void) {
+        hook(this.visible);
+        this.changeMapVisibilityOption = hook;
     }
 }
 

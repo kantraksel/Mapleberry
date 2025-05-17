@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from 'react';
 import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import MapIcon from '@mui/icons-material/MapOutlined';
 import DesktopIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import FlightIcon from '@mui/icons-material/Flight';
-import ReplayIcon from '@mui/icons-material/Replay';
-import FiberDvrIcon from '@mui/icons-material/FiberDvr';
-import FrontHandIcon from '@mui/icons-material/FrontHand';
+import SettingsIcon from '@mui/icons-material/Settings';
 import 'ol/ol.css';
 import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
+import OptionsBox from './OptionsBox';
+import Comment from './Comment';
 
 const MainDrawerContext = createContext(true);
 
@@ -79,13 +78,13 @@ function MainListText(props: { primary: ReactNode }) {
 function App() {
 	const [open, setOpen] = useState(false);
 	const mapNode = useRef<HTMLDivElement>(null);
-	const [mapVisible, setMapVisible] = useState(true);
+	const [mapVisible, setMapVisible] = useState(map.visible);
 	const [systemVisible, setSystemVisible] = useState(false);
 	const [flightVisible, setFlightVisible] = useState(false);
-	const [playbackActive, setPlaybackActive] = useState(hostBridge.playbackActive);
+	const [optionsVisible, setOptionsVisible] = useState(false);
 	
 	useEffect(() => {
-		map.setParent(mapNode.current!);
+		map.setParent(mapNode.current!, setMapVisible);
 		hostState.notifyAppReady();
 	}, []);
 
@@ -122,36 +121,10 @@ function App() {
 						</ListItem>
 					</List>
 					<List sx={{ position: 'absolute', bottom: '0px', right: '0px', left: '0px' }}>
-						{ playbackActive ? (
-							<ListItem key='stop_playlist' disablePadding>
-								<ListItemButton onClick={() => { hostBridge.abortPlayback(); }}>
-									<MainListIcon><FrontHandIcon color='error' /></MainListIcon>
-									<MainListText primary='Stop playback' />
-								</ListItemButton>
-							</ListItem>
-						) : <></> }
-						<ListItem key='record_playlist' disablePadding>
-							<ListItemButton disabled={ playbackActive } onClick={() => { hostBridge.recordPlaylist(setPlaybackActive); }}>
-								<MainListIcon><FiberDvrIcon color='error' /></MainListIcon>
-								<MainListText primary='Record' />
-							</ListItemButton>
-						</ListItem>
-						<ListItem key='play_playlist' disablePadding>
-							<ListItemButton disabled={ playbackActive } onClick={() => { hostBridge.playbackDefault(setPlaybackActive); }}>
-								<MainListIcon><ReplayIcon color='error' /></MainListIcon>
-								<MainListText primary='Play back' />
-							</ListItemButton>
-						</ListItem>
-						<ListItem key='navigate_dev' disablePadding>
-							<ListItemButton disabled={ window.location.href === 'http://localhost:5173/' } onClick={() => { window.location.href = 'http://localhost:5173/'; }}>
-								<MainListIcon><MapIcon color='info' /></MainListIcon>
-								<MainListText primary='Dev Map' />
-							</ListItemButton>
-						</ListItem>
-						<ListItem key='radar_map' disablePadding>
-							<ListItemButton selected={!mapVisible} onClick={() => { setMapVisible(!mapVisible); }}>
-								<MainListIcon><MapIcon color='error' /></MainListIcon>
-								<MainListText primary='Radar Map' />
+						<ListItem key='options' disablePadding>
+							<ListItemButton selected={optionsVisible} onClick={() => { setOptionsVisible(!optionsVisible); }}>
+								<MainListIcon><SettingsIcon /></MainListIcon>
+								<MainListText primary='Options' />
 							</ListItemButton>
 						</ListItem>
 					</List>
@@ -164,9 +137,10 @@ function App() {
 						<FlightInfoBox open={flightVisible} />
 						<SystemInfoBox open={systemVisible} />
 					</Box>
-
 				</Box>
 			</Box>
+
+			<OptionsBox open={optionsVisible} />
 		</>
 	);
 }
