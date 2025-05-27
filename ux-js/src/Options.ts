@@ -1,4 +1,9 @@
-type OptionKeys = 'map_visible';
+type OptionKeys =
+    'map_visible' |
+    'vatsim_enabled' |
+    'vatsim_refresh_rate' |
+    'user_custom_callsign' |
+    '_unused_';
 
 class Options {
     items: Map<string, unknown>;
@@ -24,8 +29,13 @@ class Options {
     }
 
     public set(key: OptionKeys, value: unknown) {
+        if (value === undefined) {
+            this.items.delete(key);
+            localStorage.removeItem(key);
+            return;
+        }
         let blob = JSON.stringify(value);
-        this.items.set(key, blob);
+        this.items.set(key, value);
         localStorage.setItem(key, blob);
     }
 }

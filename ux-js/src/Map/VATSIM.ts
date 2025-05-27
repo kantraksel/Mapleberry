@@ -129,9 +129,11 @@ class VATSIM {
     private dataRefreshTask: number;
     private planes: Map<string, VatsimPlane>;
 
+    static readonly defaultRefreshRate = 35;
+
     public constructor() {
         this.planes = new Map();
-        this.dataRefreshTask = this.fetchNetworkData();
+        this.dataRefreshTask = 0;
 
         radar.planeAdded.add((plane) => {
             const pilot = this.planes.get(plane.callsign);
@@ -150,6 +152,10 @@ class VATSIM {
 
             this.addPlane(pilot);
         });
+
+        if (this.enabled) {
+            this.start();
+        }
     }
 
     public start() {
@@ -232,7 +238,7 @@ class VATSIM {
             if (this.dataRefreshTask == 0) {
                 return;
             }
-            this.dataRefreshTask = setTimeout(fn, 35000);
+            this.dataRefreshTask = setTimeout(fn, this.refreshRate * 1000);
         };
         return setTimeout(fn, 3000);
     }
@@ -246,6 +252,25 @@ class VATSIM {
     private static async getObject<Type>(url: string) {
         const response = await fetch(url, { cache: 'no-cache' });
         return await response.json() as Type;
+    }
+
+    public set refreshRate(value: number) {
+        if (value < 15) {
+            value = VATSIM.defaultRefreshRate;
+        }
+        options.set('vatsim_refresh_rate', value);
+    }
+
+    public get refreshRate() {
+        return options.get<number>('vatsim_refresh_rate', VATSIM.defaultRefreshRate);
+    }
+
+    public set enabled(value: boolean) {
+        options.set('vatsim_enabled', value);
+    }
+
+    public get enabled() {
+        return options.get<boolean>('vatsim_enabled', true);
     }
 }
 

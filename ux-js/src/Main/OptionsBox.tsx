@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Box, Button, ButtonGroup, Divider, Link, List, ListItem, ListItemButton, ListItemText, Stack, Typography } from '@mui/material';
+import { Box, Button, ButtonGroup, Divider, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
+import VATSIM from '../Map/VATSIM';
 
 type View = 'map' | 'app' | 'about' | 'dev_preview';
 
@@ -10,8 +11,8 @@ interface ViewInfo {
 
 function ViewList(props: { view: View, onSelect: (item: View) => void }) {
     const views: ViewInfo[] = [
-        { name: 'map', display: 'Map' },
-        { name: 'app', display: 'App' },
+        { name: 'map', display: 'Web Map' },
+        { name: 'app', display: 'Host App' },
         { name: 'about', display: 'About App' },
         { name: 'dev_preview', display: 'Dev Preview' },
     ];
@@ -39,9 +40,93 @@ function Header(props: { children: string }) {
     return <Box sx={{ display: 'block', fontSize: '1.3em', fontWeight: 'bold', textAlign: 'center' }}>{props.children}</Box>;
 }
 
+function NumberField(props: { label?: string, disabled?: boolean, defaultValue?: number, placeholder?: string, onBlur?: (value: number | undefined) => void }) {
+    const [valid, setValid] = useState(true);
+
+    const onChange = (event: unknown) => {
+        const e = event as { target: {value: string} };
+        const value = e.target.value;
+
+        if (value.length == 0) {
+            setValid(true);
+            return;
+        }
+        const n = parseInt(value);
+        setValid(n.toString() === value);
+    };
+
+    const onBlur = (event: unknown) => {
+        if (!props.onBlur) {
+            return;
+        }
+        const e = event as { target: {value: string} };
+        const value = e.target.value;
+
+        let n = parseInt(value);
+        if (n.toString() !== value) {
+            props.onBlur(undefined);
+        } else {
+            props.onBlur(n);
+        }
+    };
+
+    return <TextField variant='outlined' size='small' disabled={props.disabled} label={props.label} defaultValue={props.defaultValue} placeholder={props.placeholder} error={!valid} onChange={onChange} onBlur={onBlur} />;
+}
+
 function MapView() {
+    const [vatsimOnline, setVatsimOnline] = useState(vatsim.enabled);
+    const [refreshRate, setRefreshRate] = useState(vatsim.refreshRate);
+    const [userCallsign, setUserCallsign] = useState(tracker.customCallsign);
+
+    const onCallsignChange = (event: unknown) => {
+        const e = event as { target: {value: string} };
+        const value = e.target.value;
+
+        tracker.customCallsign = value;
+        setUserCallsign(value);
+    };
+
+    const onOnlineChange = (_event: unknown, checked: boolean) => {
+        vatsim.enabled = checked;
+        checked = vatsim.enabled;
+        setVatsimOnline(checked);
+
+        if (checked) {
+            vatsim.start();
+        } else {
+            vatsim.stop();
+        }
+    };
+
+    const onRefreshRateChange = (value: number | undefined) => {
+        vatsim.refreshRate = value ?? -1;
+        setRefreshRate(vatsim.refreshRate);
+    };
+
     return (
-        <Stack flex='1 1' spacing={2}>
+        <Stack flex='1 1' spacing={3}>
+            <Stack flex='1 1' spacing={1}>
+                <Header>Radar</Header>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Callsign</Typography>
+                    <TextField variant='outlined' size='small' defaultValue={userCallsign} placeholder='Use Simulator Callsign' onBlur={onCallsignChange} />
+                </Box>
+            </Stack>
+            <Stack flex='1 1' spacing={1}>
+                <Header>VATSIM</Header>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Online Mode</Typography>
+                    <Switch checked={vatsimOnline} onChange={onOnlineChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Refresh Rate</Typography>
+                    <NumberField defaultValue={refreshRate} placeholder={`${VATSIM.defaultRefreshRate}`} onBlur={onRefreshRateChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Local User ID</Typography>
+                    <NumberField label='CID' disabled />
+                </Box>
+            </Stack>
         </Stack>
     );
 }
@@ -49,6 +134,17 @@ function MapView() {
 function AppView() {
     return (
         <Stack flex='1 1' spacing={2}>
+            <Header>Host App</Header>
+            <Stack flex='1 1' spacing={1}>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Reconnect to Simulator</Typography>
+                    <Switch disabled />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Autostart Device Server</Typography>
+                    <Switch disabled />
+                </Box>
+            </Stack>
         </Stack>
     );
 }

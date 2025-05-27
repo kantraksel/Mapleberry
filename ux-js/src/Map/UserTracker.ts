@@ -97,6 +97,11 @@ class UserTracker {
         user.info = info;
         info.plane.setMainStyle();
 
+        const customCallsign = this.customCallsign;
+        if (customCallsign.length != 0) {
+            info.plane.setCallsign(customCallsign);
+        }
+
         this.identEvent.invoke(this.getIdentity());
     }
 
@@ -133,7 +138,30 @@ class UserTracker {
         if (!info) {
             return { plane: '0000', callsign: 'UFO0000' };
         }
-        return { plane: info.model, callsign: info.callsign };
+
+        let callsign = this.customCallsign;
+        if (callsign.length == 0) {
+            callsign = info.callsign;
+        }
+        return { plane: info.model, callsign };
+    }
+
+    public set customCallsign(name: string) {
+        options.set('user_custom_callsign', name);
+
+        const info = this.user.info;
+        if (!info) {
+            return;
+        }
+        if (name.length == 0) {
+            name = info.callsign;
+        }
+        info.plane.setCallsign(name);
+        this.identEvent.invoke(this.getIdentity());
+    }
+
+    public get customCallsign() {
+        return options.get<string>('user_custom_callsign', '');
     }
 }
 
