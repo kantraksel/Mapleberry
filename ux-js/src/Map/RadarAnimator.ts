@@ -7,6 +7,7 @@ class RadarAnimator {
     private lastAutoRes: number;
     private minimumDeltaTime: number;
     private lastAnimationTimestamp: number;
+    private mapEnabled: boolean;
 
     public constructor() {
         this.animatorId = null;
@@ -14,6 +15,7 @@ class RadarAnimator {
         this.lastAutoRes = NaN;
         this.minimumDeltaTime = 100;
         this.lastAnimationTimestamp = 0;
+        this.mapEnabled = map.visible;
 
         this.adjustUpdateRate();
 
@@ -28,7 +30,13 @@ class RadarAnimator {
         });
 
         map.moveStartEvent.add(() => {
+            if (this.trackedId == -1) {
+                return;
+            }
+            const info = radar.getById(this.trackedId);
             this.trackedId = -1;
+
+            info?.restoreStyle();
         });
 
         map.changeResEvent.add((value) => {
@@ -44,6 +52,10 @@ class RadarAnimator {
             if (this.lastAutoRes < min || this.lastAutoRes > max) {
                 this.lastAutoRes = NaN;
             }
+        });
+
+        map.visibilityEvent.add((visible) => {
+            this.mapEnabled = visible;
         });
     }
 
@@ -94,13 +106,15 @@ class RadarAnimator {
 
                 const n = MathClamp(time / 1000, 0, 1);
                 const params = lerpParams(data.first, data.second!, n);
-                info.updateAnimation(params);
-
+                if (this.mapEnabled) {
+                    info.updateAnimation(params);
+                }
+                
                 if (!info.inMap) {
                     radar.onPlaneAdd(info);
                 }
 
-                if (info.id == this.trackedId) {
+                if (this.mapEnabled && info.id == this.trackedId) {
                     // fixes scroll not working when following plane on high resolution map
                     if (!data.lastStep || params.longitude != data.lastStep.longitude || params.latitude != data.lastStep.latitude) {
                         this.moveMapWithPlane(params);
@@ -111,7 +125,6 @@ class RadarAnimator {
                 if (time >= 1000) {
                     data.first = null;
                     data.second = null;
-                    data.lastStep = null;
                 }
                 activeEntities++;
             });
@@ -162,10 +175,24 @@ class RadarAnimator {
     }
 
     public stop() {
-        if (this.animatorId !== null) {
-            cancelAnimationFrame(this.animatorId);
-            this.animatorId = null;
+        if (this.animatorId === null) {
+            return;
         }
+
+        cancelAnimationFrame(this.animatorId);
+        this.animatorId = null;
+
+        radar.forEach((info) => {
+            const data = info.animator;
+            if (!data.first) {
+                return;
+            }
+
+            if (data.stepLog.length >= 2) {
+                data.first = null;
+                data.second = null;
+            }
+        });
     }
 
     public followPlane(plane: RadarPlane) {
@@ -173,8 +200,14 @@ class RadarAnimator {
             return;
         }
 
+        if (this.trackedId != -1) {
+            const info = radar.getById(this.trackedId);
+            info?.restoreStyle();
+        }
+
         this.trackedId = plane.id;
         this.lastAutoRes = 0;
+        plane.plane.setSelectedStyle();
 
         const lastStep = plane.animator.lastStep;
         if (lastStep) {

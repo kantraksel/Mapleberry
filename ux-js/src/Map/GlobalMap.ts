@@ -9,17 +9,17 @@ import Event from '../Event';
 type ClickEvent = (e: FeatureLike) => void;
 type ResEvent = (value: number) => void;
 type GenericEvent = () => void;
+type VisEvent = (value: boolean) => void;
 
 class GlobalMap {
     public readonly map: Map;
-    private changeMapVisibility?: (value: boolean) => void;
-    private changeMapVisibilityOption?: (value: boolean) => void;
     
     private isPointerDragging: boolean;
     private isInteracting: boolean;
     public readonly clickEvent: Event<ClickEvent>;
     public readonly moveStartEvent: Event<GenericEvent>;
     public readonly changeResEvent: Event<ResEvent>;
+    public readonly visibilityEvent: Event<VisEvent>;
 
     public constructor() {
         this.isPointerDragging = false;
@@ -27,6 +27,7 @@ class GlobalMap {
         this.clickEvent = new Event();
         this.moveStartEvent = new Event();
         this.changeResEvent = new Event();
+        this.visibilityEvent = new Event();
 
         const view = new View({
             center: fromLonLat([12, 50]),
@@ -72,19 +73,16 @@ class GlobalMap {
         });
     }
 
-    public setParent(node: HTMLElement, hook: (value: boolean) => void): void {
+    public setParent(node: HTMLElement): void {
         if (this.map.getTargetElement())
             return;
-
-        hook(this.visible);
-        this.changeMapVisibility = hook;
 
         node.focus();
         this.map.setTarget(node);
     }
 
     public setCenterZoom(longitude: number, latitude: number, resolution?: number) {
-        if (this.isInteracting) {
+        if (this.isInteracting || !this.visible) {
             return false;
         }
 
@@ -97,17 +95,11 @@ class GlobalMap {
 
     public set visible(value: boolean) {
         options.set('map_visible', value);
-        this.changeMapVisibility?.call(null, value);
-        this.changeMapVisibilityOption?.call(null, value);
+        this.visibilityEvent.invoke(value);
     }
 
     public get visible() {
         return options.get('map_visible', true);
-    }
-
-    public setOptionHook(hook: (value: boolean) => void) {
-        hook(this.visible);
-        this.changeMapVisibilityOption = hook;
     }
 }
 

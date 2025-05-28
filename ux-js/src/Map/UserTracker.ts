@@ -95,7 +95,7 @@ class UserTracker {
 
         const info = radar.add(0, data.planeModel, data.callsign);
         user.info = info;
-        info.plane.setMainStyle();
+        info.tagMain();
 
         const customCallsign = this.customCallsign;
         if (customCallsign.length != 0) {

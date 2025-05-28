@@ -148,6 +148,10 @@ class Radar {
             this.planeRemoved.invoke(plane);
         }
     }
+
+    public getById(id: number) {
+        return this.planes.get(id);
+    }
 }
 
 export default Radar;

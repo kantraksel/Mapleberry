@@ -15,6 +15,8 @@ class PlaneLayers {
     
     public readonly mainPointStyle: StyleLike;
     public readonly mainLabelStyle: StyleLike;
+    public readonly selectedPointStyle: StyleLike;
+    public readonly selectedLabelStyle: StyleLike;
 
     public constructor() {
         const pointStyle = new OlStyle({
@@ -45,9 +47,21 @@ class PlaneLayers {
             }),
             zIndex: 1,
         }));
-        const mainLabelStyle = labelStyle.clone();
-        mainLabelStyle.setZIndex(1);
-        this.mainLabelStyle = this.createLabelLayerStyle(mainLabelStyle);
+        this.mainLabelStyle = this.createLabelLayerStyle(new OlStyle({
+            text: labelStyle.getText()!,
+            zIndex: 1,
+        }));
+        this.selectedPointStyle = this.createPointLayerStyle(new OlStyle({
+            image: new OlIcon({
+                src: '/flight_24dp_FFFFFF.svg',
+                color: '#8600AA', // or A500D1
+            }),
+            zIndex: 2,
+        }));
+        this.selectedLabelStyle = this.createLabelLayerStyle(new OlStyle({
+            text: labelStyle.getText()!,
+            zIndex: 2,
+        }));
         const farPointStyle = new OlStyle({
             image: new OlIcon({
                 src: '/flight_24dp_FFFFFF.svg',

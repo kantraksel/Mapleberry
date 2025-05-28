@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Box, Button, ButtonGroup, Divider, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Button, ButtonGroup, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import VATSIM from '../Map/VATSIM';
 
 type View = 'map' | 'app' | 'about' | 'dev_preview';
@@ -111,6 +112,10 @@ function MapView() {
                     <Typography>Callsign</Typography>
                     <TextField variant='outlined' size='small' defaultValue={userCallsign} placeholder='Use Simulator Callsign' onBlur={onCallsignChange} />
                 </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Scale map with selected plane</Typography>
+                    <Switch disabled />
+                </Box>
             </Stack>
             <Stack flex='1 1' spacing={1}>
                 <Header>VATSIM</Header>
@@ -184,7 +189,11 @@ function DevToolsView() {
     const [mapVisible, setMapVisible] = useState(map.visible);
 
     useEffect(() => {
-        map.setOptionHook(setMapVisible);
+        map.visibilityEvent.add(setMapVisible);
+        
+        return () => {
+            map.visibilityEvent.delete(setMapVisible);
+        };
     }, []);
 
     return (
@@ -216,6 +225,7 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
     return (
         <Box sx={{ position: 'fixed', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <Box
+                position='relative'
                 border='3px solid #333333'
                 borderRadius='5px'
                 bgcolor='#333333'
@@ -236,7 +246,7 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
     );
 }
 
-function OptionsBox(props: { open: boolean }) {
+function OptionsBox(props: { open: boolean, onClose: () => void }) {
     const [state, setState] = useState<View>('map');
 
     if (!props.open) {
@@ -244,6 +254,9 @@ function OptionsBox(props: { open: boolean }) {
 	}
     return (
         <InfoBox width={600} height={400}>
+            <Stack position='absolute' right='5px' direction='row-reverse'>
+                <IconButton onClick={props.onClose}><CloseIcon /></IconButton>
+            </Stack>
             <Stack flex='1 1' direction='row' alignItems='center' justifyContent='flex-start' spacing={1}>
                 <ViewList view={state} onSelect={setState} />
                 <Divider orientation='vertical' flexItem />

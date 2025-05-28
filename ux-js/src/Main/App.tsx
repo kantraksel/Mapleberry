@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from 'react';
-import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar } from '@mui/material';
+import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DesktopIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import FlightIcon from '@mui/icons-material/Flight';
@@ -8,7 +8,6 @@ import 'ol/ol.css';
 import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
 import OptionsBox from './OptionsBox';
-import Comment from './Comment';
 
 const MainDrawerContext = createContext(true);
 
@@ -84,14 +83,34 @@ function App() {
 	const [optionsVisible, setOptionsVisible] = useState(false);
 	
 	useEffect(() => {
-		map.setParent(mapNode.current!, setMapVisible);
+		map.setParent(mapNode.current!);
+		map.visibilityEvent.add(setMapVisible);
 		hostState.notifyAppReady();
+
+		return () => {
+			map.visibilityEvent.delete(setMapVisible);
+		};
 	}, []);
 
 	const switchDrawer = () => {
 		setOpen(!open);
 	};
 	const theme = createTheme();
+
+	let mapStyle;
+	if (mapVisible) {
+		mapStyle = {
+			visibility: 'visible',
+			opacity: 1,
+			transition: 'opacity 0.25s linear, visibility 0.25s',
+		};
+	} else {
+		mapStyle = {
+			visibility: 'hidden',
+			opacity: 0,
+			transition: 'opacity 0.25s ease, visibility 0.25s',
+		};
+	}
 	
 	return (
 		<>
@@ -130,8 +149,11 @@ function App() {
 					</List>
 				</MainDrawer>
 				
-				<Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
-					<Box ref={mapNode} sx={{ flex: '1 1 auto', width: '100%', visibility: mapVisible ? 'visible' : 'hidden' }} />
+				<Box sx={{ position: 'relative', flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+					<Box sx={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', visibility: mapVisible ? 'hidden' : 'visible' }}>
+						<Typography>Map is disabled</Typography>
+					</Box>
+					<Box ref={mapNode} sx={{ flex: '1 1 auto', width: '100%', ...mapStyle }} />
 
 					<Box sx={{ flex: '1 1 auto', position: 'absolute', display: 'flex', flexDirection: 'column' }} >
 						<FlightInfoBox open={flightVisible} />
@@ -140,7 +162,7 @@ function App() {
 				</Box>
 			</Box>
 
-			<OptionsBox open={optionsVisible} />
+			<OptionsBox open={optionsVisible} onClose={() => { setOptionsVisible(false); }} />
 		</>
 	);
 }
@@ -150,8 +172,8 @@ export default App;
 /*
 TODO:
 - details when airplane is selected
+- block spamming using VATSIM switch
+- implement data sources of Radar
 
-- Find the way to disable map completely - is it still interactable? test with point clicks; also it may download tiles if getting moved by script
-- settings: vatsim id+refresh frequency, callsign override, auto server on/off, hide map switch, sim reconnect on/off
 - device control panel
 */

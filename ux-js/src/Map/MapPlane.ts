@@ -46,6 +46,16 @@ class MapPlane {
         this.label.setStyle(planeLayers.mainLabelStyle);
     }
 
+    public setSelectedStyle() {
+        this.point.setStyle(planeLayers.selectedPointStyle);
+        this.label.setStyle(planeLayers.selectedLabelStyle);
+    }
+
+    public setDefaultStyle() {
+        this.point.setStyle();
+        this.label.setStyle();
+    }
+
     public set userObject(object: unknown) {
         this.point.set('user_object', object, true);
     }
