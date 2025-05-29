@@ -142,7 +142,7 @@ class VATSIM {
                 return;
             }
 
-            this.removePlane(pilot);
+            this.loseContact(pilot);
             
         });
         radar.planeRemoved.add((plane) => {
@@ -151,7 +151,12 @@ class VATSIM {
                 return;
             }
 
-            this.addPlane(pilot);
+            const params = plane.plane.getParams();
+            if (params) {
+                pilot.plane.setParams(params);
+            }
+
+            this.establishContact(pilot);
         });
 
         if (this.enabled) {
@@ -171,7 +176,7 @@ class VATSIM {
             return;
         }
         this.planes.forEach((value) => {
-            this.removePlane(value);
+            this.loseContact(value);
         });
         this.planes.clear();
 
@@ -179,14 +184,14 @@ class VATSIM {
         this.dataRefreshTask = 0;
     }
 
-    private addPlane(pilot: VatsimPlane) {
+    private establishContact(pilot: VatsimPlane) {
         if (!pilot.inMap) {
             planeLayers.addFarPlane(pilot.plane);
             pilot.inMap = true;
         }
     }
 
-    private removePlane(pilot: VatsimPlane) {
+    private loseContact(pilot: VatsimPlane) {
         if (pilot.inMap) {
             planeLayers.removeFarPlane(pilot.plane);
             pilot.inMap = false;
@@ -211,7 +216,7 @@ class VATSIM {
                     plane.plane.setCallsign(callsign);
 
                     if (!radar.isVisible(callsign)) {
-                        this.addPlane(plane);
+                        this.establishContact(plane);
                     }
                 }
 
@@ -231,7 +236,7 @@ class VATSIM {
             // delete absent pilots
             this.planes.forEach((pilot, callsign) => {
                 if (!pilots.has(callsign)) {
-                    this.removePlane(pilot);
+                    this.loseContact(pilot);
                     this.planes.delete(callsign);
                 }
             });

@@ -111,7 +111,7 @@ class RadarAnimator {
                 }
                 
                 if (!info.inMap) {
-                    radar.onPlaneAdd(info);
+                    radar.establishRadarContact(info);
                 }
 
                 if (this.mapEnabled && info.id == this.trackedId) {

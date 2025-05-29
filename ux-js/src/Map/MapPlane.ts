@@ -33,6 +33,14 @@ class MapPlane {
         this.label.set('params', params);
     }
 
+    public getParams(): PhysicParams | null {
+        const value = this.point.get('params');
+        if (typeof value !== 'object') {
+            return null;
+        }
+        return value;
+    }
+
     public static getParams(feature: FeatureLike): PhysicParams | null {
         const value = feature.get('params');
         if (typeof value !== 'object') {

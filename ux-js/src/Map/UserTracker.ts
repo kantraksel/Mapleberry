@@ -111,7 +111,7 @@ class UserTracker {
             return;
         }
 
-        radar.removePlane(user.info);
+        radar.remove(user.info.id);
         user.reset();
         this.identEvent.invoke(this.getIdentity());
     }
@@ -130,7 +130,7 @@ class UserTracker {
         }
 
         data.id = 0;
-        radar.updatePlane(info, data as Required<typeof data>);
+        radar.update(info.id, data as Required<typeof data>);
     }
 
     public getIdentity(): Identity {

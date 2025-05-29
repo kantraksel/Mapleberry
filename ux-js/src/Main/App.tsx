@@ -172,8 +172,6 @@ export default App;
 /*
 TODO:
 - details when airplane is selected
-- block spamming using VATSIM switch
-- implement data sources of Radar
 
 - device control panel
 */
