@@ -130,6 +130,7 @@ class VATSIM {
     private planes: Map<string, VatsimPlane>;
 
     static readonly defaultRefreshRate = 35;
+    static readonly minimumRefreshRate = 15;
 
     public constructor() {
         this.planes = new Map();
@@ -240,7 +241,7 @@ class VATSIM {
             }
             this.dataRefreshTask = setTimeout(fn, this.refreshRate * 1000);
         };
-        return setTimeout(fn, 3000);
+        return setTimeout(fn, 500);
     }
 
     // https://vatsim.dev/api/metar-api/get-metar
@@ -250,19 +251,18 @@ class VATSIM {
     }
 
     private static async getObject<Type>(url: string) {
-        const response = await fetch(url, { cache: 'no-cache' });
+        const response = await fetch(url, { cache: 'default' });
         return await response.json() as Type;
     }
 
     public set refreshRate(value: number) {
-        if (value < 15) {
-            value = VATSIM.defaultRefreshRate;
-        }
+        value = Math.max(value, VATSIM.minimumRefreshRate);
         options.set('vatsim_refresh_rate', value);
     }
 
     public get refreshRate() {
-        return options.get<number>('vatsim_refresh_rate', VATSIM.defaultRefreshRate);
+        const value = options.get<number>('vatsim_refresh_rate', VATSIM.defaultRefreshRate);
+        return value < VATSIM.minimumRefreshRate ? VATSIM.defaultRefreshRate : value;
     }
 
     public set enabled(value: boolean) {

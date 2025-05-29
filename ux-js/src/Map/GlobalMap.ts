@@ -1,15 +1,22 @@
 import { Map, MapBrowserEvent, View } from 'ol';
 import TileLayer from 'ol/layer/Tile';
 import OsmSource from 'ol/source/OSM';
-import { fromLonLat } from 'ol/proj';
+import { fromLonLat, toLonLat } from 'ol/proj';
 import { FeatureLike } from 'ol/Feature';
 import { ObjectEvent } from 'ol/Object';
 import Event from '../Event';
 
 type ClickEvent = (e: FeatureLike) => void;
 type ResEvent = (value: number) => void;
+type PosEvent = (value: number[]) => void;
 type GenericEvent = () => void;
 type VisEvent = (value: boolean) => void;
+
+interface SavedPos {
+    longitude: number,
+    latitude: number,
+    resolution: number,
+}
 
 class GlobalMap {
     public readonly map: Map;
@@ -20,6 +27,10 @@ class GlobalMap {
     public readonly moveStartEvent: Event<GenericEvent>;
     public readonly changeResEvent: Event<ResEvent>;
     public readonly visibilityEvent: Event<VisEvent>;
+    public readonly changePosEvent: Event<PosEvent>;
+
+    private lastPos: SavedPos;
+    private lastPosUpdate: number;
 
     public constructor() {
         this.isPointerDragging = false;
@@ -28,10 +39,20 @@ class GlobalMap {
         this.moveStartEvent = new Event();
         this.changeResEvent = new Event();
         this.visibilityEvent = new Event();
+        this.changePosEvent = new Event();
+        this.lastPos = { longitude: 12, latitude: 50, resolution: 4892 };
+        this.lastPosUpdate = Number.POSITIVE_INFINITY;
+
+        let pos = options.get<SavedPos | null>('map_last_position', this.lastPos);
+        if (!pos) {
+            pos = this.lastPos;
+            this.lastPosUpdate = NaN;
+        }
+        this.lastPos = pos;
 
         const view = new View({
-            center: fromLonLat([12, 50]),
-            resolution: 4892,
+            center: fromLonLat([pos.longitude, pos.latitude]),
+            resolution: pos.resolution,
             minResolution: 0.5,
             maxResolution: 15105,
         });
@@ -71,6 +92,34 @@ class GlobalMap {
             const resolution = e.target.get(e.key) as number;
             this.changeResEvent.invoke(resolution);
         });
+
+        view.on('change:center', (e: ObjectEvent) => {
+            const center = e.target.get(e.key) as number[];
+            this.changePosEvent.invoke(center);
+        });
+
+        this.changeResEvent.add((value) => {
+            this.lastPos.resolution = value;
+            
+            if (!Number.isNaN(this.lastPosUpdate)) {
+                this.lastPosUpdate = Date.now();
+            }
+        });
+        this.changePosEvent.add((value) => {
+            const pos = toLonLat(value);
+            this.lastPos.longitude = pos[0];
+            this.lastPos.latitude = pos[1];
+            
+            if (!Number.isNaN(this.lastPosUpdate)) {
+                this.lastPosUpdate = Date.now();
+            }
+        });
+        setInterval(() => {
+            if (this.lastPosUpdate + 500 <= Date.now()) {
+                this.lastPosUpdate = Number.POSITIVE_INFINITY;
+                options.set('map_last_position', this.lastPos);
+            }
+        }, 500);
     }
 
     public setParent(node: HTMLElement): void {
@@ -100,6 +149,19 @@ class GlobalMap {
 
     public get visible() {
         return options.get('map_visible', true);
+    }
+
+    public set saveLastPosition(value: boolean) {
+        if (value) {
+            this.lastPosUpdate = 0;
+        } else {
+            this.lastPosUpdate = NaN;
+            options.set('map_last_position', null);
+        }
+    }
+
+    public get saveLastPosition() {
+        return !Number.isNaN(this.lastPosUpdate);
     }
 }
 

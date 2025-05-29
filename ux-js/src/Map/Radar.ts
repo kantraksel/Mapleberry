@@ -18,7 +18,7 @@ type RadarPlaneEvent = (plane: RadarPlane) => void;
 
 class Radar {
     private planes: Map<number, RadarPlane>;
-    private animator: RadarAnimator;
+    public readonly animator: RadarAnimator;
     public readonly planeAdded: Event<RadarPlaneEvent>;
     public readonly planeRemoved: Event<RadarPlaneEvent>;
 

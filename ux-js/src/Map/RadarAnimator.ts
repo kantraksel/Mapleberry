@@ -206,7 +206,7 @@ class RadarAnimator {
         }
 
         this.trackedId = plane.id;
-        this.lastAutoRes = 0;
+        this.lastAutoRes = this.enableMapScaling ? 0 : NaN;
         plane.plane.setSelectedStyle();
 
         const lastStep = plane.animator.lastStep;
@@ -224,6 +224,19 @@ class RadarAnimator {
             this.minimumDeltaTime = 100;
         } else {
             this.minimumDeltaTime = 0;
+        }
+    }
+
+    public get enableMapScaling() {
+        return options.get<boolean>('radar_follow_scale_map', true);
+    }
+
+    public set enableMapScaling(value: boolean) {
+        options.set('radar_follow_scale_map', value);
+        if (!value) {
+            this.lastAutoRes = NaN;
+        } else if (this.trackedId != -1) {
+            this.lastAutoRes = 0;
         }
     }
 }

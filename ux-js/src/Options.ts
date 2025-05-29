@@ -1,8 +1,10 @@
 type OptionKeys =
     'map_visible' |
+    'map_last_position' |
     'vatsim_enabled' |
     'vatsim_refresh_rate' |
     'user_custom_callsign' |
+    'radar_follow_scale_map' | 
     '_unused_';
 
 class Options {
