@@ -1,4 +1,4 @@
-import MapPlane, { copyPhysicParams, PhysicParams } from "./MapPlane";
+import MapPlane, { copyPhysicParams, PhysicParams } from "../Map/MapPlane";
 
 interface AnimatorState {
     first: PhysicParams | null;

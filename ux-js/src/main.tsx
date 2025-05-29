@@ -10,10 +10,10 @@ import App from './Main/App.tsx';
 import HostBridge from './Host/HostBridge.ts';
 import HostState from './Host/HostState.ts';
 import GlobalMap from './Map/GlobalMap.ts';
-import Radar from './Map/Radar.ts';
-import UserTracker from './Map/UserTracker.ts';
+import Radar from './Radar/Radar.ts';
+import UserTracker from './Radar/Sources/UserTracker.ts';
 import PlaneLayers from './Map/PlaneLayers.ts';
-import VATSIM from './Map/VATSIM.ts';
+import VATSIM from './Network/VATSIM.ts';
 import Options from './Options.ts';
 
 declare global {

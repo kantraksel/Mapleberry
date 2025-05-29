@@ -1,4 +1,4 @@
-import { PhysicParams } from "./MapPlane";
+import { PhysicParams } from "../Map/MapPlane";
 import RadarPlane from "./RadarPlane";
 import RadarAnimator from "./RadarAnimator";
 import Event from "../Event";

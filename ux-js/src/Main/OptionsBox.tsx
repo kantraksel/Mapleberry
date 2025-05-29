@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Box, Button, ButtonGroup, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import VATSIM from '../Map/VATSIM';
+import VATSIM from '../Network/VATSIM';
 
 type View = 'map' | 'app' | 'about' | 'dev_preview';
 

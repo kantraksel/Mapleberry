@@ -1,4 +1,4 @@
-import MapPlane, { PhysicParams } from "./MapPlane";
+import MapPlane, { PhysicParams } from "../Map/MapPlane";
 import RadarPlane from "./RadarPlane";
 
 class RadarAnimator {

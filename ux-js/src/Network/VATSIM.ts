@@ -1,4 +1,4 @@
-import MapPlane from "./MapPlane";
+import MapPlane from "../Map/MapPlane";
 
 interface FlightPlan {
     flight_rules: string,

@@ -1,5 +1,5 @@
-import { SimulatorStatus } from '../Host/HostState';
-import { PhysicParams, validatePhysicParams } from './MapPlane';
+import { SimulatorStatus } from '../../Host/HostState';
+import { PhysicParams, validatePhysicParams } from '../../Map/MapPlane';
 
 interface EventArgs {
     id: number;
