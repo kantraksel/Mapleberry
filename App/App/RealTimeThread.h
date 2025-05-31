@@ -28,4 +28,5 @@ public:
 
 	FunctionS<void()> SimConnectEvent;
 	FunctionS<void()> SimDisconnectEvent;
+	FunctionS<void()> Tick;
 };

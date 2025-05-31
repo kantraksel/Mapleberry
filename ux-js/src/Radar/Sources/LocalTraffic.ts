@@ -5,7 +5,7 @@ interface EventArgs {
     id: number;
 }
 
-interface FlightAddEventArgs extends EventArgs {
+interface FlightAddEventArgs extends EventArgs, PhysicParams {
     planeModel: string;
     callsign: string;
 }
@@ -15,17 +15,7 @@ type FlightUpdateEventArgs = EventArgs & PhysicParams;
 class LocalTraffic {
     public constructor() {
         hostBridge.registerHandler('FLT_ADD', (data: object) => {
-            const args = data as Partial<FlightAddEventArgs>;
-            if (typeof args.id !== 'number' || !Number.isFinite(args.id) ||
-                typeof args.callsign !== 'string' || typeof args.planeModel !== 'string')
-                return;
-
-            if (args.callsign.length > 16)
-                args.callsign = args.callsign.substring(0, 16);
-            if (args.planeModel.length > 16)
-                args.planeModel = args.planeModel.substring(0, 16);
-
-            radar.add(args.id, args.planeModel, args.callsign);
+            this.handleAdd(data);
         });
 
         hostBridge.registerHandler('FLT_REMOVE', (data: object) => {
@@ -37,12 +27,18 @@ class LocalTraffic {
         });
 
         hostBridge.registerHandler('FLT_UPDATE', (data: object) => {
-            const args = data as Partial<FlightUpdateEventArgs>;
-            if (typeof args.id !== 'number' || !Number.isFinite(args.id) ||
-                !validatePhysicParams(args))
-                return;
+            this.handleUpdate(data);
+        });
 
-            radar.update(args.id, args as PhysicParams);
+        hostState.resyncEvent.add((obj) => {
+            const data = obj.radar;
+            if (typeof data !== 'object' || !data || !(data instanceof Array)) {
+                return;
+            }
+
+            data.forEach((info) => {
+                this.handleAdd(info);
+            });
         });
 
         hostState.statusEvent.add((status) => {
@@ -50,6 +46,30 @@ class LocalTraffic {
                 radar.removeAll();
             }
         });
+    }
+
+    private handleAdd(data: object) {
+        const args = data as Partial<FlightAddEventArgs>;
+        if (typeof args.id !== 'number' || !Number.isFinite(args.id) ||
+            typeof args.callsign !== 'string' || typeof args.planeModel !== 'string')
+            return;
+
+        if (args.callsign.length > 16)
+            args.callsign = args.callsign.substring(0, 16);
+        if (args.planeModel.length > 16)
+            args.planeModel = args.planeModel.substring(0, 16);
+
+        radar.add(args.id, args.planeModel, args.callsign);
+        this.handleUpdate(data);
+    }
+
+    private handleUpdate(data: object) {
+        const args = data as Partial<FlightUpdateEventArgs>;
+        if (typeof args.id !== 'number' || !Number.isFinite(args.id) ||
+            !validatePhysicParams(args))
+            return;
+
+        radar.update(args.id, args as PhysicParams);
     }
 }
 

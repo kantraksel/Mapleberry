@@ -7,21 +7,7 @@ extern SimCom simcom;
 
 struct AircraftTrack_Model : DataModel
 {
-	struct AircraftTrack
-	{
-		double longitude;
-		double latitude;
-		double heading;
-		double realHeading;
-
-		int altitude;
-		int realAltitude;
-		int groundAltitude;
-
-		int indicatedSpeed;
-		int groundSpeed;
-		int verticalSpeed;
-	};
+	typedef LocalAircraft::AircraftTrack AircraftTrack;
 
 	static const VarDef vars[10];
 
@@ -89,6 +75,7 @@ LocalAircraft::LocalAircraft()
 	radarId = 0;
 	objectId = 0;
 	spawned = false;
+	trackInfo = {};
 }
 
 LocalAircraft::~LocalAircraft()
@@ -161,6 +148,8 @@ void LocalAircraft::Track()
 				info.altitude < 1000)
 				return;
 
+			trackInfo = info;
+
 			if (!spawned)
 			{
 				spawned = true;
@@ -171,8 +160,23 @@ void LocalAircraft::Track()
 					PlaneAddArgs e;
 					e.callsign = callsign;
 					e.model = model;
+
+					e.longitude = info.longitude;
+					e.latitude = info.latitude;
+					e.heading = info.heading;
+
+					e.altitude = info.altitude;
+					e.groundAltitude = info.groundAltitude;
+
+					e.indicatedSpeed = info.indicatedSpeed;
+					e.groundSpeed = info.groundSpeed;
+					e.verticalSpeed = info.verticalSpeed;
+
+					e.realAltitude = info.realAltitude;
+					e.realHeading = info.realHeading;
 					OnAdd(e);
 				}
+				return;
 			}
 			
 			if (OnUpdate)
@@ -211,20 +215,32 @@ void LocalAircraft::Remove()
 	spawned = false;
 	radarId = 0;
 	objectId = 0;
+	trackInfo = {};
 	callsign.clear();
 	model.clear();
 }
 
 void LocalAircraft::Resync()
 {
-	if (objectId == 0 || model.empty() || !spawned)
+	if (!spawned || !OnResync)
 		return;
 
-	if (OnAdd)
-	{
-		PlaneAddArgs e;
-		e.callsign = callsign;
-		e.model = model;
-		OnAdd(e);
-	}
+	PlaneAddArgs e;
+	e.callsign = callsign;
+	e.model = model;
+
+	e.longitude = trackInfo.longitude;
+	e.latitude = trackInfo.latitude;
+	e.heading = trackInfo.heading;
+
+	e.altitude = trackInfo.altitude;
+	e.groundAltitude = trackInfo.groundAltitude;
+
+	e.indicatedSpeed = trackInfo.indicatedSpeed;
+	e.groundSpeed = trackInfo.groundSpeed;
+	e.verticalSpeed = trackInfo.verticalSpeed;
+
+	e.realAltitude = trackInfo.realAltitude;
+	e.realHeading = trackInfo.realHeading;
+	OnResync(e);
 }

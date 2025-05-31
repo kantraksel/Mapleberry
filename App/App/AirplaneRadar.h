@@ -29,13 +29,6 @@ public:
 	Airplane& Add(unsigned int id);
 	void Remove(unsigned int id);
 
-	struct PlaneAddArgs
-	{
-		unsigned int id;
-		std::string_view model;
-		std::string_view callsign;
-	};
-
 	struct PlaneRemoveArgs
 	{
 		unsigned int id;
@@ -54,7 +47,15 @@ public:
 		int verticalSpeed;
 	};
 
+	struct PlaneAddArgs : PlaneUpdateArgs
+	{
+		unsigned int id;
+		std::string_view model;
+		std::string_view callsign;
+	};
+
 	Function<void(const PlaneAddArgs& e)> OnPlaneAdd;
 	Function<void(const PlaneRemoveArgs& e)> OnPlaneRemove;
 	Function<void(const PlaneUpdateArgs& e)> OnPlaneUpdate;
+	Function<void(const std::vector<PlaneAddArgs>& e)> OnResync;
 };

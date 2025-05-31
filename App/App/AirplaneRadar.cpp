@@ -196,9 +196,6 @@ void AirplaneRadar::RemoveAll()
 
 void AirplaneRadar::OnRemove(Airplane& airplane)
 {
-	if (!std::isnan(airplane.spawnTime))
-		return;
-	
 	if (airplane.isUser)
 	{
 		aircraft.Remove();
@@ -273,6 +270,8 @@ void AirplaneRadar::Track(Airplane& airplane)
 						info.altitude < 1000)
 						return;
 
+					airplane.radarInfo = info;
+
 					if (!airplane.spawned)
 					{
 						airplane.spawned = true;
@@ -284,11 +283,21 @@ void AirplaneRadar::Track(Airplane& airplane)
 							e.id = airplane.objId;
 							e.model = airplane.model;
 							e.callsign = airplane.callsign;
+
+							e.longitude = info.longitude;
+							e.latitude = info.latitude;
+							e.heading = info.heading;
+
+							e.altitude = info.altitude;
+							e.groundAltitude = info.groundAltitude;
+
+							e.indicatedSpeed = info.indicatedSpeed;
+							e.groundSpeed = info.groundSpeed;
+							e.verticalSpeed = info.verticalSpeed;
 							OnPlaneAdd(e);
 						}
+						return;
 					}
-
-					airplane.radarInfo = info;
 
 					if (OnPlaneUpdate)
 					{
@@ -328,18 +337,32 @@ void AirplaneRadar::OnUpdate()
 
 void AirplaneRadar::Resync()
 {
+	if (!OnResync)
+		return;
+
+	std::vector<PlaneAddArgs> list;
+	list.reserve(airplanes.size());
 	for (auto& airplane : airplanes)
 	{
-		if (!std::isnan(airplane.spawnTime) || airplane.isUser || !airplane.spawned)
+		if (!airplane.spawned)
 			continue;
 
-		if (OnPlaneAdd)
-		{
-			PlaneAddArgs e;
-			e.id = airplane.objId;
-			e.model = airplane.model;
-			e.callsign = airplane.callsign;
-			OnPlaneAdd(e);
-		}
+		auto& e = list.emplace_back();
+		e.id = airplane.objId;
+		e.model = airplane.model;
+		e.callsign = airplane.callsign;
+
+		auto& info = airplane.radarInfo;
+		e.longitude = info.longitude;
+		e.latitude = info.latitude;
+		e.heading = info.heading;
+
+		e.altitude = info.altitude;
+		e.groundAltitude = info.groundAltitude;
+
+		e.indicatedSpeed = info.indicatedSpeed;
+		e.groundSpeed = info.groundSpeed;
+		e.verticalSpeed = info.verticalSpeed;
 	}
+	OnResync(list);
 }

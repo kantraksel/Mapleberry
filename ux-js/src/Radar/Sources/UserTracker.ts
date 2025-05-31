@@ -22,7 +22,7 @@ class LocalPlaneInfo {
     }
 }
 
-interface UserAddEventArgs {
+interface UserAddEventArgs extends UserUpdateEventArgs {
     callsign: string;
     planeModel: string;
 }
@@ -51,16 +51,7 @@ class UserTracker {
         this.identEvent = new Event();
 
         hostBridge.registerHandler('UAC_ADD', (data: object) => {
-            const args = data as Partial<UserAddEventArgs>;
-            if (typeof args.callsign !== 'string' || typeof args.planeModel !== 'string')
-                return;
-
-            if (args.callsign.length > 16)
-                args.callsign = args.callsign.substring(0, 16);
-            if (args.planeModel.length > 16)
-                args.planeModel = args.planeModel.substring(0, 16);
-
-            this.addUser(args as UserAddEventArgs);
+            this.handleAdd(data);
         });
 
         hostBridge.registerHandler('UAC_REMOVE', () => {
@@ -68,16 +59,15 @@ class UserTracker {
         });
 
         hostBridge.registerHandler('UAC_UPDATE', (data: object) => {
-            const args = data as Partial<UserUpdateEventArgs>;
-            if (!validatePhysicParams(args) ||
-                typeof args.realAltitude !== 'number' || !Number.isFinite(args.realAltitude) ||
-                typeof args.realHeading !== 'number' || !Number.isFinite(args.realHeading))
+            this.handleUpdate(data);
+        });
+
+        hostState.resyncEvent.add((obj) => {
+            const data = obj.user;
+            if (typeof data !== 'object' || !data) {
                 return;
-
-            args.realAltitude = MathClamp(args.realAltitude, -10000, 100000);
-            args.realHeading = MathClamp(args.realHeading, 0, 360);
-
-            this.updateUser(args as UserUpdateEventArgs);
+            }
+            this.handleAdd(data);
         });
 
         hostState.statusEvent.add((status) => {
@@ -85,6 +75,33 @@ class UserTracker {
                 this.removeUser();
             }
         });
+    }
+
+    private handleAdd(data: object) {
+        const args = data as Partial<UserAddEventArgs>;
+        if (typeof args.callsign !== 'string' || typeof args.planeModel !== 'string')
+            return;
+
+        if (args.callsign.length > 16)
+            args.callsign = args.callsign.substring(0, 16);
+        if (args.planeModel.length > 16)
+            args.planeModel = args.planeModel.substring(0, 16);
+            
+        this.addUser(args as UserAddEventArgs);
+        this.handleUpdate(data);
+    }
+
+    private handleUpdate(data: object) {
+        const args = data as Partial<UserUpdateEventArgs>;
+        if (!validatePhysicParams(args) ||
+            typeof args.realAltitude !== 'number' || !Number.isFinite(args.realAltitude) ||
+            typeof args.realHeading !== 'number' || !Number.isFinite(args.realHeading))
+            return;
+
+        args.realAltitude = MathClamp(args.realAltitude, -10000, 100000);
+        args.realHeading = MathClamp(args.realHeading, 0, 360);
+
+        this.updateUser(args as UserUpdateEventArgs);
     }
 
     private addUser(data: UserAddEventArgs) {

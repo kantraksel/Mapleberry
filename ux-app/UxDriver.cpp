@@ -12,8 +12,9 @@
 
 extern WindowManager window;
 extern UxBridge uxbridge;
+extern UxDriver uxdriver;
 
-enum class WndMsgCmd : uint64_t
+enum class TxCmd : uint64_t
 {
 	Undefined,
 	CommitMsgQueue,
@@ -25,7 +26,15 @@ enum class WndMsgCmd : uint64_t
 	DeviceDisconnectEvent,
 };
 
-static inline void PostCommand(WndMsgCmd cmd, uint64_t param = 0)
+enum class RxCmd
+{
+	Undefined,
+	Resync,
+	ChangeSimComStatus,
+	ChangeServerStatus,
+};
+
+static inline void PostCommand(TxCmd cmd, uint64_t param = 0)
 {
 	window.PostMessage(static_cast<uint64_t>(cmd), param);
 }
@@ -101,47 +110,47 @@ void UxDriver::Initialize()
 
 	window.OnUserMessage = [this](uint64_t wParam, uint64_t lParam)
 		{
-			switch (static_cast<WndMsgCmd>(wParam))
+			switch (static_cast<TxCmd>(wParam))
 			{
-				case WndMsgCmd::SimConnectEvent:
+				case TxCmd::SimConnectEvent:
 				{
 					SendSystemState(1);
 					break;
 				}
 
-				case WndMsgCmd::SimDisconnectEvent:
+				case TxCmd::SimDisconnectEvent:
 				{
 					SendSystemState(0);
 					break;
 				}
 
-				case WndMsgCmd::ServerStartEvent:
+				case TxCmd::ServerStartEvent:
 				{
 					SendSystemState(-1, 1);
 					break;
 				}
 
-				case WndMsgCmd::ServerStopEvent:
+				case TxCmd::ServerStopEvent:
 				{
 					SendSystemState(-1, 0);
 					break;
 				}
 
-				case WndMsgCmd::DeviceConnectEvent:
+				case TxCmd::DeviceConnectEvent:
 				{
 					SendSystemState(-1, -1, 1);
 					break;
 				}
 
-				case WndMsgCmd::DeviceDisconnectEvent:
+				case TxCmd::DeviceDisconnectEvent:
 				{
 					SendSystemState(-1, -1, 0);
 					break;
 				}
 
-				case WndMsgCmd::CommitMsgQueue:
+				case TxCmd::CommitMsgQueue:
 				{
-					CommitMessages();
+					CommitTxMessages();
 					break;
 				}
 
@@ -155,89 +164,55 @@ void UxDriver::Initialize()
 
 	thread.SimConnectEvent = []()
 		{
-			PostCommand(WndMsgCmd::SimConnectEvent);
+			PostCommand(TxCmd::SimConnectEvent);
 		};
 	thread.SimDisconnectEvent = []()
 		{
-			PostCommand(WndMsgCmd::SimDisconnectEvent);
+			PostCommand(TxCmd::SimDisconnectEvent);
+		};
+	thread.Tick = []()
+		{
+			uxdriver.CommitRxMessages();
 		};
 
 	server.OnStart = []()
 		{
-			PostCommand(WndMsgCmd::ServerStartEvent);
+			PostCommand(TxCmd::ServerStartEvent);
 		};
 	server.OnStop = []()
 		{
-			PostCommand(WndMsgCmd::ServerStopEvent);
+			PostCommand(TxCmd::ServerStopEvent);
 		};
 
 	dvcMgr.DeviceConnectEvent = []()
 		{
-			PostCommand(WndMsgCmd::DeviceConnectEvent);
+			PostCommand(TxCmd::DeviceConnectEvent);
 		};
 	dvcMgr.DeviceDisconnectEvent = []()
 		{
-			PostCommand(WndMsgCmd::DeviceDisconnectEvent);
+			PostCommand(TxCmd::DeviceDisconnectEvent);
 		};
 
-	uxbridge.RegisterHandler("ALL_RQST_STATE", [](const nlohmann::json& json)
+	uxbridge.RegisterHandler("SRV_RESYNC", [this](const nlohmann::json& json)
 		{
-			auto& thread = GlobalScope::GetRealTimeThread();
-			auto& radar = GlobalScope::GetAirplaneRadar();
-			auto& aircraft = GlobalScope::GetLocalAircraft();
-
 			SendSystemState();
-			auto lock = thread.EnterCmdMode();
-			radar.Resync();
-			aircraft.Resync();
+			PushRxMessage(RxCmd::Resync, 0);
 		});
 
-	uxbridge.RegisterHandler("SRV_MODIFY", [](const nlohmann::json& json)
+	uxbridge.RegisterHandler("SRV_MODIFY", [this](const nlohmann::json& json)
 		{
-			auto& thread = GlobalScope::GetRealTimeThread();
-			auto& simcom = GlobalScope::GetSimCom();
-			auto& server = GlobalScope::GetDeviceServer();
-
 			auto simConnNode = json.find("simConnection");
 			if (simConnNode != json.end() && simConnNode->is_boolean())
 			{
 				bool value = *simConnNode;
-				auto lock = thread.EnterCmdMode();
-				if (value)
-				{
-					if (simcom.IsConnected())
-						SendSystemState();
-					else
-						simcom.Initialize();
-				}
-				else
-				{
-					if (simcom.IsConnected())
-						simcom.Shutdown();
-					else
-						SendSystemState();
-				}
+				PushRxMessage(RxCmd::ChangeSimComStatus, value);
 			}
 
 			auto srvOpenNode = json.find("serverOpen");
 			if (srvOpenNode != json.end() && srvOpenNode->is_boolean())
 			{
 				bool value = *srvOpenNode;
-				auto lock = thread.EnterCmdMode();
-				if (value)
-				{
-					if (server.IsRunning())
-						SendSystemState();
-					else
-						server.Start();
-				}
-				else
-				{
-					if (server.IsRunning())
-						server.Stop();
-					else
-						SendSystemState();
-				}
+				PushRxMessage(RxCmd::ChangeServerStatus, value);
 			}
 		});
 
@@ -247,15 +222,23 @@ void UxDriver::Initialize()
 			json["id"] = e.id;
 			json["planeModel"] = e.model;
 			json["callsign"] = e.callsign;
+			json["longitude"] = e.longitude;
+			json["latitude"] = e.latitude;
+			json["heading"] = e.heading;
+			json["altitude"] = e.altitude;
+			json["groundAltitude"] = e.groundAltitude;
+			json["indicatedSpeed"] = e.indicatedSpeed;
+			json["groundSpeed"] = e.groundSpeed;
+			json["verticalSpeed"] = e.verticalSpeed;
 
-			PushMessage("FLT_ADD", json);
+			PushTxMessage("FLT_ADD", json);
 		};
 	radar.OnPlaneRemove = [this](const AirplaneRadar::PlaneRemoveArgs& e)
 		{
 			nlohmann::json json;
 			json["id"] = e.id;
 
-			PushMessage("FLT_REMOVE", json);
+			PushTxMessage("FLT_REMOVE", json);
 		};
 	radar.OnPlaneUpdate = [this](const AirplaneRadar::PlaneUpdateArgs& e)
 		{
@@ -270,7 +253,41 @@ void UxDriver::Initialize()
 			json["groundSpeed"] = e.groundSpeed;
 			json["verticalSpeed"] = e.verticalSpeed;
 
-			PushMessage("FLT_UPDATE", json);
+			PushTxMessage("FLT_UPDATE", json);
+		};
+	radar.OnResync = [this](const std::vector<AirplaneRadar::PlaneAddArgs>& e)
+		{
+			nlohmann::json json;
+			for (auto& a : e)
+			{
+				nlohmann::json node;
+				node["id"] = a.id;
+				node["planeModel"] = a.model;
+				node["callsign"] = a.callsign;
+				node["longitude"] = a.longitude;
+				node["latitude"] = a.latitude;
+				node["heading"] = a.heading;
+				node["altitude"] = a.altitude;
+				node["groundAltitude"] = a.groundAltitude;
+				node["indicatedSpeed"] = a.indicatedSpeed;
+				node["groundSpeed"] = a.groundSpeed;
+				node["verticalSpeed"] = a.verticalSpeed;
+
+				json.emplace_back(std::move(node));
+			}
+
+			if (!resyncMsg)
+				resyncMsg = std::make_pair(std::move(json), nlohmann::json{});
+			else
+			{
+				resyncMsg->first = std::move(json);
+				json.clear();
+				json["radar"] = std::move(resyncMsg->first);
+				json["user"] = std::move(resyncMsg->second);
+				resyncMsg.reset();
+
+				PushTxMessage("SRV_RESYNC", json);
+			}
 		};
 
 	aircraft.OnAdd = [this](const LocalAircraft::PlaneAddArgs& e)
@@ -278,14 +295,24 @@ void UxDriver::Initialize()
 			nlohmann::json json;
 			json["planeModel"] = e.model;
 			json["callsign"] = e.callsign;
+			json["longitude"] = e.longitude;
+			json["latitude"] = e.latitude;
+			json["heading"] = e.heading;
+			json["altitude"] = e.altitude;
+			json["groundAltitude"] = e.groundAltitude;
+			json["indicatedSpeed"] = e.indicatedSpeed;
+			json["groundSpeed"] = e.groundSpeed;
+			json["verticalSpeed"] = e.verticalSpeed;
+			json["realAltitude"] = e.realAltitude;
+			json["realHeading"] = e.realHeading;
 
-			PushMessage("UAC_ADD", json);
+			PushTxMessage("UAC_ADD", json);
 		};
 	aircraft.OnRemove = [this]()
 		{
 			nlohmann::json json;
 
-			PushMessage("UAC_REMOVE", json);
+			PushTxMessage("UAC_REMOVE", json);
 		};
 	aircraft.OnUpdate = [this](const LocalAircraft::PlaneUpdateArgs& e)
 		{
@@ -301,27 +328,134 @@ void UxDriver::Initialize()
 			json["realAltitude"] = e.realAltitude;
 			json["realHeading"] = e.realHeading;
 
-			PushMessage("UAC_UPDATE", json);
+			PushTxMessage("UAC_UPDATE", json);
+		};
+	aircraft.OnResync = [this](const LocalAircraft::PlaneAddArgs& e)
+		{
+			nlohmann::json json;
+			json["planeModel"] = e.model;
+			json["callsign"] = e.callsign;
+			json["longitude"] = e.longitude;
+			json["latitude"] = e.latitude;
+			json["heading"] = e.heading;
+			json["altitude"] = e.altitude;
+			json["groundAltitude"] = e.groundAltitude;
+			json["indicatedSpeed"] = e.indicatedSpeed;
+			json["groundSpeed"] = e.groundSpeed;
+			json["verticalSpeed"] = e.verticalSpeed;
+			json["realAltitude"] = e.realAltitude;
+			json["realHeading"] = e.realHeading;
+
+			if (!resyncMsg)
+				resyncMsg = std::make_pair(nlohmann::json{}, std::move(json));
+			else
+			{
+				resyncMsg->second = std::move(json);
+				json.clear();
+				json["radar"] = std::move(resyncMsg->first);
+				json["user"] = std::move(resyncMsg->second);
+				resyncMsg.reset();
+
+				PushTxMessage("SRV_RESYNC", json);
+			}
 		};
 }
 
-void UxDriver::PushMessage(const std::string_view& id, nlohmann::json& content)
+void UxDriver::PushTxMessage(const std::string_view& id, nlohmann::json& content)
 {
 	auto sid = std::string(id);
 	{
-		std::lock_guard lock(msgQueueMutex);
-		msgQueue.emplace(std::move(sid), std::move(content));
+		std::lock_guard lock(txQueueMutex);
+		txQueue.emplace(std::move(sid), std::move(content));
 	}
-	PostCommand(WndMsgCmd::CommitMsgQueue);
+	PostCommand(TxCmd::CommitMsgQueue);
 }
 
-void UxDriver::CommitMessages()
+void UxDriver::CommitTxMessages()
 {
-	std::lock_guard lock(msgQueueMutex);
-	while (!msgQueue.empty())
+	std::unique_lock lock(txQueueMutex);
+	while (!txQueue.empty())
 	{
-		auto& pair = msgQueue.front();
+		std::pair<std::string, nlohmann::json> pair = std::move(txQueue.front());
+		txQueue.pop();
+
+		lock.unlock();
 		uxbridge.Send(pair.first, pair.second);
-		msgQueue.pop();
+		lock.lock();
+	}
+}
+
+void UxDriver::PushRxMessage(RxCmd id, uint64_t value)
+{
+	std::lock_guard lock(rxQueueMutex);
+	rxQueue.emplace(id, value);
+}
+
+void UxDriver::CommitRxMessages()
+{
+	std::unique_lock lock(rxQueueMutex);
+	while (!rxQueue.empty())
+	{
+		std::pair<RxCmd, uint64_t> pair = std::move(rxQueue.front());
+		rxQueue.pop();
+
+		lock.unlock();
+		HandleRxMessages(pair.first, pair.second);
+		lock.lock();
+	}
+}
+
+void UxDriver::HandleRxMessages(RxCmd id, uint64_t value)
+{
+	switch (id)
+	{
+		case RxCmd::Resync:
+		{
+			auto& radar = GlobalScope::GetAirplaneRadar();
+			auto& aircraft = GlobalScope::GetLocalAircraft();
+			radar.Resync();
+			aircraft.Resync();
+			break;
+		}
+
+		case RxCmd::ChangeSimComStatus:
+		{
+			auto& simcom = GlobalScope::GetSimCom();
+			if (value)
+			{
+				if (simcom.IsConnected())
+					SendSystemState();
+				else
+					simcom.Initialize();
+			}
+			else
+			{
+				if (simcom.IsConnected())
+					simcom.Shutdown();
+				else
+					SendSystemState();
+			}
+			break;
+		}
+
+		case RxCmd::ChangeServerStatus:
+		{
+			auto& server = GlobalScope::GetDeviceServer();
+			if (value)
+			{
+				if (server.IsRunning())
+					SendSystemState();
+				else
+					server.Start();
+			}
+			else
+			{
+				if (server.IsRunning())
+					server.Stop();
+				else
+					SendSystemState();
+			}
+			break;
+		}
 	}
 }

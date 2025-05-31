@@ -112,6 +112,7 @@ class HostBridge {
                         console.log('Playback finished');
                         alert('Playback finished');
                         callback?.call(null, false);
+                        hostState.resetApp();
                     }, 2000);
                     return;
                 }
@@ -147,6 +148,8 @@ class HostBridge {
         this.playList = [];
         this.playbackController = new AbortController();
         console.log('Playlist recording started');
+
+        hostState.resetApp();
         callback?.call(null, true);
 
         const finishFunc = () => {

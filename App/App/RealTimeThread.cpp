@@ -38,6 +38,8 @@ void RealTimeThread::Start()
 				simcom.RunCallbacks();
 
                 radar.OnUpdate();
+                if (Tick)
+                    Tick();
 
                 cmdMutex.unlock();
 				WNET::PollFD::Poll(fds.data(), (int)fds.size(), 20);

@@ -12,6 +12,26 @@ private:
 	std::string model;
 	bool spawned;
 
+public:
+	struct AircraftTrack
+	{
+		double longitude;
+		double latitude;
+		double heading;
+		double realHeading;
+
+		int altitude;
+		int realAltitude;
+		int groundAltitude;
+
+		int indicatedSpeed;
+		int groundSpeed;
+		int verticalSpeed;
+	};
+
+private:
+	AircraftTrack trackInfo;
+
 	void Track();
 
 public:
@@ -22,12 +42,6 @@ public:
 	void Resync();
 	void Set(unsigned int objId);
 	void Remove();
-
-	struct PlaneAddArgs
-	{
-		std::string_view callsign;
-		std::string_view model;
-	};
 
 	struct PlaneUpdateArgs
 	{
@@ -46,7 +60,14 @@ public:
 		double realHeading;
 	};
 
+	struct PlaneAddArgs : PlaneUpdateArgs
+	{
+		std::string_view callsign;
+		std::string_view model;
+	};
+
 	Function<void(const PlaneAddArgs& e)> OnAdd;
 	Function<void()> OnRemove;
 	Function<void(const PlaneUpdateArgs& e)> OnUpdate;
+	Function<void(const PlaneAddArgs& e)> OnResync;
 };

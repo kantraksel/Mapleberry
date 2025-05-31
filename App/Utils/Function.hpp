@@ -11,6 +11,11 @@ template <auto Func>
 constexpr MemberFuncT<Func> MemberFunc{};
 
 #ifndef FUNCTION_NO_ALLOC
+struct VirtualClosure
+{
+	virtual ~VirtualClosure() {}
+};
+
 template <class T, class Result, class... Args>
 struct CapturingClosure;
 
@@ -20,7 +25,7 @@ class Function;
 template <class Result, class... Args>
 class Function<Result(Args...)>
 {
-	static constexpr void* DYNAMIC = (void*)~0;
+	static constexpr uintptr_t DYNAMIC = ~0;
 
 public:
 	using Func = Result(Args...);
@@ -32,8 +37,8 @@ public:
 
 	~Function()
 	{
-		if (wrap == DYNAMIC)
-			delete param;
+		if (reinterpret_cast<uintptr_t>(wrap) == DYNAMIC)
+			delete reinterpret_cast<VirtualClosure*>(param);
 	}
 
 	Function(const Function& other)
@@ -41,7 +46,7 @@ public:
 		wrap = other.wrap;
 		param = other.param;
 
-		if (wrap == DYNAMIC)
+		if (reinterpret_cast<uintptr_t>(wrap) == DYNAMIC)
 		{
 			auto* closure = reinterpret_cast<CapturingClosure<void, Result, Args...>*>(param);
 			param = closure->Copy();
@@ -71,7 +76,7 @@ public:
 		else if constexpr (std::is_class_v<Fp> && std::is_copy_constructible_v<Fp>)
 		{
 			param = new CapturingClosure<Fp, Result, Args...>(func);
-			wrap = (Wrap*)DYNAMIC;
+			wrap = reinterpret_cast<Wrap*>(DYNAMIC);
 		}
 		else
 			static_assert(false, "Function supports only non/member functions and non/capturing lambdas");
@@ -93,8 +98,8 @@ public:
 
 	void reset()
 	{
-		if (wrap == DYNAMIC)
-			delete param;
+		if (reinterpret_cast<uintptr_t>(wrap) == DYNAMIC)
+			delete reinterpret_cast<VirtualClosure*>(param);
 
 		wrap = nullptr;
 		param = nullptr;
@@ -107,7 +112,7 @@ public:
 
 	Result operator()(Args... args) const
 	{
-		if (wrap == DYNAMIC)
+		if (reinterpret_cast<uintptr_t>(wrap) == DYNAMIC)
 		{
 			auto* closure = reinterpret_cast<CapturingClosure<void, Result, Args...>*>(param);
 			auto fn = closure->GetFunction();
@@ -119,13 +124,13 @@ public:
 	//unofficial amendments
 	Function& operator=(const Function& other)
 	{
-		if (wrap == DYNAMIC)
-			delete param;
+		if (reinterpret_cast<uintptr_t>(wrap) == DYNAMIC)
+			delete reinterpret_cast<VirtualClosure*>(param);
 
 		wrap = other.wrap;
 		param = other.param;
 
-		if (wrap == DYNAMIC)
+		if (reinterpret_cast<uintptr_t>(wrap) == DYNAMIC)
 		{
 			auto* closure = reinterpret_cast<CapturingClosure<void, Result, Args...>*>(param);
 			param = closure->Copy();
@@ -136,8 +141,8 @@ public:
 
 	Function& operator=(Function&& other)
 	{
-		if (wrap == DYNAMIC)
-			delete param;
+		if (reinterpret_cast<uintptr_t>(wrap) == DYNAMIC)
+			delete reinterpret_cast<VirtualClosure*>(param);
 
 		wrap = other.wrap;
 		param = other.param;
@@ -222,7 +227,7 @@ private:
 
 #ifndef FUNCTION_NO_ALLOC
 template <class T, class Result, class... Args>
-struct CapturingClosure
+struct CapturingClosure : VirtualClosure
 {
 	T* closure;
 
@@ -231,7 +236,7 @@ struct CapturingClosure
 		this->closure = new T(closure);
 	}
 
-	virtual ~CapturingClosure()
+	~CapturingClosure() override
 	{
 		delete closure;
 	}
@@ -253,7 +258,7 @@ struct CapturingClosure
 };
 
 template <class Result, class... Args>
-struct CapturingClosure<void, Result, Args...>
+struct CapturingClosure<void, Result, Args...> : VirtualClosure
 {
 	void* closure;
 

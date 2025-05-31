@@ -25,15 +25,20 @@ export enum StatusCmd {
 }
 
 type StatusEvent = (status: HostStatus) => void;
+type ResyncEvent = (obj: Record<string, unknown>) => void;
 
 class HostState {
     private status: HostStatus;
+    private ready: boolean;
 
     public readonly statusEvent: Event<StatusEvent>;
+    public readonly resyncEvent: Event<ResyncEvent>;
 
     public constructor() {
         this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+        this.ready = false;
         this.statusEvent = new Event();
+        this.resyncEvent = new Event();
 
         hostBridge.registerHandler('SRV_STATE', (data: object) => {
             const status = data as HostStatus;
@@ -49,10 +54,24 @@ class HostState {
             this.status = { simStatus: status.simStatus, srvStatus: status.srvStatus, simName: simName };
             this.statusEvent.invoke(this.status);
         });
+
+        hostBridge.registerHandler('SRV_RESYNC', (data: object) => {
+            this.resyncEvent.invoke(data as Record<string, unknown>);
+        });
     }
 
     public notifyAppReady() {
-        hostBridge.send('ALL_RQST_STATE', {});
+        if (this.ready) {
+            return;
+        }
+        this.ready = true;
+        hostBridge.send('SRV_RESYNC', {});
+    }
+
+    public resetApp() {
+        this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+        this.statusEvent.invoke(this.status);
+        hostBridge.send('SRV_RESYNC', {});
     }
 
     public sendStatusCmd(cmd: StatusCmd) {
