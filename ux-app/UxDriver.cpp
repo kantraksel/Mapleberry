@@ -32,6 +32,7 @@ enum class RxCmd
 	Resync,
 	ChangeSimComStatus,
 	ChangeServerStatus,
+	ReconnectToSim,
 };
 
 static inline void PostCommand(TxCmd cmd, uint64_t param = 0)
@@ -213,6 +214,16 @@ void UxDriver::Initialize()
 			{
 				bool value = *srvOpenNode;
 				PushRxMessage(RxCmd::ChangeServerStatus, value);
+			}
+		});
+
+	uxbridge.RegisterHandler("SRV_PROPS", [this](const nlohmann::json& json)
+		{
+			auto simConnNode = json.find("reconnectToSim");
+			if (simConnNode != json.end() && simConnNode->is_boolean())
+			{
+				bool value = *simConnNode;
+				PushRxMessage(RxCmd::ReconnectToSim, value);
 			}
 		});
 
@@ -455,6 +466,13 @@ void UxDriver::HandleRxMessages(RxCmd id, uint64_t value)
 				else
 					SendSystemState();
 			}
+			break;
+		}
+
+		case RxCmd::ReconnectToSim:
+		{
+			auto& simcom = GlobalScope::GetSimCom();
+			simcom.AllowReconnect(value);
 			break;
 		}
 	}

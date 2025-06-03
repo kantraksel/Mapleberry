@@ -13,8 +13,8 @@ extern AirplaneRadar radar;
 
 RealTimeThread::RealTimeThread()
 {
-    simcom.OnConnect = { MemberFunc<&RealTimeThread::OnSimConnect>, this };
-    simcom.OnDisconnect = { MemberFunc<&RealTimeThread::OnSimDisconnect>, this };
+	simcom.OnConnect = { MemberFunc<&RealTimeThread::OnSimConnect>, this };
+	simcom.OnDisconnect = { MemberFunc<&RealTimeThread::OnSimDisconnect>, this };
 }
 
 RealTimeThread::~RealTimeThread()
@@ -25,64 +25,59 @@ void RealTimeThread::Start()
 {
 	thread = std::jthread([this](std::stop_token token)
 		{
-            cmdMutex.lock();
-			deviceServer.Start();
-			simcom.Initialize();
-			
-			std::array<WNET::PollFD, 1> fds;
-			fds[0].fd = deviceServer.GetTransport().GetSocket().GetSocket();
+			std::unique_lock lock(cmdMutex);
+			auto& socket = deviceServer.GetTransport().GetSocket();
 
 			while (!token.stop_requested())
 			{
 				deviceServer.Run();
 				simcom.RunCallbacks();
 
-                radar.OnUpdate();
-                if (Tick)
-                    Tick();
+				radar.OnUpdate();
+				if (Tick)
+					Tick();
 
-                cmdMutex.unlock();
-				WNET::PollFD::Poll(fds.data(), (int)fds.size(), 20);
-                cmdMutex.lock();
+				lock.unlock();
+				socket.Poll(20);
+				lock.lock();
 			}
 
 			simcom.Shutdown();
 			deviceServer.Stop();
-            cmdMutex.unlock();
 		});
 }
 
 void RealTimeThread::OnSimConnect()
 {
-    deviceManager.Initialize();
-    radar.Initialize();
-
-    auto& simconnect = simcom.GetSimConnect();
-
-    simconnect.SubscribeToSimStart([]()
-        {
-            Logger::Log("SimStart");
-        });
-    simconnect.SubscribeToSimStop([]()
-        {
-            Logger::Log("SimStop");
-        });
-    simconnect.SubscribeToPause([](bool paused)
-        {
-            Logger::Log("Paused: {}", paused);
-        });
-
-    if (SimConnectEvent)
-        SimConnectEvent();
+	deviceManager.Initialize();
+	radar.Initialize();
+	/*
+	auto& simconnect = simcom.GetSimConnect();
+	
+	simconnect.SubscribeToSimStart([]()
+		{
+			Logger::Log("SimStart");
+		});
+	simconnect.SubscribeToSimStop([]()
+		{
+			Logger::Log("SimStop");
+		});
+	simconnect.SubscribeToPause([](bool paused)
+		{
+			Logger::Log("Paused: {}", paused);
+		});
+	*/
+	if (SimConnectEvent)
+		SimConnectEvent();
 }
 
 void RealTimeThread::OnSimDisconnect()
 {
-    if (SimDisconnectEvent)
-        SimDisconnectEvent();
+	if (SimDisconnectEvent)
+		SimDisconnectEvent();
 
-    radar.Shutdown();
-    deviceManager.Shutdown();
+	radar.Shutdown();
+	deviceManager.Shutdown();
 }
 
 void RealTimeThread::Stop()

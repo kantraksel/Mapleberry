@@ -10,6 +10,7 @@ private:
 	long long nextReconnect;
 	std::string appName;
 	bool isConnected;
+	bool allowReconnect;
 
 	void OnDisconnected();
 
@@ -24,6 +25,7 @@ public:
 	void Shutdown();
 	void RunCallbacks();
 
+	void AllowReconnect(bool value);
 	auto& GetSimConnect() { return simconnect; }
 	auto& GetSimName() const { return appName; }
 	bool IsConnected() { return isConnected; }

@@ -3,7 +3,10 @@
 #include "Utils/version.h"
 #include "Utils/Logger.h"
 
-SimCom::SimCom() : nextReconnect(0), isConnected(false)
+static constexpr long long ConnectTimeout = 5 * 60 * 1000;
+static constexpr long long ReconnectCooldown = 60 * 1000;
+
+SimCom::SimCom() : nextReconnect(0), isConnected(false), allowReconnect(false)
 {
 }
 
@@ -15,10 +18,10 @@ bool SimCom::Initialize()
 {
 	if (!simconnect.Initialize(Version::SimConnectName))
 	{
-		nextReconnect = Time::SteadyNowInt() + 60 * 1000;
+		nextReconnect = Time::SteadyNowInt() + ReconnectCooldown;
 		return false;
 	}
-	nextReconnect = Time::SteadyNowInt() + 5 * 60 * 1000;
+	nextReconnect = Time::SteadyNowInt() + ConnectTimeout;
 
 	simconnect.SetConnectCallback([&](const SimConnect::EventServer& event)
 		{
@@ -61,7 +64,10 @@ void SimCom::RunCallbacks()
 
 void SimCom::OnDisconnected()
 {
-	nextReconnect = Time::SteadyNowInt() + 60 * 1000;
+	if (allowReconnect)
+		nextReconnect = Time::SteadyNowInt() + ReconnectCooldown;
+	else
+		nextReconnect = INT64_MAX;
 
 	bool connected = isConnected;
 	isConnected = false;
@@ -69,5 +75,22 @@ void SimCom::OnDisconnected()
 	{
 		Logger::Log("Disconnected from simulator");
 		OnDisconnect();
+	}
+}
+
+void SimCom::AllowReconnect(bool value)
+{
+	if (value)
+	{
+		if (simconnect.IsConnected())
+			nextReconnect = Time::SteadyNowInt() + ConnectTimeout;
+		else
+			nextReconnect = Time::SteadyNowInt() + ReconnectCooldown;
+		allowReconnect = true;
+	}
+	else
+	{
+		nextReconnect = INT64_MAX;
+		allowReconnect = false;
 	}
 }

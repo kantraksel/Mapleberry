@@ -52,6 +52,8 @@ void DeviceServer::Stop()
 
 void DeviceServer::Run()
 {
+	if (!isActive)
+		return;
 	transport.Run();
 }
 
