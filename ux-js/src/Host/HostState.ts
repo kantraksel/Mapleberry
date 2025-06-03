@@ -58,6 +58,14 @@ class HostState {
         hostBridge.registerHandler('SRV_RESYNC', (data: object) => {
             this.resyncEvent.invoke(data as Record<string, unknown>);
         });
+
+        if (this.launchServerOnStart) {
+            this.sendStatusCmd(StatusCmd.StartServer);
+        }
+        if (this.getAllowSimComReconnect()) {
+            this.setAllowSimComReconnect(true);
+            this.sendStatusCmd(StatusCmd.ConnectSim);
+        }
     }
 
     public notifyAppReady() {
@@ -110,8 +118,25 @@ class HostState {
         };
     }
 
+    public setAllowSimComReconnect(value: boolean) {
+        options.set('simcom_reconnect', value);
+        hostBridge.send('SRV_PROPS', { reconnectToSim: value });
+    }
+
+    public getAllowSimComReconnect() {
+        return options.get<boolean>('simcom_reconnect', true);
+    }
+
     public getSimName() {
         return this.status.simName;
+    }
+
+    public get launchServerOnStart() {
+        return options.get<boolean>('server_autostart', false);
+    }
+
+    public set launchServerOnStart(value: boolean) {
+        options.set('server_autostart', value);
     }
 }
 

@@ -5,6 +5,8 @@ type OptionKeys =
     'vatsim_refresh_rate' |
     'user_custom_callsign' |
     'radar_follow_scale_map' | 
+    'server_autostart' |
+    'simcom_reconnect' |
     '_unused_';
 
 class Options {

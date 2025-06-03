@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Box, Button, ButtonGroup, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import VATSIM from '../Network/VATSIM';
+import { ServerStatus, SimulatorStatus, StatusCmd } from '../Host/HostState';
 
 type View = 'map' | 'app' | 'about' | 'dev_preview';
 
@@ -153,17 +154,72 @@ function MapView() {
 }
 
 function AppView() {
+    const [status, setStatus] = useState(hostState.getHostStatus());
+    const [serverAutostart, setServerAutostart] = useState(hostState.launchServerOnStart);
+    const [simcomReconnect, setSimcomReconnect] = useState(hostState.getAllowSimComReconnect());
+
+    useEffect(() => {
+        hostState.statusEvent.add(setStatus);
+
+        return () => {
+            hostState.statusEvent.delete(setStatus);
+        }
+    }, []);
+
+    const onConnectSim = () => {
+        hostState.sendStatusCmd(StatusCmd.ConnectSim);
+    };
+
+    const onDisconnectSim = () => {
+        hostState.sendStatusCmd(StatusCmd.DisconnectSim);
+    };
+
+    const onStartServer = () => {
+        hostState.sendStatusCmd(StatusCmd.StartServer);
+    };
+
+    const onStopServer = () => {
+        hostState.sendStatusCmd(StatusCmd.StopServer);
+    };
+
+    const onServerAutostartChange = (_event: unknown, checked: boolean) => {
+        hostState.launchServerOnStart = checked;
+        setServerAutostart(checked);
+    };
+
+    const onSimcomReconnectChange = (_event: unknown, checked: boolean) => {
+        hostState.setAllowSimComReconnect(checked);
+        setSimcomReconnect(checked);
+    };
+
+    const serverStarted = status.srvStatus != ServerStatus.Stopped;
+    const simConnected = status.simStatus != SimulatorStatus.Disconnected;
+
     return (
         <Stack flex='1 1' spacing={2}>
             <Header>Host App</Header>
             <Stack flex='1 1' spacing={1}>
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
-                    <Typography>Reconnect to Simulator</Typography>
-                    <Switch disabled />
+                    <Typography>Simulator Comms</Typography>
+                    <ButtonGroup variant='outlined'>
+                        <Button color='primary' disabled={simConnected} onClick={onConnectSim}>Connect</Button>
+                        <Button color='error' disabled={!simConnected} onClick={onDisconnectSim}>Disconnect</Button>
+                    </ButtonGroup>
                 </Box>
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
-                    <Typography>Autostart Device Server</Typography>
-                    <Switch disabled />
+                    <Typography>Device Server</Typography>
+                    <ButtonGroup variant='outlined'>
+                        <Button color='primary' disabled={serverStarted} onClick={onStartServer}>Start</Button>
+                        <Button color='error' disabled={!serverStarted} onClick={onStopServer}>Stop</Button>
+                    </ButtonGroup>
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Reestablish Simulator Comms</Typography>
+                    <Switch checked={simcomReconnect} onChange={onSimcomReconnectChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Launch Device Server on Start</Typography>
+                    <Switch checked={serverAutostart} onChange={onServerAutostartChange} />
                 </Box>
             </Stack>
         </Stack>

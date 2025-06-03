@@ -6,7 +6,7 @@
 static constexpr long long ConnectTimeout = 5 * 60 * 1000;
 static constexpr long long ReconnectCooldown = 60 * 1000;
 
-SimCom::SimCom() : nextReconnect(0), isConnected(false), allowReconnect(false)
+SimCom::SimCom() : nextReconnect(INT64_MAX), isConnected(false), allowReconnect(false)
 {
 }
 
