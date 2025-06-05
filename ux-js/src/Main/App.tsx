@@ -8,6 +8,7 @@ import 'ol/ol.css';
 import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
 import OptionsBox from './OptionsBox';
+import Scoreboard from './Scoreboard';
 
 const MainDrawerContext = createContext(true);
 
@@ -81,6 +82,7 @@ function App() {
 	const [systemVisible, setSystemVisible] = useState(false);
 	const [flightVisible, setFlightVisible] = useState(false);
 	const [optionsVisible, setOptionsVisible] = useState(false);
+	const [scoreboardVisible, setScoreboardVisible] = useState(false);
 	
 	useEffect(() => {
 		map.setParent(mapNode.current!);
@@ -138,6 +140,12 @@ function App() {
 								<MainListText primary='System Status' />
 							</ListItemButton>
 						</ListItem>
+						<ListItem key='pilot_list' disablePadding>
+							<ListItemButton selected={scoreboardVisible} onClick={() => { setScoreboardVisible(!scoreboardVisible); }}>
+								<MainListIcon><FlightIcon /></MainListIcon>
+								<MainListText primary='Station List' />
+							</ListItemButton>
+						</ListItem>
 					</List>
 					<List sx={{ position: 'absolute', bottom: '0px', right: '0px', left: '0px' }}>
 						<ListItem key='options' disablePadding>
@@ -149,13 +157,17 @@ function App() {
 					</List>
 				</MainDrawer>
 				
-				<Box sx={{ position: 'relative', flex: '1 1 auto', display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+				<Box sx={{ position: 'relative', flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
 					<Box sx={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', visibility: mapVisible ? 'hidden' : 'visible' }}>
 						<Typography>Map is disabled</Typography>
 					</Box>
 					<Box ref={mapNode} sx={{ flex: '1 1 auto', width: '100%', ...mapStyle }} />
 
-					<Box sx={{ flex: '1 1 auto', position: 'absolute', display: 'flex', flexDirection: 'column' }} >
+					<Box sx={{ flex: '1 1 auto', position: 'absolute', height: '100%', display: 'flex', flexDirection: 'column' }} >
+						<Scoreboard open={scoreboardVisible} />
+					</Box>
+
+					<Box sx={{ position: 'fixed', right: '0', display: 'flex', flexDirection: 'column' }} >
 						<FlightInfoBox open={flightVisible} />
 						<SystemInfoBox open={systemVisible} />
 					</Box>

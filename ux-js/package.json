@@ -17,7 +17,8 @@
     "@mui/material": "^7.1.0",
     "ol": "^10.4.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-virtuoso": "^4.12.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",

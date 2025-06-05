@@ -17,7 +17,7 @@ interface FlightPlan {
     assigned_transponder: string,
 }
 
-interface Pilot {
+export interface Pilot {
     cid: number,
     name: string,
     callsign: string,
@@ -276,6 +276,10 @@ class VATSIM {
 
     public get enabled() {
         return options.get<boolean>('vatsim_enabled', true);
+    }
+
+    public getNetworkData() {
+        return this.networkData;
     }
 }
 
