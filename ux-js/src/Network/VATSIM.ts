@@ -37,7 +37,7 @@ export interface Pilot {
     last_updated: string,
 }
 
-interface Controller {
+export interface Controller {
     cid: number,
     name: string,
     callsign: string,
@@ -75,7 +75,7 @@ interface Server {
     is_sweatbox: boolean,
 }
 
-interface Prefile {
+export interface Prefile {
     cid: number,
     name: string,
     callsign: string,
