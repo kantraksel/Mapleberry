@@ -1,3 +1,4 @@
+import Event from "../Event";
 import MapPlane from "../Map/MapPlane";
 
 interface FlightPlan {
@@ -96,7 +97,7 @@ interface Rating {
 }
 
 // https://vatsim.dev/api/data-api/get-network-data/
-interface LiveNetworkData {
+export interface LiveNetworkData {
     general: {
         version: number,
         update_timestamp: string,
@@ -124,10 +125,14 @@ class VatsimPlane {
     }
 }
 
+type UpdateEvent = (networkData?: LiveNetworkData) => void;
+
 class VATSIM {
     private networkData?: LiveNetworkData;
     private dataRefreshTask: number;
     private planes: Map<string, VatsimPlane>;
+
+    public readonly Update: Event<UpdateEvent>;
 
     static readonly defaultRefreshRate = 35;
     static readonly minimumRefreshRate = 15;
@@ -135,6 +140,7 @@ class VATSIM {
     public constructor() {
         this.planes = new Map();
         this.dataRefreshTask = 0;
+        this.Update = new Event();
 
         radar.planeAdded.add((plane) => {
             const pilot = this.planes.get(plane.callsign);
@@ -179,6 +185,7 @@ class VATSIM {
             this.loseContact(value);
         });
         this.planes.clear();
+        this.Update.invoke();
 
         clearTimeout(this.dataRefreshTask);
         this.dataRefreshTask = 0;
@@ -240,6 +247,7 @@ class VATSIM {
                     this.planes.delete(callsign);
                 }
             });
+            this.Update.invoke(this.networkData);
 
             if (this.dataRefreshTask == 0) {
                 return;

@@ -1,7 +1,7 @@
 import { Box, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs } from '@mui/material';
 import { TableComponents, TableVirtuoso } from 'react-virtuoso';
-import { Dispatch, forwardRef, Fragment, ReactNode, SetStateAction, SyntheticEvent, useState } from 'react';
-import { Controller, Pilot, Prefile } from '../Network/VATSIM';
+import { Dispatch, forwardRef, Fragment, ReactNode, SetStateAction, SyntheticEvent, useEffect, useState } from 'react';
+import { Controller, LiveNetworkData, Pilot, Prefile } from '../Network/VATSIM';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
     const style = {
@@ -44,6 +44,7 @@ interface Column<Type> {
     label: string,
     data: ((pilot: Type) => ReactNode) | string,
     compare: (a: Type, b: Type) => number,
+    alignData?: 'inherit' | 'left' | 'center' | 'right' | 'justify',
 }
 
 const pilotColumns: Column<Pilot>[] = [
@@ -81,6 +82,7 @@ const pilotColumns: Column<Pilot>[] = [
             }
             return compareIgnoreCase(one.aircraft_short, two.aircraft_short);
         },
+        alignData: 'center',
     },
     {
         width: 200,
@@ -104,18 +106,19 @@ const controllerColumns: Column<Controller>[] = [
         },
     },
     {
-        width: 80,
-        id: 'type',
-        label: 'Type',
+        width: 100,
+        id: 'freq',
+        label: 'Frequency',
         data: (pilot) => {
             return pilot.frequency;
         },
         compare: (a, b) => {
             return compareIgnoreCase(a.frequency, b.frequency);
         },
+        alignData: 'center',
     },
     {
-        width: 200,
+        width: 180,
         id: 'name',
         label: 'Name',
         data: 'name',
@@ -160,14 +163,15 @@ const prefileColumns: Column<Prefile>[] = [
             }
             return compareIgnoreCase(one.aircraft_short, two.aircraft_short);
         },
+        alignData: 'center',
     },
     {
         width: 200,
-        id: 'name',
-        label: 'Name',
-        data: 'name',
+        id: 'cid',
+        label: 'CID',
+        data: 'cid',
         compare: (a, b) => {
-            return compareIgnoreCase(a.name, b.name);
+            return a.cid - b.cid;
         },
     },
 ];
@@ -200,12 +204,14 @@ function createTableHeader<Value>(sortBy: string, setSortBy: Dispatch<SetStateAc
                 }
             };
             const dir = sortBy == column.id ? sorter.dir : 'asc';
+            const align = column.alignData ?? 'inherit';
 
             return (
                 <TableCell
                     key={column.id}
                     variant='head'
-                    style={{ width: column.width }}
+                    width={column.width}
+                    align={align}
                     sx={{ backgroundColor: 'background.paper' }}
                 >
                     <TableSortLabel active={sortBy == column.id} direction={dir} onClick={onClick}>
@@ -234,8 +240,9 @@ function createTableCell<Value>(columns: Column<Value>[]) {
                 const fn = column.data as (pilot: Value) => ReactNode;
                 value = fn(values);
             }
+            const align = column.alignData ?? 'inherit';
             return (
-                <TableCell key={column.id}>
+                <TableCell key={column.id} align={align}>
                     {value}
                 </TableCell>
             );
@@ -269,7 +276,7 @@ function sortData<Value>(values: Value[] | undefined, sorter: Sorter<Value>) {
     });
 }
 
-function DynamicList<Value>(props: { selected: boolean, getData: () => [columns: Column<Value>[], values: Value[] | undefined] }) {
+function DynamicList<Value>(props: { selected: boolean, columns: Column<Value>[], values: Value[] | undefined }) {
     const [sortBy, setSortBy] = useState('');
     const [sorter, setSorter] = useState<Sorter<Value>>({ dir: 'asc', compare: () => 0 });
 
@@ -277,12 +284,12 @@ function DynamicList<Value>(props: { selected: boolean, getData: () => [columns:
         return <></>;
     }
 
-    const [columns, data] = props.getData();
-    const sortedData = sortData(data, sorter);
+    const columns = props.columns;
+    const data = sortData(props.values, sorter);
      
     return (
         <TableVirtuoso
-            data={sortedData}
+            data={data}
             components={VirtuosoTableComponents as TableComponents<Value>}
             fixedHeaderContent={createTableHeader(sortBy, setSortBy, sorter, setSorter, columns)}
             itemContent={createTableCell(columns)}
@@ -290,32 +297,31 @@ function DynamicList<Value>(props: { selected: boolean, getData: () => [columns:
     );
 }
 
-function PilotList(props: { selected: boolean }) {
-    const getData = (): [columns: Column<Pilot>[], data: Pilot[] | undefined] => {
-        const data = vatsim.getNetworkData();
-        return [pilotColumns, data?.pilots];
-    }
-    return <DynamicList selected={props.selected} getData={getData} />;
+function PilotList(props: { selected: boolean, netData?: LiveNetworkData }) {
+    return <DynamicList selected={props.selected} columns={pilotColumns} values={props.netData?.pilots} />;
 }
 
-function ControllerList(props: { selected: boolean }) {
-    const getData = (): [columns: Column<Controller>[], data: Controller[] | undefined] => {
-        const data = vatsim.getNetworkData();
-        return [controllerColumns, data?.controllers];
-    }
-    return <DynamicList selected={props.selected} getData={getData} />;
+function ControllerList(props: { selected: boolean, netData?: LiveNetworkData }) {
+    return <DynamicList selected={props.selected} columns={controllerColumns} values={props.netData?.controllers} />;
 }
 
-function PrefileList(props: { selected: boolean }) {
-    const getData = (): [columns: Column<Prefile>[], data: Prefile[] | undefined] => {
-        const data = vatsim.getNetworkData();
-        return [prefileColumns, data?.prefiles];
-    }
-    return <DynamicList selected={props.selected} getData={getData} />;
+function PrefileList(props: { selected: boolean, netData?: LiveNetworkData }) {
+    return <DynamicList selected={props.selected} columns={prefileColumns} values={props.netData?.prefiles} />;
 }
 
 function Scoreboard(props: { open: boolean }) {
     const [tab, setTab] = useState(0);
+    const [netData, setNetData] = useState(vatsim.getNetworkData());
+
+    useEffect(() => {
+        const handler = (networkData?: LiveNetworkData) => {
+            setNetData(networkData);
+        };
+        vatsim.Update.add(handler);
+        return () => {
+            vatsim.Update.delete(handler);
+        };
+    }, []);
 
     if (!props.open) {
         return <></>;
@@ -333,9 +339,9 @@ function Scoreboard(props: { open: boolean }) {
                 <Tab label='Prefiles' />
             </Tabs>
             <Paper style={{ height: '100%', width: '100%' }}>
-                <PilotList selected={tab == 0} />
-                <ControllerList selected={tab == 1} />
-                <PrefileList selected={tab == 2} />
+                <PilotList selected={tab == 0} netData={netData} />
+                <ControllerList selected={tab == 1} netData={netData} />
+                <PrefileList selected={tab == 2} netData={netData} />
             </Paper>
         </InfoBox>
     );
