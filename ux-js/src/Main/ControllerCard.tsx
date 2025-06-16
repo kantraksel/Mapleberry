@@ -1,37 +1,31 @@
 import { Stack, TextField, Typography } from '@mui/material';
-import { ReactNode } from 'react';
+import { Controller } from '../Network/VATSIM';
+import { getControllerRating, getStation, getTimeOnline, InfoBox } from './CardsShared';
+import { useEffect, useState } from 'react';
 
-function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
-    const style = {
-        border: `3px solid #2c2c2c`,
-        borderRadius: '5px',
-        background: '#2c2c2c',
-        minWidth: props.width,
-        minHeight: props.height,
-        margin: '15px',
-        alignItems: 'center',
-        padding: '5px',
-        paddingLeft: '7px',
-        paddingRight: '7px',
-        paddingBottom: '7px',
-    };
-    return (
-        <Stack sx={style}>
-            {props.children}
-        </Stack>
-    );
-}
+function ControllerCard() {
+    const [data, setData] = useState<Controller>();
 
-function ControllerCard(props: { open: boolean }) {
-    if (!props.open) {
+    useEffect(() => {
+        cards.setControllerCard(setData);
+
+        return () => {
+            cards.setControllerCard(undefined);
+        };
+    }, []);
+
+    if (!data) {
         return <></>;
     }
 
-    const info = ['', '', ''].join('\n');
+    const rating = getControllerRating(data);
+    const timeOnline = getTimeOnline(data);
+    const station = getStation(data);
+    const info = data.text_atis?.join('\n') ?? 'N/A';
 
     return (
-        <InfoBox width={'500px'} height={'auto'}>
-            <Typography variant='h4'>_CALLSIGN_</Typography>
+        <InfoBox width={500} height={'auto'}>
+            <Typography variant='h4'>{data.callsign}</Typography>
             <Stack direction='row' spacing={3} sx={{ mt: '5px', ml: '7px', mr: '7px' }}>
                 <Stack direction='row' spacing={1}>
                     <Stack>
@@ -39,8 +33,8 @@ function ControllerCard(props: { open: boolean }) {
                         <Typography>Station:</Typography>
                     </Stack>
                     <Stack>
-                        <Typography></Typography>
-                        <Typography></Typography>
+                        <Typography>{data.name}</Typography>
+                        <Typography>{station}</Typography>
                     </Stack>
                 </Stack>
                 <Stack direction='row' spacing={1}>
@@ -49,8 +43,8 @@ function ControllerCard(props: { open: boolean }) {
                         <Typography>Time Online:</Typography>
                     </Stack>
                     <Stack>
-                        <Typography></Typography>
-                        <Typography></Typography>
+                        <Typography>{rating}</Typography>
+                        <Typography>{timeOnline}</Typography>
                     </Stack>
                 </Stack>
             </Stack>

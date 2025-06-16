@@ -1,7 +1,8 @@
-import { Box, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs } from '@mui/material';
+import { Box, IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { TableComponents, TableVirtuoso } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, ReactNode, SetStateAction, SyntheticEvent, useEffect, useState } from 'react';
 import { Controller, LiveNetworkData, Pilot, Prefile } from '../Network/VATSIM';
+import NotesIcon from '@mui/icons-material/Notes';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
     const style = {
@@ -43,7 +44,7 @@ interface Column<Type> {
     id: string,
     label: string,
     data: ((pilot: Type) => ReactNode) | string,
-    compare: (a: Type, b: Type) => number,
+    compare?: (a: Type, b: Type) => number,
     alignData?: 'inherit' | 'left' | 'center' | 'right' | 'justify',
 }
 
@@ -93,6 +94,17 @@ const pilotColumns: Column<Pilot>[] = [
             return compareIgnoreCase(a.name, b.name);
         },
     },
+    {
+        width: 50,
+        id: 'buttons',
+        label: '',
+        data: (data) => {
+            const onClick = () => {
+                cards.showPilotCard(data);
+            };
+            return <IconButton onClick={onClick} size='small'><NotesIcon fontSize='small' /></IconButton>;
+        },
+    },
 ];
 
 const controllerColumns: Column<Controller>[] = [
@@ -124,6 +136,17 @@ const controllerColumns: Column<Controller>[] = [
         data: 'name',
         compare: (a, b) => {
             return compareIgnoreCase(a.name, b.name);
+        },
+    },
+    {
+        width: 50,
+        id: 'buttons',
+        label: '',
+        data: (data) => {
+            const onClick = () => {
+                cards.showControllerCard(data);
+            };
+            return <IconButton onClick={onClick} size='small'><NotesIcon fontSize='small' /></IconButton>;
         },
     },
 ];
@@ -191,32 +214,42 @@ function compareIgnoreCase(a: string, b: string) {
 function createTableHeader<Value>(sortBy: string, setSortBy: Dispatch<SetStateAction<string>>, sorter: Sorter<Value>, setSorter: Dispatch<SetStateAction<Sorter<Value>>>, columns: Column<Value>[]) {
     return function tableHeader() {
         const items = columns.map((column) => {
-            const onClick = () => {
-                if (sortBy == column.id) {
-                    if (sorter.dir == 'asc') {
-                        setSorter({ dir: 'desc', compare: (a: Value, b: Value) => { return column.compare(b, a); } });
+            let label;
+
+            if (column.compare) {
+                const onClick = () => {
+                    const compare = column.compare!;
+                    if (sortBy == column.id) {
+                        if (sorter.dir == 'asc') {
+                            setSorter({ dir: 'desc', compare: (a: Value, b: Value) => { return compare(b, a); } });
+                        } else {
+                            setSorter({ dir: 'asc', compare: compare });
+                        }
                     } else {
-                        setSorter({ dir: 'asc', compare: column.compare });
+                        setSortBy(column.id);
+                        setSorter({ dir: 'asc', compare: compare });
                     }
-                } else {
-                    setSortBy(column.id);
-                    setSorter({ dir: 'asc', compare: column.compare });
-                }
-            };
-            const dir = sortBy == column.id ? sorter.dir : 'asc';
-            const align = column.alignData ?? 'inherit';
+                };
+                const dir = sortBy == column.id ? sorter.dir : 'asc';
+
+                label = (
+                    <TableSortLabel active={sortBy == column.id} direction={dir} onClick={onClick}>
+                        {column.label}
+                    </TableSortLabel>
+                );
+            } else {
+                label = <Typography>{column.label}</Typography>;
+            }
 
             return (
                 <TableCell
                     key={column.id}
                     variant='head'
                     width={column.width}
-                    align={align}
+                    align={column.alignData ?? 'inherit'}
                     sx={{ backgroundColor: 'background.paper' }}
                 >
-                    <TableSortLabel active={sortBy == column.id} direction={dir} onClick={onClick}>
-                        {column.label}
-                    </TableSortLabel>
+                    {label}
                 </TableCell>
             );
         });
@@ -332,7 +365,7 @@ function Scoreboard(props: { open: boolean }) {
     };
 
     return (
-        <InfoBox width={430} height={'100%'}>
+        <InfoBox width={530} height='100%'>
             <Tabs value={tab} onChange={onClickTab} centered>
                 <Tab label='Pilots' />
                 <Tab label='Controllers' />

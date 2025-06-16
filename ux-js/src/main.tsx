@@ -16,6 +16,7 @@ import PlaneLayers from './Map/PlaneLayers.ts';
 import VATSIM from './Network/VATSIM.ts';
 import Options from './Options.ts';
 import LocalTraffic from './Radar/Sources/LocalTraffic.ts';
+import Cards from './Cards.ts';
 
 declare global {
 	var hostBridge: HostBridge;
@@ -27,6 +28,7 @@ declare global {
 	var tracker: UserTracker;
 	var vatsim: VATSIM;
 	var options: Options;
+	var cards: Cards;
 }
 window.options = new Options();
 window.hostBridge = new HostBridge();
@@ -37,6 +39,7 @@ window.radar = new Radar();
 window.traffic = new LocalTraffic();
 window.tracker = new UserTracker();
 window.vatsim = new VATSIM();
+window.cards = new Cards();
 
 const theme = createTheme({
 	palette: {

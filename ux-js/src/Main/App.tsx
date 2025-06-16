@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from 'react';
-import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography } from '@mui/material';
+import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack, Toolbar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import DesktopIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import FlightIcon from '@mui/icons-material/Flight';
@@ -9,6 +9,8 @@ import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
 import OptionsBox from './OptionsBox';
 import Scoreboard from './Scoreboard';
+import ControllerCard from './ControllerCard';
+import PilotCard from './PilotCard';
 
 const MainDrawerContext = createContext(true);
 
@@ -163,9 +165,15 @@ function App() {
 					</Box>
 					<Box ref={mapNode} sx={{ flex: '1 1 auto', width: '100%', ...mapStyle }} />
 
-					<Box sx={{ flex: '1 1 auto', position: 'absolute', height: '100%', display: 'flex', flexDirection: 'column' }} >
-						<Scoreboard open={scoreboardVisible} />
-					</Box>
+					<Stack direction='row' sx={{ flex: '1 1 auto', position: 'absolute', height: '100%' }} >
+						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%' }} >
+							<Scoreboard open={scoreboardVisible} />
+						</Stack>
+						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%' }} >
+							<ControllerCard />
+							<PilotCard />
+						</Stack>
+					</Stack>
 
 					<Box sx={{ position: 'fixed', right: '0', display: 'flex', flexDirection: 'column' }} >
 						<FlightInfoBox open={flightVisible} />

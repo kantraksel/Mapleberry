@@ -1,7 +1,7 @@
 import Event from "../Event";
 import MapPlane from "../Map/MapPlane";
 
-interface FlightPlan {
+export interface FlightPlan {
     flight_rules: string,
     aircraft: string,
     aircraft_faa: string,
@@ -16,6 +16,9 @@ interface FlightPlan {
     route: string,
     revision_id: number,
     assigned_transponder: string,
+
+    cruise_tas: string,
+    altitude: string,
 }
 
 export interface Pilot {
@@ -33,7 +36,7 @@ export interface Pilot {
     heading: number,
     qnh_i_hg: number,
     qnh_mb: number,
-    flight_plan: FlightPlan,
+    flight_plan?: FlightPlan,
     logon_time: string,
     last_updated: string,
 }
@@ -47,7 +50,7 @@ export interface Controller {
     rating: number,
     server: string,
     visual_range: number,
-    text_atis: string[],
+    text_atis?: string[],
     last_updated: string,
     logon_time: string,
 }
@@ -87,13 +90,19 @@ export interface Prefile {
 interface Facility {
     id: number,
     short: string,
-    long_name: string,
+    long: string,
 }
 
 interface Rating {
     id: number,
     short_name: string,
     long_name: string,
+}
+
+interface RatingOld {
+    id: number,
+    short: string,
+    long: string,
 }
 
 // https://vatsim.dev/api/data-api/get-network-data/
@@ -110,7 +119,14 @@ export interface LiveNetworkData {
     servers: Server[],
     prefiles: Prefile[],
     facilities: Facility[],
-    ratings: Rating[],
+    ratings: RatingOld[],
+    pilot_ratings: Rating[],
+    military_ratings: Rating[],
+}
+
+interface NetPropsCache {
+    facilities: Facility[],
+    ratings: RatingOld[],
     pilot_ratings: Rating[],
     military_ratings: Rating[],
 }
@@ -131,6 +147,7 @@ class VATSIM {
     private networkData?: LiveNetworkData;
     private dataRefreshTask: number;
     private planes: Map<string, VatsimPlane>;
+    private propsCache?: NetPropsCache;
 
     public readonly Update: Event<UpdateEvent>;
 
@@ -247,6 +264,15 @@ class VATSIM {
                     this.planes.delete(callsign);
                 }
             });
+
+            // update cache
+            this.propsCache = {
+                facilities: this.networkData.facilities,
+                ratings: this.networkData.ratings,
+                pilot_ratings: this.networkData.pilot_ratings,
+                military_ratings: this.networkData.military_ratings,
+            };
+
             this.Update.invoke(this.networkData);
 
             if (this.dataRefreshTask == 0) {
@@ -288,6 +314,22 @@ class VATSIM {
 
     public getNetworkData() {
         return this.networkData;
+    }
+
+    public getPilotRatings() {
+        return this.propsCache?.pilot_ratings ?? [];
+    }
+
+    public getMilitaryRatings() {
+        return this.propsCache?.military_ratings ?? [];
+    }
+
+    public getControllerRatings() {
+        return this.propsCache?.ratings ?? [];
+    }
+
+    public getFacilities() {
+        return this.propsCache?.facilities ?? [];
     }
 }
 

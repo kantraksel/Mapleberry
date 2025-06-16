@@ -1,36 +1,32 @@
 import { Divider, Grid, Stack, TextField, Typography } from '@mui/material';
-import { ReactNode } from 'react';
-import Comment from './Comment';
+import { Pilot } from '../Network/VATSIM';
+import { getEnrouteTime, getFlightplan, getFlightRules, getPilotRating, getTimeOnline, InfoBox } from './CardsShared';
+import { useEffect, useState } from 'react';
 
-function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
-    const style = {
-        border: `3px solid #2c2c2c`,
-        borderRadius: '5px',
-        background: '#2c2c2c',
-        minWidth: props.width,
-        minHeight: props.height,
-        margin: '15px',
-        alignItems: 'center',
-        padding: '5px',
-        paddingLeft: '7px',
-        paddingRight: '7px',
-        paddingBottom: '7px',
-    };
-    return (
-        <Stack sx={style}>
-            {props.children}
-        </Stack>
-    );
-}
+function PilotCard() {
+    const [data, setData] = useState<Pilot>();
 
-function PilotCard(props: { open: boolean }) {
-    if (!props.open) {
+    useEffect(() => {
+        cards.setPilotCard(setData);
+
+        return () => {
+            cards.setPilotCard(undefined);
+        };
+    }, []);
+    
+    if (!data) {
         return <></>;
     }
 
+    const flightplan = getFlightplan(data);
+    const rating = getPilotRating(data);
+    const timeOnline = getTimeOnline(data);
+    const flightRules = getFlightRules(flightplan);
+    const enrouteTime = getEnrouteTime(flightplan);
+
     return (
-        <InfoBox width={'500px'} height={'auto'}>
-            <Typography variant='h4'>_Callsign_</Typography>
+        <InfoBox width={500} height={'auto'}>
+            <Typography variant='h4'>{data.callsign}</Typography>
             <Stack useFlexGap direction='row' spacing={3} sx={{ mt: '5px', ml: '7px', mr: '7px', width: 'stretch' }}>
                 <Stack useFlexGap direction='row' spacing={1} sx={{ flex: '1 1 auto' }}>
                     <Stack>
@@ -38,8 +34,8 @@ function PilotCard(props: { open: boolean }) {
                         <Typography>Aircraft:</Typography>
                     </Stack>
                     <Stack>
-                        <Typography></Typography>
-                        <Typography></Typography>
+                        <Typography>{data.name}</Typography>
+                        <Typography>{flightplan.aircraft_faa}</Typography>
                     </Stack>
                 </Stack>
                 <Stack useFlexGap direction='row' spacing={1} sx={{ flex: '1 1 auto' }}>
@@ -48,9 +44,8 @@ function PilotCard(props: { open: boolean }) {
                         <Typography>Time Online:</Typography>
                     </Stack>
                     <Stack>
-                        <Comment txt='Use military rating if present' />
-                        <Typography></Typography>
-                        <Typography></Typography>
+                        <Typography>{rating}</Typography>
+                        <Typography>{timeOnline}</Typography>
                     </Stack>
                 </Stack>
             </Stack>
@@ -64,9 +59,9 @@ function PilotCard(props: { open: boolean }) {
                     <Typography>Alternate:</Typography>
                 </Stack>
                 <Stack>
-                    <Typography></Typography>
-                    <Typography></Typography>
-                    <Typography></Typography>
+                    <Typography>{flightplan.departure}</Typography>
+                    <Typography>{flightplan.arrival}</Typography>
+                    <Typography>{flightplan.alternate}</Typography>
                 </Stack>
             </Stack>
             <Grid container columnSpacing={3} sx={{ ml: '7px', mr: '7px', width: 'stretch' }}>
@@ -77,8 +72,8 @@ function PilotCard(props: { open: boolean }) {
                             <Typography>Enroute Time:</Typography>
                         </Stack>
                         <Stack>
-                            <Typography></Typography>
-                            <Typography></Typography>
+                            <Typography>{flightRules}</Typography>
+                            <Typography>{enrouteTime}</Typography>
                         </Stack>
                     </Stack>
                 </Grid>
@@ -89,14 +84,14 @@ function PilotCard(props: { open: boolean }) {
                             <Typography>Cruise TAS:</Typography>
                         </Stack>
                         <Stack>
-                            <Typography></Typography>
-                            <Typography></Typography>
+                            <Typography>{flightplan.altitude}</Typography>
+                            <Typography>{flightplan.cruise_tas}</Typography>
                         </Stack>
                     </Stack>
                 </Grid>
             </Grid>
-            <TextField variant='outlined' fullWidth sx={{ mt: '15px', '& .MuiInputBase-inputMultiline': { whiteSpace: 'pre', overflowX: 'auto' } }} label='Route' value='' />
-            <TextField variant='outlined' fullWidth sx={{ mt: '15px', '& .MuiInputBase-inputMultiline': { whiteSpace: 'pre', overflowX: 'auto' } }} label='Remarks' value='' />
+            <TextField variant='outlined' fullWidth sx={{ mt: '15px' }} label='Route' value={flightplan.route} />
+            <TextField variant='outlined' fullWidth sx={{ mt: '15px' }} label='Remarks' value={flightplan.remarks} />
         </InfoBox>
     );
 }
