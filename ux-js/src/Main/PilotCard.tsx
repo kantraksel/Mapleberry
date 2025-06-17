@@ -1,5 +1,5 @@
 import { Divider, Grid, Stack, TextField, Typography } from '@mui/material';
-import { Pilot } from '../Network/VATSIM';
+import { LiveNetworkData, Pilot } from '../Network/VATSIM';
 import { getEnrouteTime, getFlightplan, getFlightRules, getPilotRating, getTimeOnline, InfoBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
@@ -13,6 +13,29 @@ function PilotCard() {
             cards.setPilotCard(undefined);
         };
     }, []);
+
+    useEffect(() => {
+        const handler = (networkData?: LiveNetworkData) => {
+            if (!data) {
+                return;
+            }
+
+            if (!networkData) {
+                setData(undefined);
+                return;
+            }
+
+            const value = networkData.pilots.find((value) => (value.cid === data.cid));
+            if (value) {
+                setData(value);
+            }
+        };
+        vatsim.Update.add(handler);
+
+        return () => {
+            vatsim.Update.delete(handler);
+        };
+    }, [data]);
     
     if (!data) {
         return <></>;
@@ -24,8 +47,12 @@ function PilotCard() {
     const flightRules = getFlightRules(flightplan);
     const enrouteTime = getEnrouteTime(flightplan);
 
+    const onClose = () => {
+        setData(undefined);
+    };
+
     return (
-        <InfoBox width={500} height={'auto'}>
+        <InfoBox width={500} height={'auto'} onClose={onClose}>
             <Typography variant='h4'>{data.callsign}</Typography>
             <Stack useFlexGap direction='row' spacing={3} sx={{ mt: '5px', ml: '7px', mr: '7px', width: 'stretch' }}>
                 <Stack useFlexGap direction='row' spacing={1} sx={{ flex: '1 1 auto' }}>

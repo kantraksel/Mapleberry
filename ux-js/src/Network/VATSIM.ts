@@ -222,58 +222,68 @@ class VATSIM {
         }
     }
 
+    private async processNetworkData() {
+        const data = await VATSIM.getObject<LiveNetworkData>('https://data.vatsim.net/v3/vatsim-data.json');
+
+        // collect present pilots, add and update planes
+        const pilots = new Set<string>();
+        data.pilots.forEach((pilot: Pilot) => {
+            const callsign = pilot.callsign;
+            pilots.add(callsign);
+
+            let plane = this.planes.get(callsign);
+            if (!plane) {
+                plane = new VatsimPlane();
+                this.planes.set(callsign, plane);
+
+                plane.plane.setCallsign(callsign);
+
+                if (!radar.isVisible(callsign)) {
+                    this.establishContact(plane);
+                }
+            }
+
+            const params = {
+                longitude: pilot.longitude,
+                latitude: pilot.latitude,
+                heading: pilot.heading,
+                altitude: pilot.altitude,
+                groundAltitude: 0,
+                indicatedSpeed: 0,
+                groundSpeed: pilot.groundspeed,
+                verticalSpeed: 0,
+            };
+            plane.plane.setParams(params);
+        });
+
+        // delete absent pilots
+        this.planes.forEach((pilot, callsign) => {
+            if (!pilots.has(callsign)) {
+                this.loseContact(pilot);
+                this.planes.delete(callsign);
+            }
+        });
+
+        // update cache
+        this.propsCache = {
+            facilities: data.facilities,
+            ratings: data.ratings,
+            pilot_ratings: data.pilot_ratings,
+            military_ratings: data.military_ratings,
+        };
+
+        this.networkData = data;
+        this.Update.invoke(data);
+    }
+
     private fetchNetworkData() {
         const fn = async () => {
-            this.networkData = await VATSIM.getObject<LiveNetworkData>('https://data.vatsim.net/v3/vatsim-data.json');
-
-            // collect present pilots, add and update planes
-            const pilots = new Set<string>();
-            this.networkData.pilots.forEach((pilot: Pilot) => {
-                const callsign = pilot.callsign;
-                pilots.add(callsign);
-
-                let plane = this.planes.get(callsign);
-                if (!plane) {
-                    plane = new VatsimPlane();
-                    this.planes.set(callsign, plane);
-
-                    plane.plane.setCallsign(callsign);
-
-                    if (!radar.isVisible(callsign)) {
-                        this.establishContact(plane);
-                    }
-                }
-
-                const params = {
-                    longitude: pilot.longitude,
-                    latitude: pilot.latitude,
-                    heading: pilot.heading,
-                    altitude: pilot.altitude,
-                    groundAltitude: 0,
-                    indicatedSpeed: 0,
-                    groundSpeed: pilot.groundspeed,
-                    verticalSpeed: 0,
-                };
-                plane.plane.setParams(params);
-            });
-
-            // delete absent pilots
-            this.planes.forEach((pilot, callsign) => {
-                if (!pilots.has(callsign)) {
-                    this.loseContact(pilot);
-                    this.planes.delete(callsign);
-                }
-            });
-
-            // update cache
-            this.propsCache = {
-                facilities: this.networkData.facilities,
-                ratings: this.networkData.ratings,
-                pilot_ratings: this.networkData.pilot_ratings,
-                military_ratings: this.networkData.military_ratings,
-            };
-
-            this.Update.invoke(this.networkData);
+            try {
+                this.processNetworkData();
+            } catch (e) {
+                const err = e as Error;
+                console.error(`VATSIM network fetch failed: ${err.message}`);
+            }
 
             if (this.dataRefreshTask == 0) {
                 return;

@@ -1,9 +1,11 @@
 import { ReactNode } from 'react';
 import { Controller, FlightPlan, Pilot } from '../Network/VATSIM';
-import { Stack } from '@mui/material';
+import { IconButton, Stack } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
-export function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
+export function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, onClose: () => void }) {
     const style = {
+        position: 'relative',
         border: `3px solid #2c2c2c`,
         borderRadius: '5px',
         background: '#2c2c2c',
@@ -15,9 +17,13 @@ export function InfoBox(props: { children?: ReactNode, width: number | string, h
         paddingLeft: '7px',
         paddingRight: '7px',
         paddingBottom: '7px',
+        zIndex: 5,
     };
     return (
         <Stack sx={style}>
+            <Stack position='absolute' right='5px' direction='row-reverse'>
+                <IconButton onClick={props.onClose}><CloseIcon /></IconButton>
+            </Stack>
             {props.children}
         </Stack>
     );
@@ -26,17 +32,15 @@ export function InfoBox(props: { children?: ReactNode, width: number | string, h
 export function getPilotRating(pilot: Pilot) {
     if (pilot.military_rating > 0) {
         const ratings = vatsim.getMilitaryRatings();
-        const candidates = ratings.filter((value) => (value.id === pilot.military_rating));
-        if (candidates.length > 0) {
-            const value = candidates[0];
+        const value = ratings.find((value) => (value.id === pilot.military_rating));
+        if (value) {
             return `${value.short_name} ${value.long_name}`;
         }
     }
 
     const ratings = vatsim.getPilotRatings();
-    const candidates = ratings.filter((value) => (value.id === pilot.pilot_rating));
-    if (candidates.length > 0) {
-        const value = candidates[0];
+    const value = ratings.find((value) => (value.id === pilot.pilot_rating));
+    if (value) {
         return `${value.short_name} ${value.long_name}`;
     }
 
@@ -45,9 +49,8 @@ export function getPilotRating(pilot: Pilot) {
 
 export function getControllerRating(controller: Controller) {
     const ratings = vatsim.getControllerRatings();
-    const candidates = ratings.filter((value) => (value.id === controller.rating));
-    if (candidates.length > 0) {
-        const value = candidates[0];
+    const value = ratings.find((value) => (value.id === controller.rating));
+    if (value) {
         return `${value.short} ${value.long}`;
     }
 
@@ -56,9 +59,8 @@ export function getControllerRating(controller: Controller) {
 
 export function getStation(controller: Controller) {
     const facilities = vatsim.getFacilities();
-    const candidates = facilities.filter((value) => (value.id === controller.facility));
-    if (candidates.length > 0) {
-        const value = candidates[0];
+    const value = facilities.find((value) => (value.id === controller.facility));
+    if (value) {
         return `${value.long} ${controller.frequency}`;
     }
 

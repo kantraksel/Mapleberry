@@ -1,5 +1,5 @@
 import { Stack, TextField, Typography } from '@mui/material';
-import { Controller } from '../Network/VATSIM';
+import { Controller, LiveNetworkData } from '../Network/VATSIM';
 import { getControllerRating, getStation, getTimeOnline, InfoBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
@@ -14,6 +14,29 @@ function ControllerCard() {
         };
     }, []);
 
+    useEffect(() => {
+        const handler = (networkData?: LiveNetworkData) => {
+            if (!data) {
+                return;
+            }
+
+            if (!networkData) {
+                setData(undefined);
+                return;
+            }
+
+            const value = networkData.controllers.find((value) => (value.cid === data.cid));
+            if (value) {
+                setData(value);
+            }
+        };
+        vatsim.Update.add(handler);
+
+        return () => {
+            vatsim.Update.delete(handler);
+        };
+    }, [data]);
+
     if (!data) {
         return <></>;
     }
@@ -23,8 +46,12 @@ function ControllerCard() {
     const station = getStation(data);
     const info = data.text_atis?.join('\n') ?? 'N/A';
 
+    const onClose = () => {
+        setData(undefined);
+    };
+
     return (
-        <InfoBox width={500} height={'auto'}>
+        <InfoBox width={500} height={'auto'} onClose={onClose}>
             <Typography variant='h4'>{data.callsign}</Typography>
             <Stack direction='row' spacing={3} sx={{ mt: '5px', ml: '7px', mr: '7px' }}>
                 <Stack direction='row' spacing={1}>

@@ -1,23 +1,23 @@
 import { Box, IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
-import { TableComponents, TableVirtuoso } from 'react-virtuoso';
-import { Dispatch, forwardRef, Fragment, ReactNode, SetStateAction, SyntheticEvent, useEffect, useState } from 'react';
+import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
+import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Controller, LiveNetworkData, Pilot, Prefile } from '../Network/VATSIM';
 import NotesIcon from '@mui/icons-material/Notes';
 
-function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
-    const style = {
-        border: `3px solid #2c2c2c`,
-        borderRadius: '5px',
-        background: '#2c2c2c',
-        width: props.width,
-        height: props.height,
-        margin: '15px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-    };
+function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
     return (
-        <Box sx={style}>
+        <Box sx={{
+            border: `3px solid #2c2c2c`,
+            borderRadius: '5px',
+            background: '#2c2c2c',
+            width: props.width,
+            height: props.height,
+            margin: '15px',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            visibility: props.visible ? 'visible' : 'hidden',
+        }}>
             {props.children}
         </Box>
     );
@@ -263,7 +263,7 @@ function createTableHeader<Value>(sortBy: string, setSortBy: Dispatch<SetStateAc
 }
 
 function createTableCell<Value>(columns: Column<Value>[]) {
-    return function tableCell(_index: number, values: Value) {
+    function tableCell({ values }: { values: Value }) {
         const items = columns.map((column) => {
             let value;
             const type = typeof column.data;
@@ -287,6 +287,11 @@ function createTableCell<Value>(columns: Column<Value>[]) {
             </Fragment>
         );
     }
+
+    const Cell = memo(tableCell);
+    return (_index: number, values: Value) => {
+        return <Cell values={values} />;
+    };
 }
 
 interface Sorter<Value> {
@@ -309,16 +314,27 @@ function sortData<Value>(values: Value[] | undefined, sorter: Sorter<Value>) {
     });
 }
 
-function DynamicList<Value>(props: { selected: boolean, columns: Column<Value>[], values: Value[] | undefined }) {
+function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[], values: Value[] | undefined }) {
     const [sortBy, setSortBy] = useState('');
     const [sorter, setSorter] = useState<Sorter<Value>>({ dir: 'asc', compare: () => 0 });
+    const table = useRef<TableVirtuosoHandle>(null);
+    const tableState = useRef<StateSnapshot>(undefined);
 
-    if (!props.selected) {
+    if (!props.enabled) {
         return <></>;
     }
 
     const columns = props.columns;
     const data = sortData(props.values, sorter);
+
+    const isScrolling = (scrolling: boolean) => {
+        if (scrolling) {
+            return;
+        }
+        table.current?.getState((state) => {
+            tableState.current = state;
+        });
+    };
      
     return (
         <TableVirtuoso
@@ -326,20 +342,23 @@ function DynamicList<Value>(props: { selected: boolean, columns: Column<Value>[]
             components={VirtuosoTableComponents as TableComponents<Value>}
             fixedHeaderContent={createTableHeader(sortBy, setSortBy, sorter, setSorter, columns)}
             itemContent={createTableCell(columns)}
+            isScrolling={isScrolling}
+            ref={table}
+            restoreStateFrom={tableState.current}
         />
     );
 }
 
-function PilotList(props: { selected: boolean, netData?: LiveNetworkData }) {
-    return <DynamicList selected={props.selected} columns={pilotColumns} values={props.netData?.pilots} />;
+function PilotList(props: { enabled: boolean, netData?: LiveNetworkData }) {
+    return <DynamicList enabled={props.enabled} columns={pilotColumns} values={props.netData?.pilots} />;
 }
 
-function ControllerList(props: { selected: boolean, netData?: LiveNetworkData }) {
-    return <DynamicList selected={props.selected} columns={controllerColumns} values={props.netData?.controllers} />;
+function ControllerList(props: { enabled: boolean, netData?: LiveNetworkData }) {
+    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={props.netData?.controllers} />;
 }
 
-function PrefileList(props: { selected: boolean, netData?: LiveNetworkData }) {
-    return <DynamicList selected={props.selected} columns={prefileColumns} values={props.netData?.prefiles} />;
+function PrefileList(props: { enabled: boolean, netData?: LiveNetworkData }) {
+    return <DynamicList enabled={props.enabled} columns={prefileColumns} values={props.netData?.prefiles} />;
 }
 
 function Scoreboard(props: { open: boolean }) {
@@ -356,25 +375,23 @@ function Scoreboard(props: { open: boolean }) {
         };
     }, []);
 
-    if (!props.open) {
-        return <></>;
-    }
+    const tabIdx = props.open ? tab : -1;
 
     const onClickTab = (_e: SyntheticEvent, newValue: number) => {
         setTab(newValue);
     };
 
     return (
-        <InfoBox width={530} height='100%'>
+        <InfoBox width={530} height='100%' visible={props.open}>
             <Tabs value={tab} onChange={onClickTab} centered>
                 <Tab label='Pilots' />
                 <Tab label='Controllers' />
                 <Tab label='Prefiles' />
             </Tabs>
             <Paper style={{ height: '100%', width: '100%' }}>
-                <PilotList selected={tab == 0} netData={netData} />
-                <ControllerList selected={tab == 1} netData={netData} />
-                <PrefileList selected={tab == 2} netData={netData} />
+                <PilotList enabled={tabIdx == 0} netData={netData} />
+                <ControllerList enabled={tabIdx == 1} netData={netData} />
+                <PrefileList enabled={tabIdx == 2} netData={netData} />
             </Paper>
         </InfoBox>
     );

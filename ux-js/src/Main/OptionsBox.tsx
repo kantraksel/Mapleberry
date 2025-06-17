@@ -295,7 +295,7 @@ function DevToolsView() {
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
     return (
-        <Box sx={{ position: 'fixed', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        <Box sx={{ position: 'fixed', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 }}>
             <Box
                 position='relative'
                 border='3px solid #333333'
