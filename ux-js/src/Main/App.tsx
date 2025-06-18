@@ -4,6 +4,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import DesktopIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import FlightIcon from '@mui/icons-material/Flight';
 import SettingsIcon from '@mui/icons-material/Settings';
+import GroupsIcon from '@mui/icons-material/Groups';
 import 'ol/ol.css';
 import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
@@ -11,6 +12,7 @@ import OptionsBox from './OptionsBox';
 import Scoreboard from './Scoreboard';
 import ControllerCard from './ControllerCard';
 import PilotCard from './PilotCard';
+import SystemInfoBar from './SystemInfoBar';
 
 const MainDrawerContext = createContext(true);
 
@@ -120,9 +122,12 @@ function App() {
 		<>
 			<AppBar sx={{ zIndex: theme.zIndex.drawer + 1 }}>
 				<Toolbar>
-					<IconButton size='large' edge='start' onClick={switchDrawer}>
-						<MenuIcon />
-					</IconButton>
+					<Box sx={{ flexGrow: 1 }}>
+						<IconButton size='large' edge='start' onClick={switchDrawer}>
+							<MenuIcon />
+						</IconButton>
+					</Box>
+					<SystemInfoBar />
 				</Toolbar>
 			</AppBar>
 			<Box sx={theme.mixins.toolbar} />
@@ -144,7 +149,7 @@ function App() {
 						</ListItem>
 						<ListItem key='pilot_list' disablePadding>
 							<ListItemButton selected={scoreboardVisible} onClick={() => { setScoreboardVisible(!scoreboardVisible); }}>
-								<MainListIcon><FlightIcon /></MainListIcon>
+								<MainListIcon><GroupsIcon /></MainListIcon>
 								<MainListText primary='Station List' />
 							</ListItemButton>
 						</ListItem>
@@ -191,7 +196,22 @@ export default App;
 
 /*
 TODO:
-- details when airplane is selected
+- add local airplane button
+- /and/or/ add local planes in Stations Lists (as a tab)
+
+- implement OSM Vector Tiles
+- add airport stations on map
+- add ARTCCs on map
+- details when airplane/airport/ARTCC is selected
 
 - device control panel
+
+OSM Vector Tiles:
+https://americanamap.org/
+https://tile.ourmap.us/
+
+https://stats.vatsim.net/search_id.php?id={cid}
+vatsim.networkData = JSON.parse(localStorage.getItem('vatsim_list'));
+vatsim.propsCache = vatsim.networkData;
+vatsim.Update.invoke(vatsim.networkData);
 */

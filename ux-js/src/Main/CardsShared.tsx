@@ -18,6 +18,7 @@ export function InfoBox(props: { children?: ReactNode, width: number | string, h
         paddingRight: '7px',
         paddingBottom: '7px',
         zIndex: 5,
+        boxShadow: '0 26px 58px 0 rgba(0, 0, 0, .22), 0 5px 14px 0 rgba(0, 0, 0, .18)',
     };
     return (
         <Stack sx={style}>

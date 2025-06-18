@@ -308,6 +308,7 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
                 alignItems='stretch'
                 padding='5px'
                 sx={{pointerEvents: 'auto'}}
+                boxShadow='0 26px 58px 0 rgba(0, 0, 0, .22), 0 5px 14px 0 rgba(0, 0, 0, .18)'
                 >
                 {props.children}
             </Box>

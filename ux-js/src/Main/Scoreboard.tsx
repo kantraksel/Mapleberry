@@ -13,10 +13,10 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
             width: props.width,
             height: props.height,
             margin: '15px',
-            display: 'flex',
+            display: props.visible ? 'flex' : 'none',
             flexDirection: 'column',
             alignItems: 'center',
-            visibility: props.visible ? 'visible' : 'hidden',
+            boxShadow: '0 26px 58px 0 rgba(0, 0, 0, .22), 0 5px 14px 0 rgba(0, 0, 0, .18)',
         }}>
             {props.children}
         </Box>
@@ -361,6 +361,25 @@ function PrefileList(props: { enabled: boolean, netData?: LiveNetworkData }) {
     return <DynamicList enabled={props.enabled} columns={prefileColumns} values={props.netData?.prefiles} />;
 }
 
+function EmptyList({ enabled }: { enabled: boolean }) {
+    if (!enabled) {
+        return <></>;
+    }
+
+    return (
+        <Box sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            }}>
+            <Typography>Network is disabled</Typography>
+        </Box>
+    );
+}
+
 function Scoreboard(props: { open: boolean }) {
     const [tab, setTab] = useState(0);
     const [netData, setNetData] = useState(vatsim.getNetworkData());
@@ -375,7 +394,7 @@ function Scoreboard(props: { open: boolean }) {
         };
     }, []);
 
-    const tabIdx = props.open ? tab : -1;
+    const tabIdx = props.open && netData ? tab : -1;
 
     const onClickTab = (_e: SyntheticEvent, newValue: number) => {
         setTab(newValue);
@@ -389,6 +408,7 @@ function Scoreboard(props: { open: boolean }) {
                 <Tab label='Prefiles' />
             </Tabs>
             <Paper style={{ height: '100%', width: '100%' }}>
+                <EmptyList enabled={tabIdx == -1} />
                 <PilotList enabled={tabIdx == 0} netData={netData} />
                 <ControllerList enabled={tabIdx == 1} netData={netData} />
                 <PrefileList enabled={tabIdx == 2} netData={netData} />
