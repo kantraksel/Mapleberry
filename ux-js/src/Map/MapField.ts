@@ -1,0 +1,33 @@
+import { Feature } from 'ol';
+import { FeatureLike } from 'ol/Feature';
+import { Point } from 'ol/geom';
+import { fromLonLat } from 'ol/proj';
+import { Airport_ext } from '../Network/ControlStations';
+
+class MapField {
+    private pos: Point;
+    public readonly point: Feature;
+    public readonly label: Feature;
+
+    public constructor() {
+        this.pos = new Point([ 0, 0 ]);
+        this.point = new Feature(this.pos);
+        this.label = new Feature(this.pos);
+    }
+
+    public set params(params: Airport_ext) {
+        this.pos.setCoordinates(fromLonLat([ params.longitude, params.latitude ]));
+        this.point.set('params', params, true);
+        this.label.set('params', params);
+    }
+
+    public static getParams(feature: FeatureLike): Airport_ext | null {
+        const value = feature.get('params');
+        if (typeof value !== 'object') {
+            return null;
+        }
+        return value;
+    }
+}
+
+export default MapField;
