@@ -3,10 +3,13 @@ import VectorSource from 'ol/source/Vector';
 import { FeatureLike } from 'ol/Feature';
 import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Circle as OlCircle } from 'ol/style';
 import MapField from './MapField';
+import MapArea from './MapArea';
 
 class ControlLayer {
     private fieldLayer: VectorLayer;
     private fieldSource: VectorSource;
+    private areaLayer: VectorLayer;
+    private areaSource: VectorSource;
     private labelLayer: VectorLayer;
     private labelSource: VectorSource;
 
@@ -36,10 +39,22 @@ class ControlLayer {
         });
 
         this.fieldSource = new VectorSource();
+        this.areaSource = new VectorSource();
         this.labelSource = new VectorSource();
         this.fieldLayer = new VectorLayer({
             style: pointStyle,
             source: this.fieldSource,
+        });
+        this.areaLayer = new VectorLayer({
+            style: new OlStyle({
+                fill: new OlFill({
+                    color: [0, 255, 0, 0.2],
+                }),
+                stroke: new OlStroke({
+                    color: '#FF0000',
+                }),
+            }),
+            source: this.areaSource,
         });
         this.labelLayer = new VectorLayer({
             style: this.createLabelLayerStyle(labelStyle),
@@ -47,6 +62,7 @@ class ControlLayer {
         });
 
         map.map.addLayer(this.fieldLayer);
+        map.map.addLayer(this.areaLayer);
         map.map.addLayer(this.labelLayer);
     }
 
@@ -69,6 +85,16 @@ class ControlLayer {
     public removeField(field: MapField) {
         this.fieldSource.removeFeature(field.point);
         this.labelSource.removeFeature(field.label);
+    }
+
+    public addArea(area: MapArea) {
+        this.areaSource.addFeature(area.area);
+        this.labelSource.addFeature(area.label);
+    }
+
+    public removeArea(area: MapArea) {
+        this.areaSource.removeFeature(area.area);
+        this.labelSource.removeFeature(area.label);
     }
 }
 

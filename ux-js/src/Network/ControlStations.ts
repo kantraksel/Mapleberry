@@ -216,7 +216,7 @@ function validateBoundaries(data: Partial<Boundaries>) {
     });
 }
 
-interface FIR_ext {
+export interface FIR_ext {
     icao: string,
     name: string,
     region: string,
@@ -228,7 +228,7 @@ interface FIR_ext {
     geometry: number[][][][],
 }
 
-interface UIR_ext {
+export interface UIR_ext {
     icao: string,
     name: string,
     firs: FIR_ext[],
@@ -246,12 +246,14 @@ class ControlStations {
     readonly airports: Map<string, Airport_ext>;
     readonly airports_iata: Map<string, Airport_ext>;
     readonly firs: Map<string, FIR_ext>;
+    readonly firs_prefix: Map<string, FIR_ext>;
     readonly uirs: Map<string, UIR_ext>;
 
     constructor() {
         this.airports = new Map();
         this.airports_iata = new Map();
         this.firs = new Map();
+        this.firs_prefix = new Map();
         this.uirs = new Map();
 
         this.loadDefs();
@@ -282,6 +284,7 @@ class ControlStations {
         const countries = list.countries;
 
         const firs = this.firs;
+        const firs_prefix = this.firs_prefix;
         list.firs.forEach(value => {
             const boundary = boundary_map.get(value.fir_boundary);
             if (!boundary) {
@@ -296,7 +299,7 @@ class ControlStations {
             }
 
             const props = boundary.properties;
-            firs.set(value.icao, {
+            const fir = {
                 icao: value.icao,
                 name,
                 region: props.region ?? '',
@@ -306,7 +309,10 @@ class ControlStations {
                 label_lon: typeof props.label_lon === 'number' ? props.label_lon : parseFloat(props.label_lon),
                 label_lat: typeof props.label_lat === 'number' ? props.label_lat : parseFloat(props.label_lat),
                 geometry: boundary.geometry.coordinates,
-            });
+            };
+
+            firs.set(value.icao, fir);
+            firs_prefix.set(value.callsign_prefix, fir);
         });
 
         const uirs = this.uirs;
