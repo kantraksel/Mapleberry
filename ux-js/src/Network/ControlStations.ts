@@ -105,7 +105,7 @@ function controlListToJson(data: string): StationList {
                 }
                 break;
             default:
-                parser(value.split('|'));
+                parser(value.split('|').map(value => value.trim()));
         }
     });
 
@@ -222,10 +222,15 @@ export interface FIR_ext {
     region: string,
     division: string,
 
-    callsign_prefix: string,
+    stations: FIRStation_ext[],
     label_lon: number,
     label_lat: number,
     geometry: number[][][][],
+}
+
+export interface FIRStation_ext {
+    prefix: string,
+    name: string,
 }
 
 export interface UIR_ext {
@@ -239,14 +244,20 @@ export interface Airport_ext {
     name: string,
     longitude: number,
     latitude: number,
-    fir: FIR_ext,
+    fir: FIR_ext | undefined,
+    stations: AirportStation_ext[];
+}
+
+export interface AirportStation_ext {
+    iata_lid: string,
+    name: string,
 }
 
 class ControlStations {
     readonly airports: Map<string, Airport_ext>;
     readonly airports_iata: Map<string, Airport_ext>;
     readonly firs: Map<string, FIR_ext>;
-    readonly firs_prefix: Map<string, FIR_ext>;
+    readonly firs_prefix: Map<string, Map<string, FIR_ext>>;
     readonly uirs: Map<string, UIR_ext>;
 
     constructor() {
@@ -282,37 +293,64 @@ class ControlStations {
         });
 
         const countries = list.countries;
+        const country_map = new Map<string, Country>();
+        countries.forEach(country => {
+            country_map.set(country.icao, country);
+        });
 
         const firs = this.firs;
-        const firs_prefix = this.firs_prefix;
         list.firs.forEach(value => {
-            const boundary = boundary_map.get(value.fir_boundary);
-            if (!boundary) {
-                console.error(`Cannot find boundary for FIR ${value.icao}`);
-                return;
+            let callsign_prefix = value.callsign_prefix;
+            if (callsign_prefix.length == 0) {
+                callsign_prefix = value.icao;
             }
 
-            const country = countries.find(country => (value.icao.startsWith(country.icao)));
+            const country = country_map.get(value.icao.slice(0, 2));
             let name = value.name;
-            if (country) {
+            if (country && country.fir_suffix.length > 0) {
                 name = `${name} ${country.fir_suffix}`;
             }
 
-            const props = boundary.properties;
-            const fir = {
-                icao: value.icao,
+            let fir = firs.get(value.icao);
+            if (!fir) {
+                const boundary = boundary_map.get(value.fir_boundary);
+                if (!boundary) {
+                    console.error(`Cannot find boundary for FIR ${value.icao}`);
+                    return;
+                }
+
+                const props = boundary.properties;
+                fir = {
+                    icao: value.icao,
+                    name,
+                    region: props.region ?? '',
+                    division: props.division ?? '',
+
+                    stations: [],
+                    label_lon: typeof props.label_lon === 'number' ? props.label_lon : parseFloat(props.label_lon),
+                    label_lat: typeof props.label_lat === 'number' ? props.label_lat : parseFloat(props.label_lat),
+                    geometry: boundary.geometry.coordinates,
+                };
+                firs.set(value.icao, fir);
+            }
+
+            fir.stations.push({
+                prefix: callsign_prefix,
                 name,
-                region: props.region ?? '',
-                division: props.division ?? '',
+            });
 
-                callsign_prefix: value.callsign_prefix,
-                label_lon: typeof props.label_lon === 'number' ? props.label_lon : parseFloat(props.label_lon),
-                label_lat: typeof props.label_lat === 'number' ? props.label_lat : parseFloat(props.label_lat),
-                geometry: boundary.geometry.coordinates,
-            };
+            const firs_prefix = this.firs_prefix;
 
-            firs.set(value.icao, fir);
-            firs_prefix.set(value.callsign_prefix, fir);
+            const parts = callsign_prefix.split('_');
+            const id = parts[0];
+            const suffix = parts.slice(1).join('_');
+
+            let first = firs_prefix.get(id);
+            if (!first) {
+                first = new Map();
+                firs_prefix.set(id, first);
+            }
+            first.set(suffix, fir);
         });
 
         const uirs = this.uirs;
@@ -336,27 +374,74 @@ class ControlStations {
         });
 
         const airports = this.airports;
-        const airports_iata = this.airports_iata;
         list.airports.forEach(value => {
             const fir = firs.get(value.fir);
             if (!fir) {
-                console.error(`Cannot find FIR ${value.fir} for ${value.icao}`);
-                return;
+                console.warn(`Cannot find FIR ${value.fir} for airport ${value.icao}`);
             }
 
-            const airport = {
-                icao: value.icao,
-                name: value.name,
-                longitude: value.longitude,
-                latitude: value.latitude,
-                fir,
-            };
-            airports.set(value.icao, airport);
+            let airport = airports.get(value.icao);
+            if (!airport) {
+                airport = {
+                    icao: value.icao,
+                    name: value.name,
+                    longitude: value.longitude,
+                    latitude: value.latitude,
+                    fir,
+                    stations: [],
+                };
+                airports.set(value.icao, airport);
+            }
 
             if (value.iata_lid.length > 0) {
-                airports_iata.set(value.iata_lid, airport);
+                airport.stations.push({
+                    iata_lid: value.iata_lid,
+                    name: value.name,
+                });
             }
         });
+
+        const airports_iata = this.airports_iata;
+        const stations_iata = Array.from(airports.values()).filter(value => value.stations.length > 0);
+        stations_iata.sort((a, b) => {
+            return a.stations.length - b.stations.length;
+        });
+        stations_iata.forEach(airport => {
+            airport.stations.forEach(station => {
+                airports_iata.set(station.iata_lid, airport);
+            });
+        });
+    }
+
+    public getFIR(callsign: string): FIR_ext | undefined {
+        const id_parts = callsign.split('_');
+        const id = id_parts[0];
+
+        const stage = this.firs_prefix.get(id);
+        if (!stage) {
+            return this.firs.get(id);
+        }
+        const fir = stage.get(id_parts[1] ?? '');
+        if (!fir) {
+            const fir = stage.get('');
+            if (!fir) {
+                // fixes invalid callsign prefixes
+                // detected in Minsk Control: main is UMMM, but parts start with UMMV
+                return this.firs.get(id);
+            }
+            return fir;
+        }
+        return fir;
+    }
+
+    public getAirport(callsign: string): Airport_ext | undefined {
+        const id = callsign.split('_')[0];
+
+        const airport = this.airports.get(id);
+        if (!airport) {
+            return this.airports_iata.get(id);
+        }
+        return airport;
     }
 }
 

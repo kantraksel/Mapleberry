@@ -18,6 +18,10 @@ class ControlRadar {
             controlLayers.removeField(field);
         });
         this.fields.clear();
+        this.areas.forEach(area => {
+            controlLayers.removeArea(area);
+        });
+        this.areas.clear();
     }
 
     private onRefresh(networkData?: LiveNetworkData) {
@@ -58,42 +62,26 @@ class ControlRadar {
     }
 
     private updateFields(controllers: Controller[]) {
-        const airports = controlStations.airports;
-        const airports_iata = controlStations.airports_iata;
         const fields = this.fields;
 
         const old_fields = new Map(fields);
         controllers.forEach(controller => {
             const callsign = controller.callsign;
-            let id;
 
-            const chIdx = callsign.search(/[_]/);
-            if (chIdx < 0) {
-                id = callsign;
-            } else {
-                id = callsign.substring(0, chIdx);
-            }
-
-            let airport = airports.get(id);
+            const airport = controlStations.getAirport(callsign);
             if (!airport) {
-                airport = airports_iata.get(id);
-                if (!airport) {
-                    console.warn(`Cannot find airport for ${callsign}`);
-                    return;
-                }
-
-                id = airport.icao;
+                console.warn(`Cannot find airport for ${callsign}`);
+                return;
             }
+            const id = airport.icao;
 
             if (fields.has(id)) {
                 old_fields.delete(id);
                 return;
             }
 
-            const field = new MapField();
+            const field = new MapField(airport);
             fields.set(id, field);
-
-            field.params = airport;
             controlLayers.addField(field);
         });
 
@@ -104,38 +92,18 @@ class ControlRadar {
     }
 
     private updateAreas(controllers: Controller[]) {
-        const fir_stations = controlStations.firs;
-        const fir_stations_prefix = controlStations.firs_prefix;
         const areas = this.areas;
 
         const old_areas = new Map(areas);
         controllers.forEach(controller => {
             const callsign = controller.callsign;
 
-            const id_parts = callsign.split('_');
-            let id = id_parts[0];
-
-            let fir = fir_stations.get(id);
+            const fir = controlStations.getFIR(callsign);
             if (!fir) {
-                fir = fir_stations_prefix.get(id);
-                if (!fir) {
-                    for (let i = 1; i < id_parts.length; ++i) {
-                        id = id_parts.slice(0, i).join('_');
-
-                        fir = fir_stations_prefix.get(id);
-                        if (fir) {
-                            break;
-                        }
-                    }
-
-                    if (!fir) {
-                        console.warn(`Cannot find FIR/UIR for ${callsign}`);
-                        return;
-                    }
-                }
-
-                id = fir.icao;
+                console.warn(`Cannot find FIR/UIR for ${callsign}`);
+                return;
             }
+            const id = fir.icao;
 
             if (areas.has(id)) {
                 old_areas.delete(id);

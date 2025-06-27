@@ -9,10 +9,13 @@ class MapField {
     public readonly point: Feature;
     public readonly label: Feature;
 
-    public constructor() {
-        this.pos = new Point([ 0, 0 ]);
+    public constructor(params: Airport_ext) {
+        this.pos = new Point(fromLonLat([ params.longitude, params.latitude ]));
         this.point = new Feature(this.pos);
         this.label = new Feature(this.pos);
+
+        this.point.set('params', params, true);
+        this.label.set('params', params, true);
     }
 
     public set params(params: Airport_ext) {
