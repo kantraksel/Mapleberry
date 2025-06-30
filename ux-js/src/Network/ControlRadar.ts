@@ -5,12 +5,31 @@ import { Controller, LiveNetworkData } from './VATSIM';
 class ControlRadar {
     private fields: Map<string, MapField>;
     private areas: Map<string, MapArea>;
+    private waitTimer: number;
 
     constructor() {
         this.fields = new Map();
         this.areas = new Map();
+        this.waitTimer = 0;
 
-        vatsim.Update.add(networkData => { this.onRefresh(networkData); });
+        vatsim.Update.add(networkData => {
+            if (controlStations.isReady()) {
+                this.onRefresh(networkData);
+                return;
+            }
+            if (this.waitTimer > 0) {
+                return;
+            }
+
+            this.waitTimer = setInterval(() => {
+                if (controlStations.isReady()) {
+                    clearInterval(this.waitTimer);
+                    this.waitTimer = 0;
+
+                    this.onRefresh(vatsim.getNetworkData());
+                }
+            }, 1000);
+        });
     }
 
     private clear() {

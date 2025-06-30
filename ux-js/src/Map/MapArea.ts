@@ -11,9 +11,7 @@ class MapArea {
     public readonly label: Feature;
 
     public constructor(params: FIR_ext) {
-        const geometry = params.geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));;
-
-        this.shape = new MultiPolygon(geometry);
+        this.shape = new MultiPolygon(params.geometry);
         this.pos = new Point(fromLonLat([ params.label_lon, params.label_lat ]));
         this.area = new Feature(this.shape);
         this.label = new Feature(this.pos);

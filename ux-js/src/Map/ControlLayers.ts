@@ -61,8 +61,8 @@ class ControlLayer {
             source: this.labelSource,
         });
 
-        map.map.addLayer(this.fieldLayer);
         map.map.addLayer(this.areaLayer);
+        map.map.addLayer(this.fieldLayer);
         map.map.addLayer(this.labelLayer);
     }
 

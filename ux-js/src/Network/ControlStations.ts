@@ -1,3 +1,6 @@
+import { fromLonLat } from 'ol/proj';
+import polygonClipping from 'polygon-clipping';
+
 interface Country {
     name: string,
     icao: string,
@@ -237,6 +240,7 @@ export interface UIR_ext {
     icao: string,
     name: string,
     firs: FIR_ext[],
+    geometry: number[][][][],
 }
 
 export interface Airport_ext {
@@ -253,12 +257,76 @@ export interface AirportStation_ext {
     name: string,
 }
 
+function checkCountryCode(code: string) {
+    if (code.length > 2) {
+        console.warn(`Country code ${code} is too long. Immediate fix needed`);
+    }
+}
+
+function checkFIR_Prefix(name: string) {
+    const parts = name.split('_');
+    if (parts.length > 2) {
+        console.warn(`FIR callsign prefix ${name} is non-standard. Immediate fix needed`);
+    }
+}
+
+function checkFIR_ICAO(name: string) {
+    const parts = name.split('_');
+    if (parts.length > 1) {
+        console.warn(`FIR ICAO ${name} is non-standard. Immediate fix needed`);
+    }
+}
+
+function checkUIR_ICAO(name: string) {
+    const parts = name.split('_');
+    if (parts.length > 2) {
+        console.warn(`UIR ICAO ${name} is non-standard. Immediate fix needed`);
+    }
+}
+
+function checkAirportICAO(icao: string) {
+    const parts = icao.split('_');
+    if (parts.length > 1 || icao.length > 4) {
+        console.warn(`Airport ICAO ${icao} is non-standard. Immediate fix needed`);
+    }
+}
+
+function checkAirportIATA_LID(iata_lid: string) {
+    const parts = iata_lid.split('_');
+    if (parts.length > 2) {
+        console.warn(`Airport IATA/LID ${iata_lid} is non-standard. Immediate fix needed`);
+    }
+}
+
+function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map<string, Obj>>) {
+    const parts = id.split('_');
+    let map = objMap.get(parts[0]);
+    if (parts.length > 1) {
+        if (!map) {
+            map = new Map<string, Obj>();
+            objMap.set(parts[0], map);
+        } else if (!(map instanceof Map)) {
+            const rootObj = map;
+            map = new Map<string, Obj>();
+            objMap.set(parts[0], map);
+            map.set('', rootObj);
+        }
+        const suffix = parts.slice(1).join('_');
+        map.set(suffix, obj);
+    } else if (map instanceof Map) {
+        map.set('', obj);
+    } else {
+        objMap.set(parts[0], obj);
+    }
+}
+
 class ControlStations {
     readonly airports: Map<string, Airport_ext>;
-    readonly airports_iata: Map<string, Airport_ext>;
+    readonly airports_iata: Map<string, Airport_ext | Map<string, Airport_ext>>;
     readonly firs: Map<string, FIR_ext>;
-    readonly firs_prefix: Map<string, Map<string, FIR_ext>>;
-    readonly uirs: Map<string, UIR_ext>;
+    readonly firs_prefix: Map<string, FIR_ext | Map<string, FIR_ext>>;
+    readonly uirs: Map<string, UIR_ext | Map<string, UIR_ext>>;
+    private ready: boolean;
 
     constructor() {
         this.airports = new Map();
@@ -266,6 +334,7 @@ class ControlStations {
         this.firs = new Map();
         this.firs_prefix = new Map();
         this.uirs = new Map();
+        this.ready = false;
 
         this.loadDefs();
     }
@@ -284,6 +353,7 @@ class ControlStations {
     }
 
     private async loadDefs() {
+        this.ready = false;
         const list = await this.getList();
         const boundaries = await this.getBoundaries();
 
@@ -295,11 +365,16 @@ class ControlStations {
         const countries = list.countries;
         const country_map = new Map<string, Country>();
         countries.forEach(country => {
+            checkCountryCode(country.icao);
             country_map.set(country.icao, country);
         });
 
         const firs = this.firs;
+        const firs_prefix = this.firs_prefix;
         list.firs.forEach(value => {
+            checkFIR_ICAO(value.icao);
+            checkFIR_Prefix(value.callsign_prefix);
+
             let callsign_prefix = value.callsign_prefix;
             if (callsign_prefix.length == 0) {
                 callsign_prefix = value.icao;
@@ -313,10 +388,14 @@ class ControlStations {
 
             let fir = firs.get(value.icao);
             if (!fir) {
-                const boundary = boundary_map.get(value.fir_boundary);
+                let boundary = boundary_map.get(value.fir_boundary);
                 if (!boundary) {
-                    console.error(`Cannot find boundary for FIR ${value.icao}`);
-                    return;
+                    // fixes invalid fir_boundary entries
+                    boundary = boundary_map.get(value.icao);
+                    if (!boundary) {
+                        console.error(`Cannot find boundary for FIR ${value.icao}`);
+                        return;
+                    }
                 }
 
                 const props = boundary.properties;
@@ -338,24 +417,16 @@ class ControlStations {
                 prefix: callsign_prefix,
                 name,
             });
-
-            const firs_prefix = this.firs_prefix;
-
-            const parts = callsign_prefix.split('_');
-            const id = parts[0];
-            const suffix = parts.slice(1).join('_');
-
-            let first = firs_prefix.get(id);
-            if (!first) {
-                first = new Map();
-                firs_prefix.set(id, first);
-            }
-            first.set(suffix, fir);
+            addToObjectMap(callsign_prefix, fir, firs_prefix);
         });
 
+        const polyUnion = polygonClipping.union as (...geoms: polygonClipping.Geom[]) => polygonClipping.MultiPolygon
         const uirs = this.uirs;
         list.uirs.forEach(value => {
+            checkUIR_ICAO(value.icao);
+
             const fir_list: FIR_ext[] = [];
+            const fir_geometries: number[][][][][] = [];
             value.firs.forEach(name => {
                 const fir = firs.get(name);
                 if (!fir) {
@@ -364,17 +435,32 @@ class ControlStations {
                 }
 
                 fir_list.push(fir);
+                fir_geometries.push(fir.geometry);
             });
 
-            uirs.set(value.icao, {
+            let geometry = polyUnion(...fir_geometries as polygonClipping.Geom[]) as number[][][][];
+            // prebake geometry
+            geometry = geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
+
+            const uir = {
                 icao: value.icao,
                 name: value.name,
                 firs: fir_list,
-            });
+                geometry,
+            };
+            addToObjectMap(uir.icao, uir, uirs);
+        });
+
+        // prebake geometry
+        this.firs.forEach(fir => {
+            fir.geometry = fir.geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
         });
 
         const airports = this.airports;
         list.airports.forEach(value => {
+            checkAirportICAO(value.icao);
+            checkAirportIATA_LID(value.iata_lid);
+
             const fir = firs.get(value.fir);
             if (!fir) {
                 console.warn(`Cannot find FIR ${value.fir} for airport ${value.icao}`);
@@ -408,40 +494,70 @@ class ControlStations {
         });
         stations_iata.forEach(airport => {
             airport.stations.forEach(station => {
-                airports_iata.set(station.iata_lid, airport);
+                addToObjectMap(station.iata_lid, airport, airports_iata);
             });
         });
+        this.ready = true;
     }
 
     public getFIR(callsign: string): FIR_ext | undefined {
         const id_parts = callsign.split('_');
         const id = id_parts[0];
 
-        const stage = this.firs_prefix.get(id);
-        if (!stage) {
+        const obj = this.firs_prefix.get(id);
+        if (!obj) {
+            return this.firs.get(id);
+        } else if (obj instanceof Map) {
+            let fir = obj.get(id_parts[1] ?? '');
+            if (fir) {
+                return fir;
+            }
+            fir = obj.get('');
+            if (fir) {
+                return fir;
+            }
+            // fixes invalid callsign prefixes
+            // detected in Minsk Control: main is UMMM, but partials start with UMMV
             return this.firs.get(id);
         }
-        const fir = stage.get(id_parts[1] ?? '');
-        if (!fir) {
-            const fir = stage.get('');
-            if (!fir) {
-                // fixes invalid callsign prefixes
-                // detected in Minsk Control: main is UMMM, but parts start with UMMV
-                return this.firs.get(id);
+        return obj;
+    }
+
+    public getUIR(callsign: string): UIR_ext | undefined {
+        const id_parts = callsign.split('_');
+
+        const obj = this.uirs.get(id_parts[0]);
+        if (obj instanceof Map) {
+            const uir = obj.get(id_parts[1] ?? '');
+            if (uir) {
+                return uir;
             }
-            return fir;
+            return obj.get('');
         }
-        return fir;
+        return obj;
     }
 
     public getAirport(callsign: string): Airport_ext | undefined {
-        const id = callsign.split('_')[0];
+        const id_parts = callsign.split('_');
+        const id = id_parts[0];
 
         const airport = this.airports.get(id);
-        if (!airport) {
-            return this.airports_iata.get(id);
+        if (airport) {
+            return airport;
         }
-        return airport;
+        const obj = this.airports_iata.get(id);
+        if (obj instanceof Map) {
+            const airport = obj.get(id_parts[1] ?? '');
+            if (airport) {
+                return airport;
+            }
+            return obj.get('');
+        }
+        return obj;
+    }
+
+    public isReady() {
+        return this.ready;
     }
 }
 
