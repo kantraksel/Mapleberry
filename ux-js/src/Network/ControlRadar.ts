@@ -117,19 +117,27 @@ class ControlRadar {
         controllers.forEach(controller => {
             const callsign = controller.callsign;
 
-            const fir = controlStations.getFIR(callsign);
-            if (!fir) {
-                console.warn(`Cannot find FIR/UIR for ${callsign}`);
-                return;
+            let area_desc;
+            const uir = controlStations.getUIR(callsign);
+            if (!uir) {
+                const fir = controlStations.getFIR(callsign);
+                if (!fir) {
+                    console.warn(`Cannot find FIR/UIR for ${callsign}`);
+                    return;
+                }
+
+                area_desc = fir;
+            } else {
+                area_desc = uir;
             }
-            const id = fir.icao;
+            const id = area_desc.icao;
 
             if (areas.has(id)) {
                 old_areas.delete(id);
                 return;
             }
 
-            const area = new MapArea(fir);
+            const area = new MapArea(area_desc);
             areas.set(id, area);
             controlLayers.addArea(area);
         });

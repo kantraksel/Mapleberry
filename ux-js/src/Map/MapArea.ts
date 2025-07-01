@@ -1,31 +1,33 @@
 import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point } from 'ol/geom';
-import { fromLonLat } from 'ol/proj';
-import { FIR_ext } from '../Network/ControlStations';
+
+interface AreaDesc {
+    icao: string,
+    name: string,
+    label_pos: number[];
+    geometry: number[][][][],
+}
 
 class MapArea {
-    private shape: MultiPolygon;
-    private pos: Point;
     public readonly area: Feature;
     public readonly label: Feature;
 
-    public constructor(params: FIR_ext) {
-        this.shape = new MultiPolygon(params.geometry);
-        this.pos = new Point(fromLonLat([ params.label_lon, params.label_lat ]));
-        this.area = new Feature(this.shape);
-        this.label = new Feature(this.pos);
+    public constructor(params: AreaDesc) {
+        const shape = new MultiPolygon(params.geometry);
+        const pos = new Point(params.label_pos);
+        this.area = new Feature(shape);
+        this.label = new Feature(pos);
 
-        this.area.set('params', params, true);
         this.label.set('params', params, true);
     }
 
-    public static getParams(feature: FeatureLike): FIR_ext | null {
-        const value = feature.get('params');
+    public static getParams(feature: FeatureLike): AreaDesc | null {
+        const value = feature.get('params') as unknown;
         if (typeof value !== 'object') {
             return null;
         }
-        return value;
+        return value as AreaDesc;
     }
 }
 

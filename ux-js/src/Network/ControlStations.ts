@@ -226,8 +226,7 @@ export interface FIR_ext {
     division: string,
 
     stations: FIRStation_ext[],
-    label_lon: number,
-    label_lat: number,
+    label_pos: number[],
     geometry: number[][][][],
 }
 
@@ -240,6 +239,7 @@ export interface UIR_ext {
     icao: string,
     name: string,
     firs: FIR_ext[],
+    label_pos: number[],
     geometry: number[][][][],
 }
 
@@ -318,6 +318,63 @@ function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map
     } else {
         objMap.set(parts[0], obj);
     }
+}
+
+function createPointFromSegments(points: number[][]) {
+    const first = points[0];
+    const second = points[1];
+    const third = points[2];
+    const fourth = points[3];
+
+    const length_first = second[0] - first[0];
+    const length_second = second[1] - first[1];
+    const length_third = fourth[0] - third[0];
+    const lenght_fourth = fourth[1] - third[1];
+    const length_fith = first[1] - third[1];
+    const length_sixth = third[0] - first[0];
+
+    // Solution of F and G factors:
+    // x1 + F(x2 - x1) = x3 + G(x4 - x3)
+    // y1 + F(y2 - y1) = y3 + G(y4 - y3)
+    const factor = (length_sixth * lenght_fourth + length_fith * length_third) / (length_first * lenght_fourth - length_second * length_third);
+    const control_factor = (factor * length_second + length_fith) / lenght_fourth;
+
+    if (factor > 1 || factor < 0 || control_factor > 1 || control_factor < 0) {
+        return null;
+    }
+
+    const x = first[0] + factor * length_first;
+    const y = first[1] + factor * length_second;
+    return [ x, y ];
+}
+
+function findBoundingPoints(geometry: number[][][][]) {
+    let north: number[];
+    let east: number[];
+    let south: number[];
+    let west: number[];
+    north = east = south = west = geometry[0][0][0];
+
+    geometry.forEach(polygon => {
+        const ring = polygon[0];
+        ring.forEach(coords => {
+            const lon = coords[0];
+            const lat = coords[1];
+            if (north[0] < lon) {
+                north = coords;
+            } else if (south[0] > lon) {
+                south = coords;
+            }
+
+            if (east[1] < lat) {
+                east = coords;
+            } else if (west[1] > lat) {
+                west = coords;
+            }
+        });
+    });
+
+    return [ north, east, south, west];
 }
 
 class ControlStations {
@@ -406,8 +463,10 @@ class ControlStations {
                     division: props.division ?? '',
 
                     stations: [],
-                    label_lon: typeof props.label_lon === 'number' ? props.label_lon : parseFloat(props.label_lon),
-                    label_lat: typeof props.label_lat === 'number' ? props.label_lat : parseFloat(props.label_lat),
+                    label_pos: [
+                        typeof props.label_lon === 'number' ? props.label_lon : parseFloat(props.label_lon),
+                        typeof props.label_lat === 'number' ? props.label_lat : parseFloat(props.label_lat),
+                    ],
                     geometry: boundary.geometry.coordinates,
                 };
                 firs.set(value.icao, fir);
@@ -417,7 +476,7 @@ class ControlStations {
                 prefix: callsign_prefix,
                 name,
             });
-            addToObjectMap(callsign_prefix, fir, firs_prefix);
+            addToObjectMap<FIR_ext>(callsign_prefix, fir, firs_prefix);
         });
 
         const polyUnion = polygonClipping.union as (...geoms: polygonClipping.Geom[]) => polygonClipping.MultiPolygon
@@ -437,22 +496,36 @@ class ControlStations {
                 fir_list.push(fir);
                 fir_geometries.push(fir.geometry);
             });
+            if (fir_list.length == 0) {
+                console.error(`Cannot find any FIR for UIR ${value.icao}`);
+                return;
+            }
 
             let geometry = polyUnion(...fir_geometries as polygonClipping.Geom[]) as number[][][][];
             // prebake geometry
             geometry = geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
 
+            let points = findBoundingPoints(geometry);
+            points = [ points[0], points[2], points[1], points[3] ];
+            let label_pos = createPointFromSegments(points);
+            if (!label_pos) {
+                console.warn(`Cannot create label point for UIR ${value.icao}`);
+                label_pos = fromLonLat(fir_list[0].label_pos);
+            }
+
             const uir = {
                 icao: value.icao,
                 name: value.name,
                 firs: fir_list,
+                label_pos,
                 geometry,
             };
-            addToObjectMap(uir.icao, uir, uirs);
+            addToObjectMap<UIR_ext>(uir.icao, uir, uirs);
         });
 
         // prebake geometry
         this.firs.forEach(fir => {
+            fir.label_pos = fromLonLat(fir.label_pos);
             fir.geometry = fir.geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
         });
 
@@ -494,7 +567,7 @@ class ControlStations {
         });
         stations_iata.forEach(airport => {
             airport.stations.forEach(station => {
-                addToObjectMap(station.iata_lid, airport, airports_iata);
+                addToObjectMap<Airport_ext>(station.iata_lid, airport, airports_iata);
             });
         });
         this.ready = true;
