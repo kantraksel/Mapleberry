@@ -170,11 +170,11 @@ function App() {
 					</Box>
 					<Box ref={mapNode} sx={{ flex: '1 1 auto', width: '100%', ...mapStyle }} />
 
-					<Stack direction='row' sx={{ flex: '1 1 auto', position: 'absolute', height: '100%' }} >
-						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%' }} >
+					<Stack direction='row' sx={{ flex: '1 1 auto', position: 'absolute', height: '100%', pointerEvents: 'none' }} >
+						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%', pointerEvents: 'auto' }} >
 							<Scoreboard open={scoreboardVisible} />
 						</Stack>
-						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%' }} >
+						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: 'fit-content', pointerEvents: 'auto' }} >
 							<ControllerCard />
 							<PilotCard />
 						</Stack>
@@ -196,8 +196,7 @@ export default App;
 
 /*
 TODO:
-- fix Card taking too much space (due to Lists and parent's 100% height)
-- separate observers from controllers (sometimes observers are on different station types, e.g. Supervisors)
+- handle observers on different station types, e.g. Supervisors
 
 - add fallback: when controller chooses wrong station type, search the station in other types
 - move area below airplanes

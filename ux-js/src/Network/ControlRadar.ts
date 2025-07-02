@@ -1,6 +1,6 @@
 import MapArea from '../Map/MapArea';
 import MapField from '../Map/MapField';
-import { Controller, LiveNetworkData } from './VATSIM';
+import { Controller, NetworkStations } from './VATSIM';
 
 class ControlRadar {
     private fields: Map<string, MapField>;
@@ -43,15 +43,16 @@ class ControlRadar {
         this.areas.clear();
     }
 
-    private onRefresh(networkData?: LiveNetworkData) {
+    private onRefresh(networkData?: NetworkStations) {
         if (!networkData) {
             this.clear();
             return;
         }
 
+        const facilities = vatsim.getFacilities();
         const local_facilities = new Set<number>();
         const area_facilities = new Set<number>();
-        networkData.facilities.forEach(value => {
+        facilities.forEach(value => {
             switch (value.short) {
                 case 'DEL':
                 case 'GND':

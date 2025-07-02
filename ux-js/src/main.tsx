@@ -20,6 +20,7 @@ import Cards from './Cards.ts';
 import ControlLayers from './Map/ControlLayers.ts';
 import ControlStations from './Network/ControlStations.ts';
 import ControlRadar from './Network/ControlRadar.ts';
+import TrafficRadar from './Network/TrafficRadar.ts';
 
 declare global {
 	var hostBridge: HostBridge;
@@ -35,6 +36,7 @@ declare global {
 	var controlLayers: ControlLayers;
 	var controlStations: ControlStations;
 	var controlRadar: ControlRadar;
+	var trafficRadar: TrafficRadar;
 }
 window.options = new Options();
 window.hostBridge = new HostBridge();
@@ -48,6 +50,7 @@ window.tracker = new UserTracker();
 window.vatsim = new VATSIM();
 window.controlStations = new ControlStations();
 window.controlRadar = new ControlRadar();
+window.trafficRadar = new TrafficRadar();
 window.cards = new Cards();
 
 const theme = createTheme({

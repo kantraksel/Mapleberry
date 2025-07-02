@@ -1,5 +1,4 @@
 import Event from "../Event";
-import MapPlane from "../Map/MapPlane";
 
 export interface FlightPlan {
     flight_rules: string,
@@ -131,22 +130,19 @@ interface NetPropsCache {
     military_ratings: Rating[],
 }
 
-class VatsimPlane {
-    plane: MapPlane;
-    inMap: boolean;
-
-    constructor() {
-        this.plane = new MapPlane();
-        this.inMap = false;
-    }
+export interface NetworkStations {
+    observers: Controller[],
+    pilots: Pilot[],
+    prefiles: Prefile[],
+    controllers: Controller[],
+    atis: Atis[],
 }
 
-type UpdateEvent = (networkData?: LiveNetworkData) => void;
+type UpdateEvent = (data?: NetworkStations) => void;
 
 class VATSIM {
-    private networkData?: LiveNetworkData;
+    private networkData?: LiveNetworkData & NetworkStations;
     private dataRefreshTask: number;
-    private planes: Map<string, VatsimPlane>;
     private propsCache?: NetPropsCache;
 
     public readonly Update: Event<UpdateEvent>;
@@ -155,32 +151,8 @@ class VATSIM {
     static readonly minimumRefreshRate = 15;
 
     public constructor() {
-        this.planes = new Map();
         this.dataRefreshTask = 0;
         this.Update = new Event();
-
-        radar.planeAdded.add((plane) => {
-            const pilot = this.planes.get(plane.callsign);
-            if (!pilot) {
-                return;
-            }
-
-            this.loseContact(pilot);
-            
-        });
-        radar.planeRemoved.add((plane) => {
-            const pilot = this.planes.get(plane.callsign);
-            if (!pilot) {
-                return;
-            }
-
-            const params = plane.plane.getParams();
-            if (params) {
-                pilot.plane.setParams(params);
-            }
-
-            this.establishContact(pilot);
-        });
 
         if (this.enabled) {
             this.start();
@@ -198,72 +170,15 @@ class VATSIM {
         if (this.dataRefreshTask == 0) {
             return;
         }
-        this.planes.forEach((value) => {
-            this.loseContact(value);
-        });
-        this.planes.clear();
         this.Update.invoke();
 
         clearTimeout(this.dataRefreshTask);
         this.dataRefreshTask = 0;
     }
 
-    private establishContact(pilot: VatsimPlane) {
-        if (!pilot.inMap) {
-            planeLayers.addFarPlane(pilot.plane);
-            pilot.inMap = true;
-        }
-    }
-
-    private loseContact(pilot: VatsimPlane) {
-        if (pilot.inMap) {
-            planeLayers.removeFarPlane(pilot.plane);
-            pilot.inMap = false;
-        }
-    }
-
     private async processNetworkData() {
-        const data = await VATSIM.getObject<LiveNetworkData>('https://data.vatsim.net/v3/vatsim-data.json');
-
-        // collect present pilots, add and update planes
-        const pilots = new Set<string>();
-        data.pilots.forEach((pilot: Pilot) => {
-            const callsign = pilot.callsign;
-            pilots.add(callsign);
-
-            let plane = this.planes.get(callsign);
-            if (!plane) {
-                plane = new VatsimPlane();
-                this.planes.set(callsign, plane);
-
-                plane.plane.setCallsign(callsign);
-
-                if (!radar.isVisible(callsign)) {
-                    this.establishContact(plane);
-                }
-            }
-
-            const params = {
-                longitude: pilot.longitude,
-                latitude: pilot.latitude,
-                heading: pilot.heading,
-                altitude: pilot.altitude,
-                groundAltitude: 0,
-                indicatedSpeed: 0,
-                groundSpeed: pilot.groundspeed,
-                verticalSpeed: 0,
-            };
-            plane.plane.setParams(params);
-        });
-
-        // delete absent pilots
-        this.planes.forEach((pilot, callsign) => {
-            if (!pilots.has(callsign)) {
-                this.loseContact(pilot);
-                this.planes.delete(callsign);
-            }
-        });
-
+        const data = await VATSIM.getObject<LiveNetworkData & Partial<NetworkStations>>('https://data.vatsim.net/v3/vatsim-data.json');
+        
         // update cache
         this.propsCache = {
             facilities: data.facilities,
@@ -272,8 +187,23 @@ class VATSIM {
             military_ratings: data.military_ratings,
         };
 
-        this.networkData = data;
-        this.Update.invoke(data);
+        // separate observers from controllers
+        const observerId = data.facilities.find(facility => facility.short == 'OBS')?.id ?? 0;
+        const observers: Controller[] = [];
+        const controllers: Controller[] = [];
+
+        data.controllers.forEach(controller => {
+            if (controller.facility === observerId) {
+                observers.push(controller);
+            } else {
+                controllers.push(controller);
+            }
+        });
+        data.controllers = controllers;
+        data.observers = observers;
+
+        this.networkData = data as Required<typeof data>;
+        this.Update.invoke(data as NetworkStations);
     }
 
     private fetchNetworkData() {
@@ -322,7 +252,7 @@ class VATSIM {
         return options.get<boolean>('vatsim_enabled', true);
     }
 
-    public getNetworkData() {
+    public getNetworkData(): NetworkStations | undefined {
         return this.networkData;
     }
 

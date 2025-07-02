@@ -1,5 +1,5 @@
 import { Stack, TextField, Typography } from '@mui/material';
-import { Controller, LiveNetworkData } from '../Network/VATSIM';
+import { Controller, NetworkStations } from '../Network/VATSIM';
 import { getControllerRating, getStation, getTimeOnline, InfoBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
@@ -15,7 +15,7 @@ function ControllerCard() {
     }, []);
 
     useEffect(() => {
-        const handler = (networkData?: LiveNetworkData) => {
+        const handler = (networkData?: NetworkStations) => {
             if (!data) {
                 return;
             }

@@ -1,5 +1,5 @@
 import { Divider, Grid, Stack, TextField, Typography } from '@mui/material';
-import { LiveNetworkData, Pilot } from '../Network/VATSIM';
+import { NetworkStations, Pilot } from '../Network/VATSIM';
 import { getEnrouteTime, getFlightplan, getFlightRules, getPilotRating, getTimeOnline, InfoBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
@@ -15,7 +15,7 @@ function PilotCard() {
     }, []);
 
     useEffect(() => {
-        const handler = (networkData?: LiveNetworkData) => {
+        const handler = (networkData?: NetworkStations) => {
             if (!data) {
                 return;
             }

@@ -1,7 +1,7 @@
 import { Box, IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, SyntheticEvent, useEffect, useRef, useState } from 'react';
-import { Controller, LiveNetworkData, Pilot, Prefile } from '../Network/VATSIM';
+import { Controller, NetworkStations, Pilot, Prefile } from '../Network/VATSIM';
 import NotesIcon from '@mui/icons-material/Notes';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
@@ -349,15 +349,15 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
     );
 }
 
-function PilotList(props: { enabled: boolean, netData?: LiveNetworkData }) {
+function PilotList(props: { enabled: boolean, netData?: NetworkStations }) {
     return <DynamicList enabled={props.enabled} columns={pilotColumns} values={props.netData?.pilots} />;
 }
 
-function ControllerList(props: { enabled: boolean, netData?: LiveNetworkData }) {
+function ControllerList(props: { enabled: boolean, netData?: NetworkStations }) {
     return <DynamicList enabled={props.enabled} columns={controllerColumns} values={props.netData?.controllers} />;
 }
 
-function PrefileList(props: { enabled: boolean, netData?: LiveNetworkData }) {
+function PrefileList(props: { enabled: boolean, netData?: NetworkStations }) {
     return <DynamicList enabled={props.enabled} columns={prefileColumns} values={props.netData?.prefiles} />;
 }
 
@@ -385,7 +385,7 @@ function Scoreboard(props: { open: boolean }) {
     const [netData, setNetData] = useState(vatsim.getNetworkData());
 
     useEffect(() => {
-        const handler = (networkData?: LiveNetworkData) => {
+        const handler = (networkData?: NetworkStations) => {
             setNetData(networkData);
         };
         vatsim.Update.add(handler);
