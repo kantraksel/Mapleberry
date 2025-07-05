@@ -12,82 +12,98 @@ class PlaneLayers {
     private labelSource: VectorSource;
     private farPointLayer: VectorLayer;
     private farPointSource: VectorSource;
+    private farLabelLayer: VectorLayer;
+    private farLabelSource: VectorSource;
     
     public readonly mainPointStyle: StyleLike;
     public readonly mainLabelStyle: StyleLike;
     public readonly selectedPointStyle: StyleLike;
     public readonly selectedLabelStyle: StyleLike;
 
+    private extendedLabels: boolean;
+
     public constructor() {
-        const pointStyle = new OlStyle({
+        this.extendedLabels = false;
+
+        const pointIconSrc = '/flight_24dp_FFFFFF.svg';
+        const pointStyle = this.planeStyle(new OlStyle({
             image: new OlIcon({
-                src: '/flight_24dp_FFFFFF.svg',
-                color: '#FF7900',
+                src: pointIconSrc,
+                color: [255, 121, 0],
             }),
-        });
-        const labelStyle = new OlStyle({
+        }));
+        const labelStyle = this.planeLabelStyle(new OlStyle({
             text: new OlText({
-                padding: [ 3, 3, 3, 7], // top, right, bottom, left
-                offsetY: -30, // one-liner: -20
-                font: '14px cascadia-code',
-                backgroundFill: new OlFill({
-                    color: 'lightgray',
-                }),
-                backgroundStroke: new OlStroke({
-                    color: 'black',
-                    width: 1,
-                }),
-                textAlign: 'center',
+                padding: [ 3, 1, 1, 5 ],
+                font: '14px "Cascadia Code"',
+                backgroundFill: new OlFill({ color: 'lightgray' }),
+                backgroundStroke: new OlStroke({ color: 'black', width: 1 }),
             }),
-        });
-        this.mainPointStyle = this.createPointLayerStyle(new OlStyle({
+        }));
+
+        this.mainPointStyle = this.planeStyle(new OlStyle({
             image: new OlIcon({
-                src: '/flight_24dp_FFFFFF.svg',
-                color: '#AA0000',
+                src: pointIconSrc,
+                color: [170, 0, 0],
             }),
             zIndex: 1,
         }));
-        this.mainLabelStyle = this.createLabelLayerStyle(new OlStyle({
-            text: labelStyle.getText()!,
-            zIndex: 1,
-        }));
-        this.selectedPointStyle = this.createPointLayerStyle(new OlStyle({
+        this.mainLabelStyle = (feature: FeatureLike, resolution: number) => {
+            const style = labelStyle(feature, resolution);
+            style?.setZIndex(1);
+            return style;
+        };
+
+        this.selectedPointStyle = this.planeStyle(new OlStyle({
             image: new OlIcon({
-                src: '/flight_24dp_FFFFFF.svg',
-                color: '#8600AA', // or A500D1
+                src: pointIconSrc,
+                color: [134, 0, 170], // or [165, 0, 209]
             }),
             zIndex: 2,
         }));
-        this.selectedLabelStyle = this.createLabelLayerStyle(new OlStyle({
-            text: labelStyle.getText()!,
-            zIndex: 2,
-        }));
-        const farPointStyle = new OlStyle({
+        this.selectedLabelStyle = (feature: FeatureLike, resolution: number) => {
+            const style = labelStyle(feature, resolution);
+            style?.setZIndex(2);
+            return style;
+        };
+
+        const farPointStyle = this.planeStyle(new OlStyle({
             image: new OlIcon({
-                src: '/flight_24dp_FFFFFF.svg',
-                color: '#0000AA',
+                src: pointIconSrc,
+                color: [0, 0, 170],
             }),
-        });
+        }));
 
         this.pointSource = new VectorSource();
         this.labelSource = new VectorSource();
         this.farPointSource = new VectorSource();
+        this.farLabelSource = new VectorSource();
         this.pointLayer = new VectorLayer({
-            style: this.createPointLayerStyle(pointStyle),
+            style: pointStyle,
             source: this.pointSource,
+            updateWhileAnimating: true,
+            updateWhileInteracting: true,
         });
         this.labelLayer = new VectorLayer({
-            style: this.createLabelLayerStyle(labelStyle),
+            style: labelStyle,
             source: this.labelSource,
+            updateWhileAnimating: true,
+            updateWhileInteracting: true,
         });
         this.farPointLayer = new VectorLayer({
-            style: this.createPointLayerStyle(farPointStyle),
+            style: farPointStyle,
             source: this.farPointSource,
         });
+        this.farLabelLayer = new VectorLayer({
+            style: labelStyle,
+            source: this.farLabelSource,
+        });
 
-        map.map.addLayer(this.farPointLayer);
-        map.map.addLayer(this.pointLayer);
-        map.map.addLayer(this.labelLayer);
+        const map = window.map.map;
+        map.addLayer(this.farPointLayer);
+        map.addLayer(this.pointLayer);
+        map.addLayer(this.farLabelLayer);
+        map.addLayer(this.labelLayer);
     }
 
     public addPlane(plane: MapPlane) {
@@ -102,35 +118,56 @@ class PlaneLayers {
 
     public addFarPlane(plane: MapPlane) {
         this.farPointSource.addFeature(plane.point);
-        this.labelSource.addFeature(plane.label);
+        this.farLabelSource.addFeature(plane.label);
     }
 
     public removeFarPlane(plane: MapPlane) {
         this.farPointSource.removeFeature(plane.point);
-        this.labelSource.removeFeature(plane.label);
+        this.farLabelSource.removeFeature(plane.label);
     }
 
-    private createLabelLayerStyle(base: OlStyle) {
-        return (feature: FeatureLike) => {
-            const style = base.clone();
-            const params = MapPlane.getParams(feature);
+    public setExtendedLabels(value: boolean) {
+        this.extendedLabels = value;
+        this.farLabelLayer.changed();
+        this.labelLayer.changed();
+    }
 
-            let callsign = MapPlane.getCallsign(feature) ?? '#UFO';
-            let altitude = params ? Math.round(params.altitude) : '-';
-            let speed = params ? Math.round(params.groundSpeed) : '-';
+    private planeLabelStyle(style: OlStyle) {
+        return (feature: FeatureLike, resolution: number) => {
+            if (resolution >= 1523) {
+                return undefined;
+            }
 
-            const str = `${callsign}\n${altitude}ft ${speed}kts`;
-            style.getText()!.setText(str);
+            const textPart = style.getText()!;
+            const callsign = MapPlane.getCallsign(feature) ?? '???';
+
+            if (this.extendedLabels) {
+                const params = MapPlane.getParams(feature);
+                let altitude: unknown = '-';
+                let speed: unknown = '-';
+                if (params) {
+                    altitude = Math.round(params.altitude);
+                    speed = Math.round(params.groundSpeed);
+                }
+
+                textPart.setText(`${callsign}\n${altitude}ft ${speed}kts`);
+                textPart.setOffsetY(-30);
+            } else {
+                textPart.setText(callsign);
+                textPart.setOffsetY(-20);
+            }
+
+            style.setZIndex(0);
             return style;
         };
     }
 
-    private createPointLayerStyle(base: OlStyle) {
+    private planeStyle(style: OlStyle) {
+        const rotFactor = Math.PI / 180;
         return (feature: FeatureLike) => {
-            const style = base.clone();
             const params = MapPlane.getParams(feature);
 
-            const rot = params ? params.heading * (Math.PI / 180) : 0;
+            const rot = params ? params.heading * rotFactor : 0;
             style.getImage()!.setRotation(rot);
             return style;
         };

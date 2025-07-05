@@ -6,95 +6,123 @@ import MapField from './MapField';
 import MapArea from './MapArea';
 
 class ControlLayer {
-    private fieldLayer: VectorLayer;
+    private fieldLayer?: VectorLayer;
     private fieldSource: VectorSource;
-    private areaLayer: VectorLayer;
+    private fieldLabelLayer?: VectorLayer;
+    private fieldLabelSource: VectorSource;
+    private areaLayer?: VectorLayer;
     private areaSource: VectorSource;
-    private labelLayer: VectorLayer;
-    private labelSource: VectorSource;
+    private areaLabelLayer?: VectorLayer;
+    private areaLabelSource: VectorSource;
 
     public constructor() {
+        this.fieldSource = new VectorSource();
+        this.fieldLabelSource = new VectorSource();
+        this.areaSource = new VectorSource();
+        this.areaLabelSource = new VectorSource();
+
+        this.createAreaLayers();
+        this.createFieldLayers();
+
+        const map = window.map.map;
+        map.addLayer(this.areaLayer!);
+        map.addLayer(this.fieldLayer!);
+        map.addLayer(this.areaLabelLayer!);
+        map.addLayer(this.fieldLabelLayer!);
+    }
+
+    private createFieldLayers() {
         const pointStyle = new OlStyle({
             image: new OlCircle({
                 radius: 5,
-                fill: new OlFill({
-                    color: '#222222',
-                }),
+                fill: new OlFill({ color: [135, 58, 235] }),
             }),
         });
-        const labelStyle = new OlStyle({
+        const labelStyleObj = new OlStyle({
             text: new OlText({
-                padding: [ 3, 3, 3, 7], // top, right, bottom, left
-                offsetY: -20,
-                font: '14px cascadia-code',
-                backgroundFill: new OlFill({
-                    color: 'lightgray',
-                }),
-                backgroundStroke: new OlStroke({
-                    color: 'black',
-                    width: 1,
-                }),
-                textAlign: 'center',
+                padding: [ 3, 1, 1, 4 ],
+                offsetY: -16,
+                font: '14px "Cascadia Code"',
+                backgroundFill: new OlFill({ color: [228, 228, 228] }),
+                backgroundStroke: new OlStroke({ color: 'black', width: 1 }),
             }),
         });
+        const labelStyle = (feature: FeatureLike, resolution: number) => {
+            if (resolution >= 4791) {
+                return undefined;
+            }
 
-        this.fieldSource = new VectorSource();
-        this.areaSource = new VectorSource();
-        this.labelSource = new VectorSource();
+            const callsign = MapField.getParams(feature)?.icao ?? 'unknown';
+            labelStyleObj.getText()!.setText(callsign);
+            return labelStyleObj;
+        };
+
         this.fieldLayer = new VectorLayer({
             style: pointStyle,
             source: this.fieldSource,
         });
-        this.areaLayer = new VectorLayer({
-            style: new OlStyle({
-                fill: new OlFill({
-                    color: [0, 255, 0, 0.2],
-                }),
-                stroke: new OlStroke({
-                    color: '#FF0000',
-                }),
-            }),
-            source: this.areaSource,
+        this.fieldLabelLayer = new VectorLayer({
+            style: labelStyle,
+            source: this.fieldLabelSource,
         });
-        this.labelLayer = new VectorLayer({
-            style: this.createLabelLayerStyle(labelStyle),
-            source: this.labelSource,
-        });
-
-        map.map.addLayer(this.areaLayer);
-        map.map.addLayer(this.fieldLayer);
-        map.map.addLayer(this.labelLayer);
     }
 
-    private createLabelLayerStyle(base: OlStyle) {
-        return (feature: FeatureLike) => {
-            const style = base.clone();
+    private createAreaLayers() {
+        const areaStyle = new OlStyle({
+            fill: new OlFill({ color: [255, 0, 0, 0.2] }),
+            stroke: new OlStroke({ color: [255, 0, 0] }),
+        });
+        const labelStyleObj = new OlStyle({
+            text: new OlText({
+                font: '18px "Cascadia Code"',
+                fill: new OlFill({ color: [16, 16, 16] }),
+            }),
+        });
+        const labelStyle = (feature: FeatureLike, resolution: number) => {
+            const refResolution = 4791;
 
-            const callsign = MapField.getParams(feature)?.icao ?? 'unknown';
+            let labelRes = 1.0;
+            if (resolution > refResolution) {
+                const minResolution = 15105 - refResolution;
+                labelRes -= Math.min(resolution - refResolution, minResolution) / minResolution * 0.4;
+            }
+            const text = labelStyleObj.getText()!;
+            text.setScale(labelRes);
 
-            style.getText()!.setText(callsign);
-            return style;
+            const callsign = MapArea.getParams(feature)?.icao ?? 'unknown';
+            text.setText(callsign);
+            return labelStyleObj;
         };
+
+        this.areaLayer = new VectorLayer({
+            style: areaStyle,
+            source: this.areaSource,
+        });
+        this.areaLabelLayer = new VectorLayer({
+            style: labelStyle,
+            source: this.areaLabelSource,
+            updateWhileAnimating: true,
+        });
     }
 
     public addField(field: MapField) {
         this.fieldSource.addFeature(field.point);
-        this.labelSource.addFeature(field.label);
+        this.fieldLabelSource.addFeature(field.label);
     }
 
     public removeField(field: MapField) {
         this.fieldSource.removeFeature(field.point);
-        this.labelSource.removeFeature(field.label);
+        this.fieldLabelSource.removeFeature(field.label);
     }
 
     public addArea(area: MapArea) {
         this.areaSource.addFeature(area.area);
-        this.labelSource.addFeature(area.label);
+        this.areaLabelSource.addFeature(area.label);
     }
 
     public removeArea(area: MapArea) {
         this.areaSource.removeFeature(area.area);
-        this.labelSource.removeFeature(area.label);
+        this.areaLabelSource.removeFeature(area.label);
     }
 }
 
