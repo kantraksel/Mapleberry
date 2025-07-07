@@ -53,6 +53,10 @@ window.controlRadar = new ControlRadar();
 window.trafficRadar = new TrafficRadar();
 window.cards = new Cards();
 
+controlLayers.setupLayers();
+planeLayers.setupLayers();
+controlLayers.setupLabelLayers();
+
 const theme = createTheme({
 	palette: {
 		mode: 'dark',

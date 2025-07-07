@@ -326,6 +326,13 @@ function createPointFromSegments(points: number[][]) {
     const third = points[2];
     const fourth = points[3];
 
+    if ((first[0] == third[0] && first[1] == third[0]) ||
+        (first[0] == fourth[0] && first[1] == fourth[0]) ||
+        (second[0] == third[0] && second[1] == third[0]) ||
+        (second[0] == fourth[0] && second[1] == fourth[0])) {
+        return null;
+    }
+
     const length_first = second[0] - first[0];
     const length_second = second[1] - first[1];
     const length_third = fourth[0] - third[0];
@@ -345,6 +352,10 @@ function createPointFromSegments(points: number[][]) {
 
     const x = first[0] + factor * length_first;
     const y = first[1] + factor * length_second;
+
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return null;
+    }
     return [ x, y ];
 }
 
@@ -355,26 +366,101 @@ function findBoundingPoints(geometry: number[][][][]) {
     let west: number[];
     north = east = south = west = geometry[0][0][0];
 
+    let onTimeLine = false;
     geometry.forEach(polygon => {
         const ring = polygon[0];
+        let lastPoint = ring[0];
         ring.forEach(coords => {
-            const lon = coords[0];
-            const lat = coords[1];
-            if (north[0] < lon) {
-                north = coords;
-            } else if (south[0] > lon) {
-                south = coords;
+            let lon = coords[0];
+            let lastLon = lastPoint[0];
+            lastPoint = coords;
+
+            if (lon > 180) {
+                lon -= 360;
+            } else if (lon < -180) {
+                lon += 360;
+            }
+            if (lastLon > 180) {
+                lastLon -= 360;
+            } else if (lastLon < -180) {
+                lastLon += 360;
             }
 
-            if (east[1] < lat) {
-                east = coords;
-            } else if (west[1] > lat) {
-                west = coords;
+            if ((lon < 0) !== (lastLon < 0) && Math.abs(lon - lastLon) > 180) {
+                onTimeLine = true;
             }
         });
     });
 
-    return [ north, east, south, west];
+    geometry.forEach(polygon => {
+        const ring = polygon[0];
+        ring.forEach(coords => {
+            let lon = coords[0];
+            const lat = coords[1];
+
+            if (lon > 180) {
+                lon -= 360;
+            } else if (lon < -180) {
+                lon += 360;
+            }
+
+            if (north[1] < lat) {
+                north = coords;
+            } else if (south[1] > lat) {
+                south = coords;
+            }
+
+            const eastLat = east[0];
+            const westLat = west[0];
+            if (onTimeLine) {
+                if (lon < 0) {
+                    if (eastLat > 0 || eastLat < lon) {
+                        east = coords;
+                    } else if (westLat < 0 && westLat > lon) {
+                        west = coords;
+                    }
+                } else {
+                    if (eastLat > 0 && eastLat < lon) {
+                        east = coords;
+                    } else if (westLat < 0 || westLat > lon) {
+                        west = coords;
+                    }
+                }
+            } else {
+                if (eastLat < lon) {
+                    east = coords;
+                } else if (westLat > lon) {
+                    west = coords;
+                }
+            }
+        });
+    });
+
+    return [ north, east, south, west ];
+}
+
+function boundingToPlainPoints(points: number[][]) {
+    let third = points[2];
+    const fourth = points[3];
+
+    if (Math.abs(fourth[0] - third[0]) <= 180) {
+        return points;
+    }
+    const thirdLon = 360 - Math.abs(third[0]);
+    third = [ thirdLon, third[1] ];
+
+    let first = points[0];
+    let second = points[1];
+    if (Math.abs(second[0] - first[0]) > 180) {
+        if (first[0] > second[0]) {
+            const tmp = second;
+            second = first;
+            first = tmp;
+        }
+        const firstLon = 360 - Math.abs(first[0]);
+        first = [ firstLon, first[1] ];
+    }
+    return [ first, second, third, fourth ];
 }
 
 class ControlStations {
@@ -502,16 +588,18 @@ class ControlStations {
             }
 
             let geometry = polyUnion(...fir_geometries as polygonClipping.Geom[]) as number[][][][];
-            // prebake geometry
-            geometry = geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
 
             let points = findBoundingPoints(geometry);
             points = [ points[0], points[2], points[1], points[3] ];
-            let label_pos = createPointFromSegments(points);
+            let label_pos = createPointFromSegments(boundingToPlainPoints(points));
             if (!label_pos) {
                 console.warn(`Cannot create label point for UIR ${value.icao}`);
-                label_pos = fromLonLat(fir_list[0].label_pos);
+                label_pos = fir_list[0].label_pos;
             }
+
+            // prebake geometry
+            geometry = geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
+            label_pos = fromLonLat(label_pos);
 
             const uir = {
                 icao: value.icao,

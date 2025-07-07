@@ -23,10 +23,16 @@ class ControlLayer {
 
         this.createAreaLayers();
         this.createFieldLayers();
+    }
 
+    public setupLayers() {
         const map = window.map.map;
         map.addLayer(this.areaLayer!);
         map.addLayer(this.fieldLayer!);
+    }
+
+    public setupLabelLayers() {
+        const map = window.map.map;
         map.addLayer(this.areaLabelLayer!);
         map.addLayer(this.fieldLabelLayer!);
     }

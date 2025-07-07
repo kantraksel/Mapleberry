@@ -98,7 +98,9 @@ class PlaneLayers {
             style: labelStyle,
             source: this.farLabelSource,
         });
+    }
 
+    public setupLayers() {
         const map = window.map.map;
         map.addLayer(this.farPointLayer);
         map.addLayer(this.pointLayer);
