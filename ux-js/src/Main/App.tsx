@@ -198,10 +198,9 @@ export default App;
 TODO:
 - handle observers on different station types, e.g. Supervisors
 
-- add fallback: when controller chooses wrong station type, search the station in other types
-- move area below airplanes
-- consider other ways of generating UIR labels: middle of coords, largest FIR...
+- add fallback: when controller chooses wrong station type, search the station in other types (airport services may select Center, Center may select Approach, etc)
 - write FIR/UIR/Aiport benchmarks
+- investigate KZNY & SUEO - determine oceanic flag
 
 - add local airplane button
 - /and/or/ add local planes in Stations Lists (as a tab)
@@ -209,9 +208,10 @@ TODO:
 - implement OSM Vector Tiles
 - details when airplane/airport/ARTCC is selected
 - mark controller when finding station has failed
-- rework labels over map entities
 - cache VATSpy data + update mechanism (self-host and github)
 - try to eliminate large, thin holes in UIRs
+- option: airport label icao or iata
+- option: airplane label simple or extended
 
 - device control panel
 
@@ -226,6 +226,7 @@ vatsim.Update.invoke(vatsim.networkData);
 
 Dataset errors:
 [NOT EXPLORED] Boundaries.geojson: some entries (above 700) have numeric properties instead of strings
+Boundaries.geojson: 300 & 301 - LKAA is duplicated [CONFIRM USING PROGRAM]
 VATSpy.dat: 9704 - OAKB is not a FIR (most likely OAKX)
 VATSpy.dat: 13029 - FIR UULL doesn't exist (most likely ULLL)
 VATSpy.dat: 13624 - FIR VMSN doesn't exist (most likely VNSM)
@@ -235,7 +236,7 @@ VATSpy.dat: 18193 - ICAO FAJA_NE is malformed (the only ICAO with underscore - l
 VATSpy.dat: 18482 - FIR boundary is OBBB_S, while in Boundary.geojson is OBBB-S
 VATSpy.dat: 18487 - FIR boundary is OTDF_N, while in Boundary.geojson is OTDF-N
 VATSpy.dat: 18488 - FIR boundary is OTDF_S, while in Boundary.geojson is OTDF-S
-VATSpy.dat: 19079 - FIR EDWW-D doesn't exist [NOT EXPLORED] looks like there's a piece missing around Hannover
+VATSpy.dat: 19079 - FIR EDWW-D doesn't exist
 
 Warnings:
 VATSpy.dat: 7702 & 7703 - duplicate entry, but only one is pseudo

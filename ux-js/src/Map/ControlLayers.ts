@@ -123,12 +123,16 @@ class ControlLayer {
 
     public addArea(area: MapArea) {
         this.areaSource.addFeature(area.area);
-        this.areaLabelSource.addFeature(area.label);
+        area.labels.forEach(label => {
+            this.areaLabelSource.addFeature(label);
+        });
     }
 
     public removeArea(area: MapArea) {
         this.areaSource.removeFeature(area.area);
-        this.areaLabelSource.removeFeature(area.label);
+        area.labels.forEach(label => {
+            this.areaLabelSource.removeFeature(label);
+        });
     }
 }
 

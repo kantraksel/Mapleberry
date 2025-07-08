@@ -5,21 +5,31 @@ import { MultiPolygon, Point } from 'ol/geom';
 interface AreaDesc {
     icao: string,
     name: string,
-    label_pos: number[];
+    label_pos?: number[];
+    labels_pos?: number[][];
     geometry: number[][][][],
 }
 
 class MapArea {
     public readonly area: Feature;
-    public readonly label: Feature;
+    public readonly labels: Feature[];
 
     public constructor(params: AreaDesc) {
         const shape = new MultiPolygon(params.geometry);
-        const pos = new Point(params.label_pos);
         this.area = new Feature(shape);
-        this.label = new Feature(pos);
 
-        this.label.set('params', params, true);
+        this.labels = [];
+        const labels_pos = params.labels_pos ?? [];
+        if (params.label_pos) {
+            labels_pos.push(params.label_pos);
+        }
+
+        labels_pos.forEach(label_pos => {
+            const pos = new Point(label_pos);
+            const label = new Feature(pos);
+            label.set('params', params, true);
+            this.labels.push(label);
+        });
     }
 
     public static getParams(feature: FeatureLike): AreaDesc | null {

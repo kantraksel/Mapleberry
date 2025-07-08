@@ -1,5 +1,6 @@
 import { fromLonLat } from 'ol/proj';
 import polygonClipping from 'polygon-clipping';
+import polylabel from 'polylabel';
 
 interface Country {
     name: string,
@@ -239,7 +240,7 @@ export interface UIR_ext {
     icao: string,
     name: string,
     firs: FIR_ext[],
-    label_pos: number[],
+    labels_pos: number[][],
     geometry: number[][][][],
 }
 
@@ -320,149 +321,6 @@ function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map
     }
 }
 
-function createPointFromSegments(points: number[][]) {
-    const first = points[0];
-    const second = points[1];
-    const third = points[2];
-    const fourth = points[3];
-
-    if ((first[0] == third[0] && first[1] == third[0]) ||
-        (first[0] == fourth[0] && first[1] == fourth[0]) ||
-        (second[0] == third[0] && second[1] == third[0]) ||
-        (second[0] == fourth[0] && second[1] == fourth[0])) {
-        return null;
-    }
-
-    const length_first = second[0] - first[0];
-    const length_second = second[1] - first[1];
-    const length_third = fourth[0] - third[0];
-    const lenght_fourth = fourth[1] - third[1];
-    const length_fith = first[1] - third[1];
-    const length_sixth = third[0] - first[0];
-
-    // Solution of F and G factors:
-    // x1 + F(x2 - x1) = x3 + G(x4 - x3)
-    // y1 + F(y2 - y1) = y3 + G(y4 - y3)
-    const factor = (length_sixth * lenght_fourth + length_fith * length_third) / (length_first * lenght_fourth - length_second * length_third);
-    const control_factor = (factor * length_second + length_fith) / lenght_fourth;
-
-    if (factor > 1 || factor < 0 || control_factor > 1 || control_factor < 0) {
-        return null;
-    }
-
-    const x = first[0] + factor * length_first;
-    const y = first[1] + factor * length_second;
-
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        return null;
-    }
-    return [ x, y ];
-}
-
-function findBoundingPoints(geometry: number[][][][]) {
-    let north: number[];
-    let east: number[];
-    let south: number[];
-    let west: number[];
-    north = east = south = west = geometry[0][0][0];
-
-    let onTimeLine = false;
-    geometry.forEach(polygon => {
-        const ring = polygon[0];
-        let lastPoint = ring[0];
-        ring.forEach(coords => {
-            let lon = coords[0];
-            let lastLon = lastPoint[0];
-            lastPoint = coords;
-
-            if (lon > 180) {
-                lon -= 360;
-            } else if (lon < -180) {
-                lon += 360;
-            }
-            if (lastLon > 180) {
-                lastLon -= 360;
-            } else if (lastLon < -180) {
-                lastLon += 360;
-            }
-
-            if ((lon < 0) !== (lastLon < 0) && Math.abs(lon - lastLon) > 180) {
-                onTimeLine = true;
-            }
-        });
-    });
-
-    geometry.forEach(polygon => {
-        const ring = polygon[0];
-        ring.forEach(coords => {
-            let lon = coords[0];
-            const lat = coords[1];
-
-            if (lon > 180) {
-                lon -= 360;
-            } else if (lon < -180) {
-                lon += 360;
-            }
-
-            if (north[1] < lat) {
-                north = coords;
-            } else if (south[1] > lat) {
-                south = coords;
-            }
-
-            const eastLat = east[0];
-            const westLat = west[0];
-            if (onTimeLine) {
-                if (lon < 0) {
-                    if (eastLat > 0 || eastLat < lon) {
-                        east = coords;
-                    } else if (westLat < 0 && westLat > lon) {
-                        west = coords;
-                    }
-                } else {
-                    if (eastLat > 0 && eastLat < lon) {
-                        east = coords;
-                    } else if (westLat < 0 || westLat > lon) {
-                        west = coords;
-                    }
-                }
-            } else {
-                if (eastLat < lon) {
-                    east = coords;
-                } else if (westLat > lon) {
-                    west = coords;
-                }
-            }
-        });
-    });
-
-    return [ north, east, south, west ];
-}
-
-function boundingToPlainPoints(points: number[][]) {
-    let third = points[2];
-    const fourth = points[3];
-
-    if (Math.abs(fourth[0] - third[0]) <= 180) {
-        return points;
-    }
-    const thirdLon = 360 - Math.abs(third[0]);
-    third = [ thirdLon, third[1] ];
-
-    let first = points[0];
-    let second = points[1];
-    if (Math.abs(second[0] - first[0]) > 180) {
-        if (first[0] > second[0]) {
-            const tmp = second;
-            second = first;
-            first = tmp;
-        }
-        const firstLon = 360 - Math.abs(first[0]);
-        first = [ firstLon, first[1] ];
-    }
-    return [ first, second, third, fourth ];
-}
-
 class ControlStations {
     readonly airports: Map<string, Airport_ext>;
     readonly airports_iata: Map<string, Airport_ext | Map<string, Airport_ext>>;
@@ -502,7 +360,16 @@ class ControlStations {
 
         const boundary_map = new Map<string, BoundaryFeature>();
         boundaries.features.forEach(value => {
-            boundary_map.set(value.properties.id, value);
+            const id = value.properties.id;
+            if (boundary_map.has(id)) {
+                const bound = boundary_map.get(id)!
+                value.geometry.coordinates.forEach(polygon => {
+                    bound.geometry.coordinates.push(polygon);
+                });
+                return;
+            } else {
+                boundary_map.set(id, value);
+            }
         });
 
         const countries = list.countries;
@@ -565,7 +432,10 @@ class ControlStations {
             addToObjectMap<FIR_ext>(callsign_prefix, fir, firs_prefix);
         });
 
-        const polyUnion = polygonClipping.union as (...geoms: polygonClipping.Geom[]) => polygonClipping.MultiPolygon
+        const polyUnion = polygonClipping.union as (...geoms: number[][][][][]) => polygonClipping.MultiPolygon;
+        const polyDiff = polygonClipping.difference;
+        const worldBorders = { south: [[ [-200, -58], [200, -58], [200, -100], [-200, -100,], [-200, -58] ]], north: [[ [-200, 75], [200, 75], [200, 100], [-200, 100,], [-200, 75] ]] };
+
         const uirs = this.uirs;
         list.uirs.forEach(value => {
             checkUIR_ICAO(value.icao);
@@ -587,25 +457,29 @@ class ControlStations {
                 return;
             }
 
-            let geometry = polyUnion(...fir_geometries as polygonClipping.Geom[]) as number[][][][];
+            let geometry = polyUnion(...fir_geometries) as number[][][][];
 
-            let points = findBoundingPoints(geometry);
-            points = [ points[0], points[2], points[1], points[3] ];
-            let label_pos = createPointFromSegments(boundingToPlainPoints(points));
-            if (!label_pos) {
-                console.warn(`Cannot create label point for UIR ${value.icao}`);
-                label_pos = fir_list[0].label_pos;
+            let labels = [];
+            const labelGeometry = polyDiff(geometry as polygonClipping.Geom, worldBorders.north as polygonClipping.Geom, worldBorders.south as polygonClipping.Geom);
+            if (labelGeometry.length == 0) {
+                console.warn(`Cannot create label geometry for UIR ${value.icao}`);
+                labels.push(fir_list[0].label_pos);
+            } else {
+                for (let i = 0; i < labelGeometry.length; ++i) {
+                    const label_pos = polylabel(labelGeometry[i]) as number[];
+                    labels.push(label_pos);
+                }
             }
 
             // prebake geometry
             geometry = geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
-            label_pos = fromLonLat(label_pos);
+            labels = labels.map(label => fromLonLat(label));
 
             const uir = {
                 icao: value.icao,
                 name: value.name,
                 firs: fir_list,
-                label_pos,
+                labels_pos: labels,
                 geometry,
             };
             addToObjectMap<UIR_ext>(uir.icao, uir, uirs);
