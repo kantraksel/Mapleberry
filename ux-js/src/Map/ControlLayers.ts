@@ -82,6 +82,7 @@ class ControlLayer {
             text: new OlText({
                 font: '18px "Cascadia Code"',
                 fill: new OlFill({ color: [16, 16, 16] }),
+                backgroundFill: new OlFill({ color: [0, 0, 0, 0.0001] }),
             }),
         });
         const labelStyle = (feature: FeatureLike, resolution: number) => {

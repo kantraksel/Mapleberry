@@ -1,16 +1,39 @@
-import MapArea from '../Map/MapArea';
+import MapArea, { AreaDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
+import { Airport_ext } from './ControlStations';
 import { Controller, NetworkStations } from './VATSIM';
 
+class VatsimArea {
+    area: MapArea;
+    controller: Controller;
+
+    constructor(params: AreaDesc, controller: Controller) {
+        this.area = new MapArea(params);
+        this.controller = controller;
+    }
+}
+
+class VatsimField {
+    field: MapField;
+    controller: Controller;
+
+    constructor(params: Airport_ext, controller: Controller) {
+        this.field = new MapField(params);
+        this.controller = controller;
+    }
+}
+
 class ControlRadar {
-    private fields: Map<string, MapField>;
-    private areas: Map<string, MapArea>;
+    private fields: Map<string, VatsimField>;
+    private areas: Map<string, VatsimArea>;
     private waitTimer: number;
+    private stationsById: Map<number, VatsimArea | VatsimField>;
 
     constructor() {
         this.fields = new Map();
         this.areas = new Map();
         this.waitTimer = 0;
+        this.stationsById = new Map();
 
         vatsim.Update.add(networkData => {
             if (controlStations.isReady()) {
@@ -30,15 +53,27 @@ class ControlRadar {
                 }
             }, 1000);
         });
+
+        map.clickEvent.add(e => {
+            const id = MapArea.getNetId(e);
+            if (id === null) {
+                return;
+            }
+            const plane = this.stationsById.get(id);
+            if (!plane) {
+                return;
+            }
+            cards.showControllerCard(plane.controller);
+        });
     }
 
     private clear() {
         this.fields.forEach(field => {
-            controlLayers.removeField(field);
+            controlLayers.removeField(field.field);
         });
         this.fields.clear();
         this.areas.forEach(area => {
-            controlLayers.removeArea(area);
+            controlLayers.removeArea(area.area);
         });
         this.areas.clear();
     }
@@ -83,6 +118,8 @@ class ControlRadar {
 
     private updateFields(controllers: Controller[]) {
         const fields = this.fields;
+        const stationsById = this.stationsById;
+        stationsById.clear();
 
         const old_fields = new Map(fields);
         controllers.forEach(controller => {
@@ -95,24 +132,29 @@ class ControlRadar {
             }
             const id = airport.icao;
 
-            if (fields.has(id)) {
+            let field = fields.get(id);
+            if (field) {
+                field.controller = controller;
                 old_fields.delete(id);
-                return;
+            } else {
+                field = new VatsimField(airport, controller);
+                fields.set(id, field);
+                controlLayers.addField(field.field);
             }
-
-            const field = new MapField(airport);
-            fields.set(id, field);
-            controlLayers.addField(field);
+            stationsById.set(controller.cid, field);
+            field.field.netId = controller.cid;
         });
 
         old_fields.forEach((field, icao) => {
             fields.delete(icao);
-            controlLayers.removeField(field);
+            controlLayers.removeField(field.field);
         });
     }
 
     private updateAreas(controllers: Controller[]) {
         const areas = this.areas;
+        const stationsById = this.stationsById;
+        stationsById.clear();
 
         const old_areas = new Map(areas);
         controllers.forEach(controller => {
@@ -133,19 +175,23 @@ class ControlRadar {
             }
             const id = area_desc.icao;
 
-            if (areas.has(id)) {
+            let area = areas.get(id);
+            if (area) {
+                area.controller = controller;
                 old_areas.delete(id);
                 return;
+            } else {
+                area = new VatsimArea(area_desc, controller);
+                areas.set(id, area);
+                controlLayers.addArea(area.area);
             }
-
-            const area = new MapArea(area_desc);
-            areas.set(id, area);
-            controlLayers.addArea(area);
+            stationsById.set(controller.cid, area);
+            area.area.netId = controller.cid;
         });
 
         old_areas.forEach((area, icao) => {
             areas.delete(icao);
-            controlLayers.removeArea(area);
+            controlLayers.removeArea(area.area);
         });
     }
 }

@@ -31,6 +31,19 @@ class MapField {
         }
         return value;
     }
+
+    public set netId(id: number | undefined) {
+        this.label.set('net_id_control', id, true);
+        this.point.set('net_id_control', id, true);
+    }
+
+    public static getNetId(feature: FeatureLike): number | null {
+        const value = feature.get('net_id_control');
+        if (typeof value !== 'number') {
+            return null;
+        }
+        return value;
+    }
 }
 
 export default MapField;

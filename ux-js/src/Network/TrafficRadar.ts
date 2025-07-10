@@ -3,19 +3,23 @@ import { NetworkStations, Pilot } from "./VATSIM";
 
 class VatsimPlane {
     plane: MapPlane;
+    pilot: Pilot;
     inMap: boolean;
 
-    constructor() {
+    constructor(pilot: Pilot) {
         this.plane = new MapPlane();
+        this.pilot = pilot;
         this.inMap = false;
     }
 }
 
 class TrafficRadar {
     private planes: Map<string, VatsimPlane>;
+    private planesById: Map<number, VatsimPlane>;
 
     public constructor() {
         this.planes = new Map();
+        this.planesById = new Map();
 
         radar.planeAdded.add((plane) => {
             const pilot = this.planes.get(plane.callsign);
@@ -47,6 +51,18 @@ class TrafficRadar {
                 this.onRefresh(data);
             }
         });
+
+        map.clickEvent.add(e => {
+            const id = MapPlane.getNetId(e);
+            if (id === null) {
+                return;
+            }
+            const plane = this.planesById.get(id);
+            if (!plane) {
+                return;
+            }
+            cards.showPilotCard(plane.pilot);
+        });
     }
 
     public clear() {
@@ -72,6 +88,8 @@ class TrafficRadar {
 
     private onRefresh(data: NetworkStations) {
         const planes = this.planes;
+        const planesById = this.planesById;
+        planesById.clear();
 
         const old_planes = new Map(planes);
         data.pilots.forEach((pilot: Pilot) => {
@@ -79,7 +97,7 @@ class TrafficRadar {
 
             let plane = planes.get(callsign);
             if (!plane) {
-                plane = new VatsimPlane();
+                plane = new VatsimPlane(pilot);
                 planes.set(callsign, plane);
 
                 plane.plane.setCallsign(callsign);
@@ -88,8 +106,11 @@ class TrafficRadar {
                     this.establishContact(plane);
                 }
             } else {
+                plane.pilot = pilot;
                 old_planes.delete(callsign);
             }
+            planesById.set(pilot.cid, plane);
+            plane.plane.netId = pilot.cid;
 
             const params = {
                 longitude: pilot.longitude,

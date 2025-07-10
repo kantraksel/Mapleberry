@@ -2,7 +2,7 @@ import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point } from 'ol/geom';
 
-interface AreaDesc {
+export interface AreaDesc {
     icao: string,
     name: string,
     label_pos?: number[];
@@ -38,6 +38,20 @@ class MapArea {
             return null;
         }
         return value as AreaDesc;
+    }
+
+    public set netId(id: number | undefined) {
+        this.labels.forEach(label => {
+            label.set('net_id_control', id, true);
+        });
+    }
+
+    public static getNetId(feature: FeatureLike): number | null {
+        const value = feature.get('net_id_control');
+        if (typeof value !== 'number') {
+            return null;
+        }
+        return value;
     }
 }
 

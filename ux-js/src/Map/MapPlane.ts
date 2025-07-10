@@ -71,6 +71,19 @@ class MapPlane {
     public static getUserObject(feature: FeatureLike): unknown {
         return feature.get('user_object');
     }
+
+    public set netId(id: number | undefined) {
+        this.label.set('net_id_pilot', id, true);
+        this.point.set('net_id_pilot', id, true);
+    }
+
+    public static getNetId(feature: FeatureLike): number | null {
+        const value = feature.get('net_id_pilot');
+        if (typeof value !== 'number') {
+            return null;
+        }
+        return value;
+    }
 }
 
 export interface PhysicParams {
