@@ -19,14 +19,11 @@ class RadarAnimator {
 
         this.adjustUpdateRate();
 
-        map.clickEvent.add((e) => {
-            const obj = MapPlane.getUserObject(e);
-            if (!obj || !(obj instanceof RadarPlane)) {
-                return;
+        map.clickEvent.add(e => {
+            const obj = MapPlane.getRadarState(e[0]);
+            if (obj) {
+                this.followPlane(obj);
             }
-
-            const info = obj as RadarPlane;
-            this.followPlane(info);
         });
 
         map.moveStartEvent.add(() => {
@@ -39,7 +36,7 @@ class RadarAnimator {
             info?.restoreStyle();
         });
 
-        map.changeResEvent.add((value) => {
+        map.changeResEvent.add(value => {
             this.adjustUpdateRate(value);
 
             if (Number.isNaN(this.lastAutoRes)) {

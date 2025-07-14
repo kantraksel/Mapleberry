@@ -26,7 +26,7 @@ class RadarPlane {
 
         this.inMap = false;
         this.plane = new MapPlane();
-        this.plane.userObject = this;
+        this.plane.radarState = this;
         this.plane.setCallsign(callsign);
 
         this.animator = {

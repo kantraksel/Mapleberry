@@ -6,7 +6,7 @@ import { FeatureLike } from 'ol/Feature';
 import { ObjectEvent } from 'ol/Object';
 import Event from '../Event';
 
-type ClickEvent = (e: FeatureLike) => void;
+type ClickEvent = (e: FeatureLike[]) => void;
 type ResEvent = (value: number) => void;
 type PosEvent = (value: number[]) => void;
 type GenericEvent = () => void;
@@ -83,9 +83,8 @@ class GlobalMap {
         });
 
         this.map.on('click', (e: MapBrowserEvent<PointerEvent>) => {
-            this.map.forEachFeatureAtPixel(e.pixel, (feature) => {
-                this.clickEvent.invoke(feature);
-            });
+            const features = this.map.getFeaturesAtPixel(e.pixel);
+            this.clickEvent.invoke(features);
         });
 
         view.on('change:resolution', (e: ObjectEvent) => {

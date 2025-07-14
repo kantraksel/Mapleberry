@@ -1,6 +1,7 @@
 import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point } from 'ol/geom';
+import { VatsimArea } from '../Network/ControlRadar';
 
 export interface AreaDesc {
     icao: string,
@@ -40,18 +41,18 @@ class MapArea {
         return value as AreaDesc;
     }
 
-    public set netId(id: number | undefined) {
+    public set netState(obj: VatsimArea) {
         this.labels.forEach(label => {
-            label.set('net_id_control', id, true);
+            label.set('control_area_net_state', obj, true);
         });
     }
 
-    public static getNetId(feature: FeatureLike): number | null {
-        const value = feature.get('net_id_control');
-        if (typeof value !== 'number') {
+    public static getNetState(feature: FeatureLike): VatsimArea | null {
+        const value = feature.get('control_area_net_state') as unknown;
+        if (typeof value !== 'object') {
             return null;
         }
-        return value;
+        return value as VatsimArea;
     }
 }
 

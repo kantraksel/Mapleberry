@@ -3,23 +3,27 @@ import MapField from '../Map/MapField';
 import { Airport_ext } from './ControlStations';
 import { Controller, NetworkStations } from './VATSIM';
 
-class VatsimArea {
+export class VatsimArea {
     area: MapArea;
-    controller: Controller;
+    controllers: Controller[];
 
-    constructor(params: AreaDesc, controller: Controller) {
+    constructor(params: AreaDesc) {
         this.area = new MapArea(params);
-        this.controller = controller;
+        this.controllers = [];
+
+        this.area.netState = this;
     }
 }
 
-class VatsimField {
+export class VatsimField {
     field: MapField;
-    controller: Controller;
+    controllers: Controller[];
 
-    constructor(params: Airport_ext, controller: Controller) {
+    constructor(params: Airport_ext) {
         this.field = new MapField(params);
-        this.controller = controller;
+        this.controllers = [];
+
+        this.field.netState = this;
     }
 }
 
@@ -27,13 +31,11 @@ class ControlRadar {
     private fields: Map<string, VatsimField>;
     private areas: Map<string, VatsimArea>;
     private waitTimer: number;
-    private stationsById: Map<number, VatsimArea | VatsimField>;
 
     constructor() {
         this.fields = new Map();
         this.areas = new Map();
         this.waitTimer = 0;
-        this.stationsById = new Map();
 
         vatsim.Update.add(networkData => {
             if (controlStations.isReady()) {
@@ -55,15 +57,18 @@ class ControlRadar {
         });
 
         map.clickEvent.add(e => {
-            const id = MapArea.getNetId(e);
-            if (id === null) {
+            const obj = MapArea.getNetState(e[0]);
+            if (obj) {
+                //TODO: show controller list
+                cards.showControllerCard(obj.controllers[0]);
                 return;
             }
-            const plane = this.stationsById.get(id);
-            if (!plane) {
-                return;
+
+            const obj2 = MapField.getNetState(e[0]);
+            if (obj2) {
+                //TODO: show controller list
+                cards.showControllerCard(obj2.controllers[0]);
             }
-            cards.showControllerCard(plane.controller);
         });
     }
 
@@ -118,8 +123,9 @@ class ControlRadar {
 
     private updateFields(controllers: Controller[]) {
         const fields = this.fields;
-        const stationsById = this.stationsById;
-        stationsById.clear();
+        fields.forEach(field => {
+            field.controllers = [];
+        });
 
         const old_fields = new Map(fields);
         controllers.forEach(controller => {
@@ -134,15 +140,13 @@ class ControlRadar {
 
             let field = fields.get(id);
             if (field) {
-                field.controller = controller;
                 old_fields.delete(id);
             } else {
-                field = new VatsimField(airport, controller);
+                field = new VatsimField(airport);
                 fields.set(id, field);
                 controlLayers.addField(field.field);
             }
-            stationsById.set(controller.cid, field);
-            field.field.netId = controller.cid;
+            field.controllers.push(controller);
         });
 
         old_fields.forEach((field, icao) => {
@@ -153,8 +157,9 @@ class ControlRadar {
 
     private updateAreas(controllers: Controller[]) {
         const areas = this.areas;
-        const stationsById = this.stationsById;
-        stationsById.clear();
+        areas.forEach(area => {
+            area.controllers = [];
+        });
 
         const old_areas = new Map(areas);
         controllers.forEach(controller => {
@@ -177,16 +182,13 @@ class ControlRadar {
 
             let area = areas.get(id);
             if (area) {
-                area.controller = controller;
                 old_areas.delete(id);
-                return;
             } else {
-                area = new VatsimArea(area_desc, controller);
+                area = new VatsimArea(area_desc);
                 areas.set(id, area);
                 controlLayers.addArea(area.area);
             }
-            stationsById.set(controller.cid, area);
-            area.area.netId = controller.cid;
+            area.controllers.push(controller);
         });
 
         old_areas.forEach((area, icao) => {

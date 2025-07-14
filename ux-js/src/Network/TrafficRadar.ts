@@ -1,7 +1,7 @@
 import MapPlane from "../Map/MapPlane";
 import { NetworkStations, Pilot } from "./VATSIM";
 
-class VatsimPlane {
+export class VatsimPlane {
     plane: MapPlane;
     pilot: Pilot;
     inMap: boolean;
@@ -10,18 +10,19 @@ class VatsimPlane {
         this.plane = new MapPlane();
         this.pilot = pilot;
         this.inMap = false;
+
+        this.plane.netState = this;
+        this.plane.setCallsign(pilot.callsign);
     }
 }
 
 class TrafficRadar {
     private planes: Map<string, VatsimPlane>;
-    private planesById: Map<number, VatsimPlane>;
 
     public constructor() {
         this.planes = new Map();
-        this.planesById = new Map();
 
-        radar.planeAdded.add((plane) => {
+        radar.planeAdded.add(plane => {
             const pilot = this.planes.get(plane.callsign);
             if (!pilot) {
                 return;
@@ -30,7 +31,7 @@ class TrafficRadar {
             this.loseContact(pilot);
             
         });
-        radar.planeRemoved.add((plane) => {
+        radar.planeRemoved.add(plane => {
             const pilot = this.planes.get(plane.callsign);
             if (!pilot) {
                 return;
@@ -53,20 +54,15 @@ class TrafficRadar {
         });
 
         map.clickEvent.add(e => {
-            const id = MapPlane.getNetId(e);
-            if (id === null) {
-                return;
+            const obj = MapPlane.getNetState(e[0]);
+            if (obj) {
+                cards.showPilotCard(obj.pilot);
             }
-            const plane = this.planesById.get(id);
-            if (!plane) {
-                return;
-            }
-            cards.showPilotCard(plane.pilot);
         });
     }
 
     public clear() {
-        this.planes.forEach((value) => {
+        this.planes.forEach(value => {
             this.loseContact(value);
         });
         this.planes.clear();
@@ -88,19 +84,15 @@ class TrafficRadar {
 
     private onRefresh(data: NetworkStations) {
         const planes = this.planes;
-        const planesById = this.planesById;
-        planesById.clear();
 
         const old_planes = new Map(planes);
-        data.pilots.forEach((pilot: Pilot) => {
+        data.pilots.forEach(pilot => {
             const callsign = pilot.callsign;
 
             let plane = planes.get(callsign);
             if (!plane) {
                 plane = new VatsimPlane(pilot);
                 planes.set(callsign, plane);
-
-                plane.plane.setCallsign(callsign);
 
                 if (!radar.isVisible(callsign)) {
                     this.establishContact(plane);
@@ -109,8 +101,6 @@ class TrafficRadar {
                 plane.pilot = pilot;
                 old_planes.delete(callsign);
             }
-            planesById.set(pilot.cid, plane);
-            plane.plane.netId = pilot.cid;
 
             const params = {
                 longitude: pilot.longitude,

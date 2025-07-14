@@ -29,7 +29,7 @@ class PlaneLayers {
         const pointStyle = this.planeStyle(new OlStyle({
             image: new OlIcon({
                 src: pointIconSrc,
-                color: [255, 121, 0],
+                color: [0, 138, 214],
             }),
         }));
         const labelStyle = this.planeLabelStyle(new OlStyle({
@@ -44,7 +44,7 @@ class PlaneLayers {
         this.mainPointStyle = this.planeStyle(new OlStyle({
             image: new OlIcon({
                 src: pointIconSrc,
-                color: [170, 0, 0],
+                color: [200, 0, 0],
             }),
             zIndex: 1,
         }));
@@ -57,7 +57,7 @@ class PlaneLayers {
         this.selectedPointStyle = this.planeStyle(new OlStyle({
             image: new OlIcon({
                 src: pointIconSrc,
-                color: [134, 0, 170], // or [165, 0, 209]
+                color: [168, 50, 255],
             }),
             zIndex: 2,
         }));
