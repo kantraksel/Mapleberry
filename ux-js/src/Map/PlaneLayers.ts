@@ -144,7 +144,7 @@ class PlaneLayers {
             const callsign = MapPlane.getCallsign(feature) ?? '???';
 
             if (this.extendedLabels) {
-                const params = MapPlane.getParams(feature);
+                const params = MapPlane.getPhysicParams(feature);
                 let altitude: unknown = '-';
                 let speed: unknown = '-';
                 if (params) {
@@ -167,7 +167,7 @@ class PlaneLayers {
     private planeStyle(style: OlStyle) {
         const rotFactor = Math.PI / 180;
         return (feature: FeatureLike) => {
-            const params = MapPlane.getParams(feature);
+            const params = MapPlane.getPhysicParams(feature);
 
             const rot = params ? params.heading * rotFactor : 0;
             style.getImage()!.setRotation(rot);

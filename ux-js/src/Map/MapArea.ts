@@ -3,7 +3,7 @@ import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point } from 'ol/geom';
 import { VatsimArea } from '../Network/ControlRadar';
 
-export interface AreaDesc {
+export interface StationDesc {
     icao: string,
     name: string,
     label_pos?: number[];
@@ -15,30 +15,32 @@ class MapArea {
     public readonly area: Feature;
     public readonly labels: Feature[];
 
-    public constructor(params: AreaDesc) {
-        const shape = new MultiPolygon(params.geometry);
+    public constructor(desc: StationDesc) {
+        const shape = new MultiPolygon(desc.geometry);
         this.area = new Feature(shape);
 
         this.labels = [];
-        const labels_pos = params.labels_pos ?? [];
-        if (params.label_pos) {
-            labels_pos.push(params.label_pos);
+        const labels_pos = desc.labels_pos ?? [];
+        if (desc.label_pos) {
+            labels_pos.push(desc.label_pos);
         }
 
         labels_pos.forEach(label_pos => {
             const pos = new Point(label_pos);
             const label = new Feature(pos);
-            label.set('params', params, true);
+            label.set('station_desc', desc, true);
             this.labels.push(label);
         });
+
+        this.area.set('cards_ignore', true, true);
     }
 
-    public static getParams(feature: FeatureLike): AreaDesc | null {
-        const value = feature.get('params') as unknown;
+    public static getStationDesc(feature: FeatureLike) {
+        const value = feature.get('station_desc') as unknown;
         if (typeof value !== 'object') {
             return null;
         }
-        return value as AreaDesc;
+        return value as StationDesc;
     }
 
     public set netState(obj: VatsimArea) {

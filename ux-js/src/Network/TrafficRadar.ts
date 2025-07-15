@@ -1,10 +1,13 @@
+import { FeatureLike } from "ol/Feature";
 import MapPlane from "../Map/MapPlane";
 import { NetworkStations, Pilot } from "./VATSIM";
+import RadarPlane from "../Radar/RadarPlane";
 
 export class VatsimPlane {
     plane: MapPlane;
     pilot: Pilot;
     inMap: boolean;
+    external?: RadarPlane;
 
     constructor(pilot: Pilot) {
         this.plane = new MapPlane();
@@ -12,7 +15,7 @@ export class VatsimPlane {
         this.inMap = false;
 
         this.plane.netState = this;
-        this.plane.setCallsign(pilot.callsign);
+        this.plane.callsign = pilot.callsign;
     }
 }
 
@@ -29,7 +32,8 @@ class TrafficRadar {
             }
 
             this.loseContact(pilot);
-            
+            plane.plane.netState = pilot;
+            pilot.external = plane;
         });
         radar.planeRemoved.add(plane => {
             const pilot = this.planes.get(plane.callsign);
@@ -37,12 +41,14 @@ class TrafficRadar {
                 return;
             }
 
-            const params = plane.plane.getParams();
+            const params = plane.plane.getPhysicParams();
             if (params) {
-                pilot.plane.setParams(params);
+                pilot.plane.physicParams = params;
             }
 
             this.establishContact(pilot);
+            plane.plane.netState = null;
+            pilot.external = undefined;
         });
 
         vatsim.Update.add(data => {
@@ -52,13 +58,15 @@ class TrafficRadar {
                 this.onRefresh(data);
             }
         });
+    }
 
-        map.clickEvent.add(e => {
-            const obj = MapPlane.getNetState(e[0]);
-            if (obj) {
-                cards.showPilotCard(obj.pilot);
-            }
-        });
+    public onSelectStation(e: FeatureLike[]) {
+        const obj = MapPlane.getNetState(e[0]);
+        if (obj) {
+            cards.showPilotCard(obj.pilot);
+            return true;
+        }
+        return false;
     }
 
     public clear() {
@@ -94,8 +102,12 @@ class TrafficRadar {
                 plane = new VatsimPlane(pilot);
                 planes.set(callsign, plane);
 
-                if (!radar.isVisible(callsign)) {
+                const radarPlane = radar.getByCallsign(callsign);
+                if (!radarPlane) {
                     this.establishContact(plane);
+                } else {
+                    radarPlane.plane.netState = plane;
+                    plane.external = radarPlane;
                 }
             } else {
                 plane.pilot = pilot;
@@ -112,12 +124,17 @@ class TrafficRadar {
                 groundSpeed: pilot.groundspeed,
                 verticalSpeed: 0,
             };
-            plane.plane.setParams(params);
+            plane.plane.physicParams = params;
         });
 
         old_planes.forEach((pilot, callsign) => {
             planes.delete(callsign);
             this.loseContact(pilot);
+
+            const plane = pilot.external;
+            if (plane) {
+                plane.plane.netState = null;
+            }
         });
     }
 }

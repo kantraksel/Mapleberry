@@ -58,7 +58,7 @@ class ControlLayer {
                 return undefined;
             }
 
-            const callsign = MapField.getParams(feature)?.icao ?? 'unknown';
+            const callsign = MapField.getStation(feature)?.icao ?? 'unknown';
             labelStyleObj.getText()!.setText(callsign);
             return labelStyleObj;
         };
@@ -96,7 +96,7 @@ class ControlLayer {
             const text = labelStyleObj.getText()!;
             text.setScale(labelRes);
 
-            const callsign = MapArea.getParams(feature)?.icao ?? 'unknown';
+            const callsign = MapArea.getStationDesc(feature)?.icao ?? 'unknown';
             text.setText(callsign);
             return labelStyleObj;
         };

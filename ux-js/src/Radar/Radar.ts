@@ -99,6 +99,11 @@ class Radar {
     public getById(id: number) {
         return this.planes.get(id);
     }
+
+    public getByCallsign(callsign: string) {
+        const planes = Array.from(this.planes.values());
+        return planes.find(value => value.callsign === callsign);
+    }
 }
 
 export default Radar;

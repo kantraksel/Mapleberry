@@ -84,6 +84,9 @@ class GlobalMap {
 
         this.map.on('click', (e: MapBrowserEvent<PointerEvent>) => {
             const features = this.map.getFeaturesAtPixel(e.pixel);
+            if (features.length == 0) {
+                return;
+            }
             this.clickEvent.invoke(features);
         });
 

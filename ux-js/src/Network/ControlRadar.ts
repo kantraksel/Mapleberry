@@ -1,4 +1,5 @@
-import MapArea, { AreaDesc } from '../Map/MapArea';
+import { FeatureLike } from 'ol/Feature';
+import MapArea, { StationDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
 import { Airport_ext } from './ControlStations';
 import { Controller, NetworkStations } from './VATSIM';
@@ -7,8 +8,8 @@ export class VatsimArea {
     area: MapArea;
     controllers: Controller[];
 
-    constructor(params: AreaDesc) {
-        this.area = new MapArea(params);
+    constructor(desc: StationDesc) {
+        this.area = new MapArea(desc);
         this.controllers = [];
 
         this.area.netState = this;
@@ -19,8 +20,8 @@ export class VatsimField {
     field: MapField;
     controllers: Controller[];
 
-    constructor(params: Airport_ext) {
-        this.field = new MapField(params);
+    constructor(station: Airport_ext) {
+        this.field = new MapField(station);
         this.controllers = [];
 
         this.field.netState = this;
@@ -55,21 +56,24 @@ class ControlRadar {
                 }
             }, 1000);
         });
+    }
 
-        map.clickEvent.add(e => {
-            const obj = MapArea.getNetState(e[0]);
-            if (obj) {
-                //TODO: show controller list
-                cards.showControllerCard(obj.controllers[0]);
-                return;
-            }
+    public onSelectStation(e: FeatureLike[]) {
+        const obj = MapArea.getNetState(e[0]);
+        if (obj) {
+            //TODO: show controller list
+            cards.showControllerCard(obj.controllers[0]);
+            return true;
+        }
 
-            const obj2 = MapField.getNetState(e[0]);
-            if (obj2) {
-                //TODO: show controller list
-                cards.showControllerCard(obj2.controllers[0]);
-            }
-        });
+        const obj2 = MapField.getNetState(e[0]);
+        if (obj2) {
+            //TODO: show controller list
+            cards.showControllerCard(obj2.controllers[0]);
+            return true;
+        }
+
+        return false;
     }
 
     private clear() {

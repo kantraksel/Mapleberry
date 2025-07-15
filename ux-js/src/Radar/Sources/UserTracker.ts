@@ -116,7 +116,7 @@ class UserTracker {
 
         const customCallsign = this.customCallsign;
         if (customCallsign.length != 0) {
-            info.plane.setCallsign(customCallsign);
+            info.plane.callsign = customCallsign;
         }
 
         this.identEvent.invoke(this.getIdentity());
@@ -173,7 +173,7 @@ class UserTracker {
         if (name.length == 0) {
             name = info.callsign;
         }
-        info.plane.setCallsign(name);
+        info.plane.callsign = name;
         this.identEvent.invoke(this.getIdentity());
     }
 

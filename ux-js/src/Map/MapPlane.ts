@@ -16,7 +16,7 @@ class MapPlane {
         this.label = new Feature(this.pos);
     }
 
-    public setCallsign(callsign: string) {
+    public set callsign(callsign: string) {
         this.label.set('callsign', callsign);
     }
 
@@ -28,14 +28,14 @@ class MapPlane {
         return value;
     }
 
-    public setParams(params: PhysicParams) {
+    public set physicParams(params: PhysicParams) {
         this.pos.setCoordinates(fromLonLat([ params.longitude, params.latitude ]));
 
         this.point.set('params', params);
         this.label.set('params', params);
     }
 
-    public getParams(): PhysicParams | null {
+    public getPhysicParams(): PhysicParams | null {
         const value = this.point.get('params');
         if (typeof value !== 'object') {
             return null;
@@ -43,7 +43,7 @@ class MapPlane {
         return value;
     }
 
-    public static getParams(feature: FeatureLike): PhysicParams | null {
+    public static getPhysicParams(feature: FeatureLike): PhysicParams | null {
         const value = feature.get('params');
         if (typeof value !== 'object') {
             return null;
@@ -79,7 +79,7 @@ class MapPlane {
         return value as RadarPlane;
     }
 
-    public set netState(obj: VatsimPlane) {
+    public set netState(obj: VatsimPlane | null) {
         this.label.set('pilot_net_state', obj, true);
         this.point.set('pilot_net_state', obj, true);
     }

@@ -5,7 +5,17 @@ class Cards {
     private pilotRef?: (data: Pilot | undefined) => void;
 
     constructor() {
-
+        map.clickEvent.add(e => {
+            if (
+                trafficRadar.onSelectStation(e) ||
+                controlRadar.onSelectStation(e) ||
+                e[0].get('cards_ignore')
+            ) {
+                return;
+            }
+            this.controllerRef?.call(null, undefined);
+            this.pilotRef?.call(null, undefined);
+        });
     }
 
     setControllerCard(cardRef: ((data: Controller | undefined) => void) | undefined) {

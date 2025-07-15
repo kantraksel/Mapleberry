@@ -27,7 +27,7 @@ class RadarPlane {
         this.inMap = false;
         this.plane = new MapPlane();
         this.plane.radarState = this;
-        this.plane.setCallsign(callsign);
+        this.plane.callsign = callsign;
 
         this.animator = {
             first: null,
@@ -42,7 +42,7 @@ class RadarPlane {
     setIdent(model: string, callsign: string) {
         this.model = model;
         this.callsign = callsign;
-        this.plane.setCallsign(callsign);
+        this.plane.callsign = callsign;
     }
 
     update(data: PhysicParams) {
@@ -55,7 +55,7 @@ class RadarPlane {
     }
 
     updateAnimation(params: PhysicParams) {
-        this.plane.setParams(params);
+        this.plane.physicParams = params;
     }
 
     tagMain() {

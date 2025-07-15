@@ -10,23 +10,17 @@ class MapField {
     public readonly point: Feature;
     public readonly label: Feature;
 
-    public constructor(params: Airport_ext) {
-        this.pos = new Point(fromLonLat([ params.longitude, params.latitude ]));
+    public constructor(station: Airport_ext) {
+        this.pos = new Point(fromLonLat([ station.longitude, station.latitude ]));
         this.point = new Feature(this.pos);
         this.label = new Feature(this.pos);
 
-        this.point.set('params', params, true);
-        this.label.set('params', params, true);
+        this.point.set('station', station, true);
+        this.label.set('station', station, true);
     }
 
-    public set params(params: Airport_ext) {
-        this.pos.setCoordinates(fromLonLat([ params.longitude, params.latitude ]));
-        this.point.set('params', params, true);
-        this.label.set('params', params);
-    }
-
-    public static getParams(feature: FeatureLike): Airport_ext | null {
-        const value = feature.get('params');
+    public static getStation(feature: FeatureLike): Airport_ext | null {
+        const value = feature.get('station');
         if (typeof value !== 'object') {
             return null;
         }
