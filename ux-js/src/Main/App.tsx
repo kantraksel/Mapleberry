@@ -9,7 +9,7 @@ import 'ol/ol.css';
 import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
 import OptionsBox from './OptionsBox';
-import Scoreboard from './Scoreboard';
+import Scoreboard, { FacilityStationsList } from './Scoreboard';
 import ControllerCard from './ControllerCard';
 import PilotCard from './PilotCard';
 import SystemInfoBar from './SystemInfoBar';
@@ -93,8 +93,10 @@ function App() {
 		map.visibilityEvent.add(setMapVisible);
 		hostState.notifyAppReady();
 
+		cards.stationsRef = setScoreboardVisible;
 		return () => {
 			map.visibilityEvent.delete(setMapVisible);
+			cards.stationsRef = undefined;
 		};
 	}, []);
 
@@ -148,7 +150,7 @@ function App() {
 							</ListItemButton>
 						</ListItem>
 						<ListItem key='pilot_list' disablePadding>
-							<ListItemButton selected={scoreboardVisible} onClick={() => { setScoreboardVisible(!scoreboardVisible); }}>
+							<ListItemButton selected={scoreboardVisible} onClick={() => { cards.showStationLists(!scoreboardVisible); }}>
 								<MainListIcon><GroupsIcon /></MainListIcon>
 								<MainListText primary='Station List' />
 							</ListItemButton>
@@ -173,6 +175,7 @@ function App() {
 					<Stack direction='row' sx={{ flex: '1 1 auto', position: 'absolute', height: '100%', pointerEvents: 'none' }} >
 						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%', pointerEvents: 'auto' }} >
 							<Scoreboard open={scoreboardVisible} />
+							<FacilityStationsList />
 						</Stack>
 						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: 'fit-content', pointerEvents: 'auto' }} >
 							<ControllerCard />

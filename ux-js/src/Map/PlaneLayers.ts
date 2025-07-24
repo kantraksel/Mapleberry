@@ -109,6 +109,8 @@ class PlaneLayers {
     }
 
     public addPlane(plane: MapPlane) {
+        plane.point.set('ol_layer', this.pointLayer);
+        plane.label.set('ol_layer', this.labelLayer);
         this.pointSource.addFeature(plane.point);
         this.labelSource.addFeature(plane.label);
     }
@@ -119,6 +121,8 @@ class PlaneLayers {
     }
 
     public addFarPlane(plane: MapPlane) {
+        plane.point.set('ol_layer', this.farPointLayer);
+        plane.label.set('ol_layer', this.farLabelLayer);
         this.farPointSource.addFeature(plane.point);
         this.farLabelSource.addFeature(plane.label);
     }

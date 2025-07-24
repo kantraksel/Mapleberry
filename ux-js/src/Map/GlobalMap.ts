@@ -5,6 +5,7 @@ import { fromLonLat, toLonLat } from 'ol/proj';
 import { FeatureLike } from 'ol/Feature';
 import { ObjectEvent } from 'ol/Object';
 import Event from '../Event';
+import VectorLayer from 'ol/layer/Vector';
 
 type ClickEvent = (e: FeatureLike[]) => void;
 type ResEvent = (value: number) => void;
@@ -87,7 +88,7 @@ class GlobalMap {
             if (features.length == 0) {
                 return;
             }
-            this.clickEvent.invoke(features);
+            this.clickEvent.invoke(sortFeatures(features));
         });
 
         view.on('change:resolution', (e: ObjectEvent) => {
@@ -165,6 +166,41 @@ class GlobalMap {
     public get saveLastPosition() {
         return !Number.isNaN(this.lastPosUpdate);
     }
+}
+
+function sortFeatures(features: FeatureLike[]) {
+    if (features.length < 2) {
+        return features;
+    }
+
+    let layers = features.map<VectorLayer | undefined>(feature => feature.get('ol_layer'));
+    let startLayer = layers[0];
+    let startLayerIdx = 0;
+    let result: FeatureLike[] = [];
+
+    for (let i = 1; i < features.length; ++i) {
+        const layer = layers[i];
+        if (startLayer == layer) {
+            continue;
+        }
+
+        const set = features.slice(startLayerIdx, i);
+        if (startLayer) {
+            set.reverse();
+        }
+        set.forEach(feature => result.push(feature));
+
+        startLayer = layer;
+        startLayerIdx = i;
+    }
+
+    const set = features.slice(startLayerIdx);
+    if (startLayer) {
+        set.reverse();
+    }
+    set.forEach(feature => result.push(feature));
+
+    return result;
 }
 
 export default GlobalMap;

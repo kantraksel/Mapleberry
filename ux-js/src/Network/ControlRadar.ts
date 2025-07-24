@@ -3,40 +3,53 @@ import MapArea, { StationDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
 import { Airport_ext } from './ControlStations';
 import { Controller, NetworkStations } from './VATSIM';
+import Event from '../Event';
 
 export class VatsimArea {
+    icao: string;
     area: MapArea;
     controllers: Controller[];
+    station: StationDesc;
 
     constructor(desc: StationDesc) {
         this.area = new MapArea(desc);
         this.controllers = [];
+        this.station = desc;
+        this.icao = desc.icao;
 
         this.area.netState = this;
     }
 }
 
 export class VatsimField {
+    icao: string;
     field: MapField;
     controllers: Controller[];
+    station: Airport_ext;
 
     constructor(station: Airport_ext) {
         this.field = new MapField(station);
         this.controllers = [];
+        this.station = station;
+        this.icao = station.icao;
 
         this.field.netState = this;
     }
 }
 
+export type VatsimControl = VatsimArea | VatsimField;
+
 class ControlRadar {
     private fields: Map<string, VatsimField>;
     private areas: Map<string, VatsimArea>;
     private waitTimer: number;
+    public readonly update: Event<() => void>;
 
     constructor() {
         this.fields = new Map();
         this.areas = new Map();
         this.waitTimer = 0;
+        this.update = new Event();
 
         vatsim.Update.add(networkData => {
             if (controlStations.isReady()) {
@@ -58,18 +71,26 @@ class ControlRadar {
         });
     }
 
-    public onSelectStation(e: FeatureLike[]) {
-        const obj = MapArea.getNetState(e[0]);
+    public onSelectStation(e: FeatureLike) {
+        const obj = MapArea.getNetState(e);
         if (obj) {
-            //TODO: show controller list
-            cards.showControllerCard(obj.controllers[0]);
+            const controllers = obj.controllers;
+            if (controllers.length > 1) {
+                cards.showFacilityList(obj);
+            } else {
+                cards.showControllerCard(controllers[0]);
+            }
             return true;
         }
 
-        const obj2 = MapField.getNetState(e[0]);
+        const obj2 = MapField.getNetState(e);
         if (obj2) {
-            //TODO: show controller list
-            cards.showControllerCard(obj2.controllers[0]);
+            const controllers = obj2.controllers;
+            if (controllers.length > 1) {
+                cards.showFacilityList(obj2);
+            } else {
+                cards.showControllerCard(controllers[0]);
+            }
             return true;
         }
 
@@ -85,6 +106,8 @@ class ControlRadar {
             controlLayers.removeArea(area.area);
         });
         this.areas.clear();
+
+        this.update.invoke();
     }
 
     private onRefresh(networkData?: NetworkStations) {
@@ -123,6 +146,7 @@ class ControlRadar {
 
         this.updateFields(field_controllers);
         this.updateAreas(area_controllers);
+        this.update.invoke();
     }
 
     private updateFields(controllers: Controller[]) {
@@ -199,6 +223,18 @@ class ControlRadar {
             areas.delete(icao);
             controlLayers.removeArea(area.area);
         });
+    }
+
+    public getStation(icao: string): VatsimControl | undefined {
+        const area = this.areas.get(icao);
+        if (area) {
+            return area;
+        }
+
+        const field = this.fields.get(icao);
+        if (field) {
+            return field;
+        }
     }
 }
 

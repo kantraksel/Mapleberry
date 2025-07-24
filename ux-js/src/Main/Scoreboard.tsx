@@ -1,12 +1,15 @@
-import { Box, IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
+import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Controller, NetworkStations, Pilot, Prefile } from '../Network/VATSIM';
 import NotesIcon from '@mui/icons-material/Notes';
+import CloseIcon from '@mui/icons-material/Close';
+import { VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
     return (
         <Box sx={{
+            position: 'relative',
             border: `3px solid #2c2c2c`,
             borderRadius: '5px',
             background: '#2c2c2c',
@@ -418,3 +421,55 @@ function Scoreboard(props: { open: boolean }) {
 }
 
 export default Scoreboard;
+
+function FacilityStationsList() {
+    const [facility, setFacility] = useState<VatsimControl>();
+    const hasFacility = facility != undefined;
+
+    useEffect(() => {
+        cards.facilityRef = setFacility;
+        return () => {
+            cards.facilityRef = undefined;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!facility) {
+            return;
+        }
+        const onUpdate = () => {
+            setFacility(controlRadar.getStation(facility.icao));
+        };
+        controlRadar.update.add(onUpdate);
+        return () => {
+            controlRadar.update.delete(onUpdate);
+        };
+    }, [facility]);
+
+    let list: Controller[] | undefined = [];
+    let stationName = '';
+    if (facility) {
+        if (facility instanceof VatsimArea) {
+            list = facility.controllers;
+            stationName = facility.station.name;
+        } else if (facility instanceof VatsimField) {
+            list = facility.controllers;
+            stationName = facility.station.name;
+        }
+    }
+
+    return (
+        <InfoBox width={530} height='100%' visible={hasFacility}>
+            <Box sx={{ padding: 1 }}>
+                <Typography variant='h5'>{stationName}</Typography>
+            </Box>
+            <Stack position='absolute' right='5px' top='3px' direction='row-reverse'>
+                <IconButton onClick={() => setFacility(undefined)}><CloseIcon /></IconButton>
+            </Stack>
+            <Paper style={{ height: '100%', width: '100%' }}>
+                <DynamicList enabled={hasFacility} columns={controllerColumns} values={list} />
+            </Paper>
+        </InfoBox>
+    );
+}
+export { FacilityStationsList };

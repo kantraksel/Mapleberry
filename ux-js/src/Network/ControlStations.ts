@@ -392,8 +392,12 @@ class ControlStations {
 
             const country = country_map.get(value.icao.slice(0, 2));
             let name = value.name;
-            if (country && country.fir_suffix.length > 0) {
-                name = `${name} ${country.fir_suffix}`;
+            if (country) {
+                let suffix = country.fir_suffix;
+                if (suffix.length == 0) {
+                    suffix = 'Center';
+                }
+                name = `${name} ${suffix}`;
             }
 
             let fir = firs.get(value.icao);

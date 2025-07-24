@@ -7,10 +7,10 @@ function ControllerCard() {
     const [data, setData] = useState<Controller>();
 
     useEffect(() => {
-        cards.setControllerCard(setData);
+        cards.controllerRef = setData;
 
         return () => {
-            cards.setControllerCard(undefined);
+            cards.controllerRef = undefined;
         };
     }, []);
 

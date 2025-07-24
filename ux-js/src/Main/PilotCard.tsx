@@ -7,10 +7,10 @@ function PilotCard() {
     const [data, setData] = useState<Pilot>();
 
     useEffect(() => {
-        cards.setPilotCard(setData);
+        cards.pilotRef = setData;
 
         return () => {
-            cards.setPilotCard(undefined);
+            cards.pilotRef = undefined;
         };
     }, []);
 

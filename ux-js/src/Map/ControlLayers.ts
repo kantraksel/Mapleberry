@@ -113,6 +113,8 @@ class ControlLayer {
     }
 
     public addField(field: MapField) {
+        field.point.set('ol_layer', this.fieldLayer);
+        field.label.set('ol_layer', this.fieldLabelLayer);
         this.fieldSource.addFeature(field.point);
         this.fieldLabelSource.addFeature(field.label);
     }
@@ -123,8 +125,10 @@ class ControlLayer {
     }
 
     public addArea(area: MapArea) {
+        area.area.set('ol_layer', this.areaLayer);
         this.areaSource.addFeature(area.area);
         area.labels.forEach(label => {
+            label.set('ol_layer', this.areaLabelLayer);
             this.areaLabelSource.addFeature(label);
         });
     }

@@ -60,8 +60,8 @@ class TrafficRadar {
         });
     }
 
-    public onSelectStation(e: FeatureLike[]) {
-        const obj = MapPlane.getNetState(e[0]);
+    public onSelectStation(e: FeatureLike) {
+        const obj = MapPlane.getNetState(e);
         if (obj) {
             cards.showPilotCard(obj.pilot);
             return true;
