@@ -595,6 +595,11 @@ class ControlStations {
         return obj;
     }
 
+    public getAirportByIcao(callsign: string): Airport_ext | undefined {
+        const id_parts = callsign.split('_');
+        return this.airports.get(id_parts[0]);
+    }
+
     public isReady() {
         return this.ready;
     }

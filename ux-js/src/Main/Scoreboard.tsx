@@ -4,7 +4,7 @@ import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, Synthe
 import { Controller, NetworkStations, Pilot, Prefile } from '../Network/VATSIM';
 import NotesIcon from '@mui/icons-material/Notes';
 import CloseIcon from '@mui/icons-material/Close';
-import { VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
+import { ControllerEx, VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
     return (
@@ -110,12 +110,15 @@ const pilotColumns: Column<Pilot>[] = [
     },
 ];
 
-const controllerColumns: Column<Controller>[] = [
+const controllerColumns: Column<ControllerEx>[] = [
     {
         width: 120,
         id: 'callsign',
         label: 'Callsign',
-        data: 'callsign',
+        data: (data) => {
+            const color = data.station ? undefined : 'error';
+            return <Typography color={color} variant='inherit'>{data.callsign}</Typography>;
+        },
         compare: (a, b) => {
             return compareIgnoreCase(a.callsign, b.callsign);
         },
@@ -198,6 +201,17 @@ const prefileColumns: Column<Prefile>[] = [
         data: 'cid',
         compare: (a, b) => {
             return a.cid - b.cid;
+        },
+    },
+    {
+        width: 50,
+        id: 'buttons',
+        label: '',
+        data: data => {
+            const onClick = () => {
+                cards.showPrefileCard(data);
+            };
+            return <IconButton onClick={onClick} size='small'><NotesIcon fontSize='small' /></IconButton>;
         },
     },
 ];

@@ -1,10 +1,11 @@
 import { VatsimControl } from './Network/ControlRadar';
-import { Controller, Pilot } from './Network/VATSIM';
+import { Controller, Pilot, Prefile } from './Network/VATSIM';
 
 class Cards {
     controllerRef?: (data: Controller | undefined) => void;
     pilotRef?: (data: Pilot | undefined) => void;
     facilityRef?: (data: VatsimControl | undefined) => void;
+    prefileRef?: (data: Prefile | undefined) => void;
     stationsRef?: (show: boolean) => void;
 
     constructor() {
@@ -20,6 +21,7 @@ class Cards {
             this.controllerRef?.call(null, undefined);
             this.pilotRef?.call(null, undefined);
             this.facilityRef?.call(null, undefined);
+            this.prefileRef?.call(null, undefined);
         });
     }
 
@@ -27,18 +29,28 @@ class Cards {
         this.pilotRef?.call(null, undefined);
         this.controllerRef?.call(null, data);
         this.facilityRef?.call(null, undefined);
+        this.prefileRef?.call(null, undefined);
     }
 
     showPilotCard(data: Pilot) {
         this.controllerRef?.call(null, undefined);
         this.pilotRef?.call(null, data);
         this.facilityRef?.call(null, undefined);
+        this.prefileRef?.call(null, undefined);
+    }
+    
+    showPrefileCard(data: Prefile) {
+        this.controllerRef?.call(null, undefined);
+        this.pilotRef?.call(null, undefined);
+        this.facilityRef?.call(null, undefined);
+        this.prefileRef?.call(null, data);
     }
 
     showFacilityList(data: VatsimControl) {
         this.pilotRef?.call(null, undefined);
         this.controllerRef?.call(null, undefined);
         this.facilityRef?.call(null, data);
+        this.prefileRef?.call(null, undefined);
         this.stationsRef?.call(null, false);
     }
 

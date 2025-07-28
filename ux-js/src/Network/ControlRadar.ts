@@ -38,6 +38,7 @@ export class VatsimField {
 }
 
 export type VatsimControl = VatsimArea | VatsimField;
+export type ControllerEx = Controller & { station?: boolean };
 
 class ControlRadar {
     private fields: Map<string, VatsimField>;
@@ -149,7 +150,7 @@ class ControlRadar {
         this.update.invoke();
     }
 
-    private updateFields(controllers: Controller[]) {
+    private updateFields(controllers: ControllerEx[]) {
         const fields = this.fields;
         fields.forEach(field => {
             field.controllers = [];
@@ -162,8 +163,10 @@ class ControlRadar {
             const airport = controlStations.getAirport(callsign);
             if (!airport) {
                 console.warn(`Cannot find airport for ${callsign}`);
+                controller.station = false;
                 return;
             }
+            controller.station = true;
             const id = airport.icao;
 
             let field = fields.get(id);
@@ -183,7 +186,7 @@ class ControlRadar {
         });
     }
 
-    private updateAreas(controllers: Controller[]) {
+    private updateAreas(controllers: ControllerEx[]) {
         const areas = this.areas;
         areas.forEach(area => {
             area.controllers = [];
@@ -199,6 +202,7 @@ class ControlRadar {
                 const fir = controlStations.getFIR(callsign);
                 if (!fir) {
                     console.warn(`Cannot find FIR/UIR for ${callsign}`);
+                    controller.station = false;
                     return;
                 }
 
@@ -206,6 +210,7 @@ class ControlRadar {
             } else {
                 area_desc = uir;
             }
+            controller.station = true;
             const id = area_desc.icao;
 
             let area = areas.get(id);

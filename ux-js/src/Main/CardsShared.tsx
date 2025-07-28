@@ -127,3 +127,39 @@ export function getEnrouteTime(plan: FlightPlan) {
         return plan.enroute_time;
     }
 }
+
+interface StationNames {
+    departure: string,
+    arrival: string,
+    alternate: string,
+}
+
+export function createStationNames(data?: { flight_plan?: FlightPlan }): StationNames {
+    const names = {
+        departure: '',
+        arrival: '',
+        alternate: '',
+    };
+
+    if (!data) {
+        return names;
+    }
+    const plan = data.flight_plan;
+    if (!plan) {
+        return names;
+    }
+
+    let airport = controlStations.getAirportByIcao(plan.departure);
+    if (airport) {
+        names.departure = airport.name;
+    }
+    airport = controlStations.getAirportByIcao(plan.arrival);
+    if (airport) {
+        names.arrival = airport.name;
+    }
+    airport = controlStations.getAirportByIcao(plan.alternate);
+    if (airport) {
+        names.alternate = airport.name;
+    }
+    return names;
+}

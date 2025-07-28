@@ -13,6 +13,7 @@ import Scoreboard, { FacilityStationsList } from './Scoreboard';
 import ControllerCard from './ControllerCard';
 import PilotCard from './PilotCard';
 import SystemInfoBar from './SystemInfoBar';
+import PrefileCard from './PrefileCard';
 
 const MainDrawerContext = createContext(true);
 
@@ -180,6 +181,7 @@ function App() {
 						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: 'fit-content', pointerEvents: 'auto' }} >
 							<ControllerCard />
 							<PilotCard />
+							<PrefileCard />
 						</Stack>
 					</Stack>
 
@@ -199,24 +201,33 @@ export default App;
 
 /*
 TODO:
-- handle observers on different station types, e.g. Supervisors
-
+- navigation between lists and cards + adjust lists-cards look
+- add ATIS to fields + draw ATIS-only field as outlined
 - add fallback: when controller chooses wrong station type, search the station in other types (airport services may select Center, Center may select Approach, etc)
-- write FIR/UIR/Aiport benchmarks
-- investigate KZNY & SUEO - determine oceanic flag
+- expose stationless controllers on map
+- on station disappear mark current card as old
 
+- add VATSIM metar query
 - add local airplane button
 - /and/or/ add local planes in Stations Lists (as a tab)
+- try to autodetect local airplane, show toast with suggestion
 
-- implement OSM Vector Tiles
-- details when airplane/airport/ARTCC is selected
-- mark controller when finding station has failed
 - cache VATSpy data + update mechanism (self-host and github)
 - try to eliminate large, thin holes in UIRs
 - option: airport label icao or iata
 - option: airplane label simple or extended
+- option: hide areas, planes, airports
+- option: hide fields with ATIS only
+- better contrast for net planes and area labels
+- add network status icon
+- redesign network data (flow), single source of truth for UX + less useless objects
 
-- device control panel
+- implement OSM Vector Tiles
+- handle observers on different station types, e.g. Supervisors
+- write FIR/UIR/Aiport benchmarks
+- investigate KZNY & SUEO - determine oceanic flag
+
+- device control panel (possibly move to different project, native ImGui app)
 
 OSM Vector Tiles:
 https://americanamap.org/
@@ -229,7 +240,7 @@ vatsim.Update.invoke(vatsim.networkData);
 
 Dataset errors:
 [NOT EXPLORED] Boundaries.geojson: some entries (above 700) have numeric properties instead of strings
-Boundaries.geojson: 300 & 301 - LKAA is duplicated [CONFIRM USING PROGRAM]
+[FIXED] Boundaries.geojson: 300 & 301 - LKAA is duplicated [CONFIRM USING PROGRAM]
 VATSpy.dat: 9704 - OAKB is not a FIR (most likely OAKX)
 VATSpy.dat: 13029 - FIR UULL doesn't exist (most likely ULLL)
 VATSpy.dat: 13624 - FIR VMSN doesn't exist (most likely VNSM)
