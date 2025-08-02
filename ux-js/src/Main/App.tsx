@@ -14,6 +14,7 @@ import ControllerCard from './ControllerCard';
 import PilotCard from './PilotCard';
 import SystemInfoBar from './SystemInfoBar';
 import PrefileCard from './PrefileCard';
+import AtisCard from './AtisCard';
 
 const MainDrawerContext = createContext(true);
 
@@ -182,6 +183,7 @@ function App() {
 							<ControllerCard />
 							<PilotCard />
 							<PrefileCard />
+							<AtisCard />
 						</Stack>
 					</Stack>
 
@@ -202,10 +204,10 @@ export default App;
 /*
 TODO:
 - navigation between lists and cards + adjust lists-cards look
-- add ATIS to fields + draw ATIS-only field as outlined
 - add fallback: when controller chooses wrong station type, search the station in other types (airport services may select Center, Center may select Approach, etc)
 - expose stationless controllers on map
 - on station disappear mark current card as old
+- add scrolling context to controller information (station+atis)
 
 - add VATSIM metar query
 - add local airplane button
@@ -220,7 +222,7 @@ TODO:
 - option: hide fields with ATIS only
 - better contrast for net planes and area labels
 - add network status icon
-- redesign network data (flow), single source of truth for UX + less useless objects
+- redesign network data (flow), single source of truth for UX + less useless objects + add ATIS+Controller array
 
 - implement OSM Vector Tiles
 - handle observers on different station types, e.g. Supervisors
@@ -237,6 +239,7 @@ https://stats.vatsim.net/search_id.php?id={cid}
 vatsim.networkData = JSON.parse(localStorage.getItem('vatsim_list'));
 vatsim.propsCache = vatsim.networkData;
 vatsim.Update.invoke(vatsim.networkData);
+https://vatspy-data.kantraksel.workers.dev/release.json
 
 Dataset errors:
 [NOT EXPLORED] Boundaries.geojson: some entries (above 700) have numeric properties instead of strings

@@ -467,7 +467,7 @@ function FacilityStationsList() {
             list = facility.controllers;
             stationName = facility.station.name;
         } else if (facility instanceof VatsimField) {
-            list = facility.controllers;
+            list = [...facility.controllers, ...facility.atis];
             stationName = facility.station.name;
         }
     }

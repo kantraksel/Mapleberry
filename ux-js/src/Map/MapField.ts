@@ -39,6 +39,20 @@ class MapField {
         }
         return value as VatsimField;
     }
+
+    public setFilled() {
+        this.point.setStyle(controlLayers.filledPointStyle);
+        this.label.set('control_field_outlined', undefined);
+    }
+
+    public setOutlined() {
+        this.point.setStyle(controlLayers.outlinedPointStyle);
+        this.label.set('control_field_outlined', true);
+    }
+
+    public static getOutlined(feature: FeatureLike): boolean | undefined {
+        return feature.get('control_field_outlined');
+    }
 }
 
 export default MapField;

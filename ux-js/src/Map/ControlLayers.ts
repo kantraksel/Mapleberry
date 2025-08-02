@@ -2,6 +2,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { FeatureLike } from 'ol/Feature';
 import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Circle as OlCircle } from 'ol/style';
+import { StyleLike } from 'ol/style/Style';
 import MapField from './MapField';
 import MapArea from './MapArea';
 
@@ -15,11 +16,28 @@ class ControlLayer {
     private areaLabelLayer?: VectorLayer;
     private areaLabelSource: VectorSource;
 
+    public readonly filledPointStyle: StyleLike;
+    public readonly outlinedPointStyle: StyleLike;
+
     public constructor() {
         this.fieldSource = new VectorSource();
         this.fieldLabelSource = new VectorSource();
         this.areaSource = new VectorSource();
         this.areaLabelSource = new VectorSource();
+
+        this.filledPointStyle = new OlStyle({
+            image: new OlCircle({
+                radius: 5,
+                fill: new OlFill({ color: [135, 58, 235] }),
+            }),
+        });
+        this.outlinedPointStyle = new OlStyle({
+            image: new OlCircle({
+                radius: 5,
+                fill: new OlFill({ color: [1, 1, 1, 0.01] }),
+                stroke: new OlStroke({ color: [135, 58, 235], width: 3 }),
+            }),
+        });
 
         this.createAreaLayers();
         this.createFieldLayers();
@@ -38,12 +56,6 @@ class ControlLayer {
     }
 
     private createFieldLayers() {
-        const pointStyle = new OlStyle({
-            image: new OlCircle({
-                radius: 5,
-                fill: new OlFill({ color: [135, 58, 235] }),
-            }),
-        });
         const labelStyleObj = new OlStyle({
             text: new OlText({
                 padding: [ 3, 1, 1, 4 ],
@@ -59,12 +71,18 @@ class ControlLayer {
             }
 
             const callsign = MapField.getStation(feature)?.icao ?? 'unknown';
-            labelStyleObj.getText()!.setText(callsign);
+            const text = labelStyleObj.getText()!;
+            text.setText(callsign);
+            if (MapField.getOutlined(feature)) {
+                text.setFont('italic 14px "Cascadia Code"');
+            } else {
+                text.setFont('14px "Cascadia Code"');
+            }
             return labelStyleObj;
         };
 
         this.fieldLayer = new VectorLayer({
-            style: pointStyle,
+            style: this.filledPointStyle,
             source: this.fieldSource,
         });
         this.fieldLabelLayer = new VectorLayer({

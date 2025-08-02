@@ -54,7 +54,7 @@ export interface Controller {
     logon_time: string,
 }
 
-interface Atis {
+export interface Atis {
     cid: number,
     name: string,
     callsign: string,

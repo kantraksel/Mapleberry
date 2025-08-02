@@ -1,11 +1,12 @@
 import { VatsimControl } from './Network/ControlRadar';
-import { Controller, Pilot, Prefile } from './Network/VATSIM';
+import { Atis, Controller, Pilot, Prefile } from './Network/VATSIM';
 
 class Cards {
     controllerRef?: (data: Controller | undefined) => void;
     pilotRef?: (data: Pilot | undefined) => void;
     facilityRef?: (data: VatsimControl | undefined) => void;
     prefileRef?: (data: Prefile | undefined) => void;
+    atisRef?: (data: Atis | undefined) => void;
     stationsRef?: (show: boolean) => void;
 
     constructor() {
@@ -22,6 +23,7 @@ class Cards {
             this.pilotRef?.call(null, undefined);
             this.facilityRef?.call(null, undefined);
             this.prefileRef?.call(null, undefined);
+            this.atisRef?.call(null, undefined);
         });
     }
 
@@ -30,6 +32,7 @@ class Cards {
         this.controllerRef?.call(null, data);
         this.facilityRef?.call(null, undefined);
         this.prefileRef?.call(null, undefined);
+        this.atisRef?.call(null, undefined);
     }
 
     showPilotCard(data: Pilot) {
@@ -37,6 +40,7 @@ class Cards {
         this.pilotRef?.call(null, data);
         this.facilityRef?.call(null, undefined);
         this.prefileRef?.call(null, undefined);
+        this.atisRef?.call(null, undefined);
     }
     
     showPrefileCard(data: Prefile) {
@@ -44,6 +48,7 @@ class Cards {
         this.pilotRef?.call(null, undefined);
         this.facilityRef?.call(null, undefined);
         this.prefileRef?.call(null, data);
+        this.atisRef?.call(null, undefined);
     }
 
     showFacilityList(data: VatsimControl) {
@@ -51,7 +56,16 @@ class Cards {
         this.controllerRef?.call(null, undefined);
         this.facilityRef?.call(null, data);
         this.prefileRef?.call(null, undefined);
+        this.atisRef?.call(null, undefined);
         this.stationsRef?.call(null, false);
+    }
+
+    showAtisCard(data: Atis) {
+        this.controllerRef?.call(null, undefined);
+        this.pilotRef?.call(null, undefined);
+        this.facilityRef?.call(null, undefined);
+        this.prefileRef?.call(null, undefined);
+        this.atisRef?.call(null, data);
     }
 
     showStationLists(show: boolean) {

@@ -2,7 +2,7 @@ import { FeatureLike } from 'ol/Feature';
 import MapArea, { StationDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
 import { Airport_ext } from './ControlStations';
-import { Controller, NetworkStations } from './VATSIM';
+import { Atis, Controller, NetworkStations } from './VATSIM';
 import Event from '../Event';
 
 export class VatsimArea {
@@ -25,20 +25,35 @@ export class VatsimField {
     icao: string;
     field: MapField;
     controllers: Controller[];
+    atis: Atis[];
     station: Airport_ext;
+    isOutlined: boolean;
 
     constructor(station: Airport_ext) {
         this.field = new MapField(station);
         this.controllers = [];
+        this.atis = [];
         this.station = station;
         this.icao = station.icao;
+        this.isOutlined = false;
 
         this.field.netState = this;
+    }
+
+    setFill() {
+        this.field.setFilled();
+        this.isOutlined = false;
+    }
+
+    setOutline() {
+        this.field.setOutlined();
+        this.isOutlined = true;
     }
 }
 
 export type VatsimControl = VatsimArea | VatsimField;
 export type ControllerEx = Controller & { station?: boolean };
+export type AtisEx = Atis & { station?: boolean };
 
 class ControlRadar {
     private fields: Map<string, VatsimField>;
@@ -87,10 +102,13 @@ class ControlRadar {
         const obj2 = MapField.getNetState(e);
         if (obj2) {
             const controllers = obj2.controllers;
-            if (controllers.length > 1) {
+            const atis = obj2.atis;
+            if ((controllers.length + atis.length) > 1) {
                 cards.showFacilityList(obj2);
-            } else {
+            } else if (controllers.length > 0) {
                 cards.showControllerCard(controllers[0]);
+            } else {
+                cards.showAtisCard(atis[0]);
             }
             return true;
         }
@@ -145,12 +163,12 @@ class ControlRadar {
             }
         });
 
-        this.updateFields(field_controllers);
+        this.updateFields(field_controllers, networkData.atis);
         this.updateAreas(area_controllers);
         this.update.invoke();
     }
 
-    private updateFields(controllers: ControllerEx[]) {
+    private updateFields(controllers: ControllerEx[], atis: AtisEx[]) {
         const fields = this.fields;
         fields.forEach(field => {
             field.controllers = [];
@@ -172,12 +190,44 @@ class ControlRadar {
             let field = fields.get(id);
             if (field) {
                 old_fields.delete(id);
+
+                if (field.isOutlined) {
+                    field.setFill();
+                }
             } else {
                 field = new VatsimField(airport);
                 fields.set(id, field);
                 controlLayers.addField(field.field);
             }
             field.controllers.push(controller);
+        });
+        atis.forEach(atis => {
+            const callsign = atis.callsign;
+
+            const airport = controlStations.getAirport(callsign);
+            if (!airport) {
+                console.warn(`Cannot find airport for ${callsign}`);
+                atis.station = false;
+                return;
+            }
+            atis.station = true;
+            const id = airport.icao;
+
+            let field = fields.get(id);
+            if (field) {
+                old_fields.delete(id);
+
+                if (!field.isOutlined && field.controllers.length == 0) {
+                    field.setOutline();
+                }
+            } else {
+                field = new VatsimField(airport);
+                fields.set(id, field);
+                controlLayers.addField(field.field);
+
+                field.setOutline();
+            }
+            field.atis.push(atis);
         });
 
         old_fields.forEach((field, icao) => {
