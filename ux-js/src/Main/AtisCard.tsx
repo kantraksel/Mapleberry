@@ -20,7 +20,7 @@ function AtisCard() {
         }
         const handler = (networkData?: NetworkStations) => {
             if (!networkData) {
-                setData(undefined);
+                cards.close();
                 return;
             }
 
@@ -43,14 +43,10 @@ function AtisCard() {
     const timeOnline = getTimeOnline(data);
     const info = data.text_atis?.join(' ') ?? 'N/A';
 
-    const onClose = () => {
-        setData(undefined);
-    };
-
     return (
-        <InfoBox width={500} height={'auto'} onClose={onClose}>
-            <Typography variant='h4'>{data.callsign}</Typography>
-            <Stack direction='row' spacing={3} sx={{ mt: '5px', pl: '14px', pr: '14px', width: '100%', justifyContent: 'space-between' }}>
+        <InfoBox width={500} maxWidth='100vw'>
+            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5' }}>{data.callsign}</Typography>
+            <Stack direction='row' spacing={3} sx={{ pl: '14px', pr: '14px', width: '100%', justifyContent: 'space-between' }}>
                 <Stack direction='row' spacing={1}>
                     <Stack>
                         <Typography>Name:</Typography>

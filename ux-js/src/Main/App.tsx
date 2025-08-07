@@ -152,7 +152,7 @@ function App() {
 							</ListItemButton>
 						</ListItem>
 						<ListItem key='pilot_list' disablePadding>
-							<ListItemButton selected={scoreboardVisible} onClick={() => { cards.showStationLists(!scoreboardVisible); }}>
+							<ListItemButton selected={scoreboardVisible} onClick={() => { scoreboardVisible ? cards.close() : cards.showStationLists(true); }}>
 								<MainListIcon><GroupsIcon /></MainListIcon>
 								<MainListText primary='Station List' />
 							</ListItemButton>
@@ -203,7 +203,6 @@ export default App;
 
 /*
 TODO:
-- navigation between lists and cards + adjust lists-cards look
 - add fallback: when controller chooses wrong station type, search the station in other types (airport services may select Center, Center may select Approach, etc)
 - expose stationless controllers on map
 - on station disappear mark current card as old
@@ -223,11 +222,13 @@ TODO:
 - better contrast for net planes and area labels
 - add network status icon
 - redesign network data (flow), single source of truth for UX + less useless objects + add ATIS+Controller array
+- option: draw 50 NM TRACON circle
 
 - implement OSM Vector Tiles
 - handle observers on different station types, e.g. Supervisors
 - write FIR/UIR/Aiport benchmarks
 - investigate KZNY & SUEO - determine oceanic flag
+- integrate VATSIM AIP, accurate station names
 
 - device control panel (possibly move to different project, native ImGui app)
 

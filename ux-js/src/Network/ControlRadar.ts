@@ -51,9 +51,14 @@ export class VatsimField {
     }
 }
 
+export enum BroadcastType {
+    Control,
+    ATIS,
+}
+
 export type VatsimControl = VatsimArea | VatsimField;
-export type ControllerEx = Controller & { station?: boolean };
-export type AtisEx = Atis & { station?: boolean };
+export type ControllerEx = Controller & { station?: boolean, type?: BroadcastType };
+export type AtisEx = Atis & { station?: boolean, type?: BroadcastType };
 
 class ControlRadar {
     private fields: Map<string, VatsimField>;
@@ -177,6 +182,7 @@ class ControlRadar {
         const old_fields = new Map(fields);
         controllers.forEach(controller => {
             const callsign = controller.callsign;
+            controller.type = BroadcastType.Control;
 
             const airport = controlStations.getAirport(callsign);
             if (!airport) {
@@ -203,6 +209,7 @@ class ControlRadar {
         });
         atis.forEach(atis => {
             const callsign = atis.callsign;
+            atis.type = BroadcastType.ATIS;
 
             const airport = controlStations.getAirport(callsign);
             if (!airport) {

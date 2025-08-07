@@ -21,7 +21,7 @@ function ControllerCard() {
             }
 
             if (!networkData) {
-                setData(undefined);
+                cards.close();
                 return;
             }
 
@@ -46,14 +46,10 @@ function ControllerCard() {
     const station = getStation(data);
     const info = data.text_atis?.join('\n') ?? 'N/A';
 
-    const onClose = () => {
-        setData(undefined);
-    };
-
     return (
-        <InfoBox width={500} height={'auto'} onClose={onClose}>
-            <Typography variant='h4'>{data.callsign}</Typography>
-            <Stack direction='row' spacing={3} sx={{ mt: '5px', ml: '7px', mr: '7px' }}>
+        <InfoBox width='auto' maxWidth='100vw'>
+            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5' }}>{data.callsign}</Typography>
+            <Stack direction='row' spacing={3} sx={{ ml: '7px', mr: '7px' }}>
                 <Stack direction='row' spacing={1}>
                     <Stack>
                         <Typography>Name:</Typography>

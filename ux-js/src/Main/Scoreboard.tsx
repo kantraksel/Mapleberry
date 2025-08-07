@@ -4,7 +4,7 @@ import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, Synthe
 import { Controller, NetworkStations, Pilot, Prefile } from '../Network/VATSIM';
 import NotesIcon from '@mui/icons-material/Notes';
 import CloseIcon from '@mui/icons-material/Close';
-import { ControllerEx, VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
+import { AtisEx, BroadcastType, ControllerEx, VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
     return (
@@ -110,12 +110,12 @@ const pilotColumns: Column<Pilot>[] = [
     },
 ];
 
-const controllerColumns: Column<ControllerEx>[] = [
+const controllerColumns: Column<ControllerEx | AtisEx>[] = [
     {
         width: 120,
         id: 'callsign',
         label: 'Callsign',
-        data: (data) => {
+        data: data => {
             const color = data.station ? undefined : 'error';
             return <Typography color={color} variant='inherit'>{data.callsign}</Typography>;
         },
@@ -127,8 +127,8 @@ const controllerColumns: Column<ControllerEx>[] = [
         width: 100,
         id: 'freq',
         label: 'Frequency',
-        data: (pilot) => {
-            return pilot.frequency;
+        data: data => {
+            return data.frequency;
         },
         compare: (a, b) => {
             return compareIgnoreCase(a.frequency, b.frequency);
@@ -148,9 +148,13 @@ const controllerColumns: Column<ControllerEx>[] = [
         width: 50,
         id: 'buttons',
         label: '',
-        data: (data) => {
+        data: data => {
             const onClick = () => {
-                cards.showControllerCard(data);
+                if (data.type == BroadcastType.ATIS) {
+                    cards.showAtisCard(data as AtisEx);
+                } else {
+                    cards.showControllerCard(data);
+                }
             };
             return <IconButton onClick={onClick} size='small'><NotesIcon fontSize='small' /></IconButton>;
         },
@@ -460,7 +464,7 @@ function FacilityStationsList() {
         };
     }, [facility]);
 
-    let list: Controller[] | undefined = [];
+    let list: Controller[] | undefined;
     let stationName = '';
     if (facility) {
         if (facility instanceof VatsimArea) {
@@ -478,7 +482,7 @@ function FacilityStationsList() {
                 <Typography variant='h5'>{stationName}</Typography>
             </Box>
             <Stack position='absolute' right='5px' top='3px' direction='row-reverse'>
-                <IconButton onClick={() => setFacility(undefined)}><CloseIcon /></IconButton>
+                <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>
             </Stack>
             <Paper style={{ height: '100%', width: '100%' }}>
                 <DynamicList enabled={hasFacility} columns={controllerColumns} values={list} />

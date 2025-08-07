@@ -31,8 +31,7 @@ function PrefileCard() {
 
         const handler = (networkData?: NetworkStations) => {
             if (!networkData) {
-                setData(undefined);
-                setStationNames(createStationNames());
+                cards.close();
                 return;
             }
 
@@ -57,14 +56,10 @@ function PrefileCard() {
     const flightRules = getFlightRules(flightplan);
     const enrouteTime = getEnrouteTime(flightplan);
 
-    const onClose = () => {
-        setData(undefined);
-    };
-
     return (
-        <InfoBox width={500} height={'auto'} onClose={onClose}>
-            <Typography variant='h4'>{data.callsign}</Typography>
-            <Stack useFlexGap direction='row' spacing={3} sx={{ mt: '5px', ml: '7px', mr: '7px', width: 'stretch' }}>
+        <InfoBox width='100vw' maxWidth={500}>
+            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5' }}>{data.callsign}</Typography>
+            <Stack useFlexGap direction='row' spacing={3} sx={{ ml: '7px', mr: '7px', width: 'stretch' }}>
                 <Stack useFlexGap direction='row' spacing={1} sx={{ flex: '1 1 auto' }}>
                     <Stack>
                         <Typography>Name:</Typography>

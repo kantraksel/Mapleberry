@@ -2,18 +2,18 @@ import { ReactNode } from 'react';
 import { Controller, FlightPlan, Pilot } from '../Network/VATSIM';
 import { IconButton, Stack } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 
-export function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, onClose: () => void }) {
+export function InfoBox(props: { children?: ReactNode, width: number | string, maxWidth: number | string }) {
     const style = {
         position: 'relative',
         border: `3px solid #2c2c2c`,
         borderRadius: '5px',
         background: '#2c2c2c',
-        minWidth: props.width,
-        minHeight: props.height,
+        width: props.width,
+        maxWidth: props.maxWidth,
         margin: '15px',
         alignItems: 'center',
-        padding: '5px',
         paddingLeft: '7px',
         paddingRight: '7px',
         paddingBottom: '7px',
@@ -22,8 +22,11 @@ export function InfoBox(props: { children?: ReactNode, width: number | string, h
     };
     return (
         <Stack sx={style}>
-            <Stack position='absolute' right='5px' direction='row-reverse'>
-                <IconButton onClick={props.onClose}><CloseIcon /></IconButton>
+            <Stack direction='row-reverse' sx={{ position: 'absolute', right: '5px', mt: '3px' }}>
+                <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>
+            </Stack>
+            <Stack direction='row' sx={{ position: 'absolute', left: '5px', mt: '3px' }}>
+                <IconButton onClick={() => cards.goBack()}><ArrowBackIosNewIcon /></IconButton>
             </Stack>
             {props.children}
         </Stack>
