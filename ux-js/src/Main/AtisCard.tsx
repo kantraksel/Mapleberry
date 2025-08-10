@@ -1,13 +1,17 @@
-import { Stack, TextField, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import { Atis, NetworkStations } from '../Network/VATSIM';
-import { getTimeOnline, InfoBox } from './CardsShared';
+import { getTimeOnline, InfoBox, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 function AtisCard() {
     const [data, setData] = useState<Atis>();
+    const [present, setPresent] = useState(true);
 
     useEffect(() => {
-        cards.atisRef = setData;
+        cards.atisRef = data => {
+            setData(data);
+            setPresent(true);
+        };
 
         return () => {
             cards.atisRef = undefined;
@@ -27,6 +31,9 @@ function AtisCard() {
             const value = networkData.atis.find(value => (value.cid === data.cid));
             if (value) {
                 setData(value);
+                setPresent(true);
+            } else {
+                setPresent(false);
             }
         };
         vatsim.Update.add(handler);
@@ -43,9 +50,11 @@ function AtisCard() {
     const timeOnline = getTimeOnline(data);
     const info = data.text_atis?.join(' ') ?? 'N/A';
 
+    const headerColor = present ? 'inherit' : '#8b8b8b';
+
     return (
         <InfoBox width={500} maxWidth='100vw'>
-            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5' }}>{data.callsign}</Typography>
+            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5', color: headerColor }}>{data.callsign}</Typography>
             <Stack direction='row' spacing={3} sx={{ pl: '14px', pr: '14px', width: '100%', justifyContent: 'space-between' }}>
                 <Stack direction='row' spacing={1}>
                     <Stack>
@@ -68,7 +77,7 @@ function AtisCard() {
                     </Stack>
                 </Stack>
             </Stack>
-            <TextField variant='outlined' multiline fullWidth sx={{ mt: '15px' }} label='Information' value={info} />
+            <TextBox label='Information' value={info} />
         </InfoBox>
     );
 }

@@ -1,6 +1,6 @@
-import { Divider, Grid, Stack, TextField, Typography } from '@mui/material';
+import { Divider, Grid, Stack, Typography } from '@mui/material';
 import { NetworkStations, Pilot } from '../Network/VATSIM';
-import { createStationNames, getEnrouteTime, getFlightplan, getFlightRules, getPilotRating, getTimeOnline, InfoBox } from './CardsShared';
+import { createStationNames, getEnrouteTime, getFlightplan, getFlightRules, getPilotRating, getTimeOnline, InfoBox, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 interface StationNames {
@@ -12,11 +12,13 @@ interface StationNames {
 function PilotCard() {
     const [data, setData] = useState<Pilot>();
     const [stationNames, setStationNames] = useState<StationNames>(createStationNames());
+    const [present, setPresent] = useState(true);
 
     useEffect(() => {
         cards.pilotRef = value => {
             setData(value);
             setStationNames(createStationNames(value));
+            setPresent(true);
         };
 
         return () => {
@@ -39,6 +41,9 @@ function PilotCard() {
             if (value) {
                 setData(value);
                 setStationNames(createStationNames(value));
+                setPresent(true);
+            } else {
+                setPresent(false);
             }
         };
         vatsim.Update.add(handler);
@@ -58,9 +63,11 @@ function PilotCard() {
     const flightRules = getFlightRules(flightplan);
     const enrouteTime = getEnrouteTime(flightplan);
 
+    const headerColor = present ? 'inherit' : '#8b8b8b';
+
     return (
         <InfoBox width='auto' maxWidth='100vw'>
-            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5' }}>{data.callsign}</Typography>
+            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5', color: headerColor }}>{data.callsign}</Typography>
             <Stack useFlexGap direction='row' spacing={3} sx={{ ml: '7px', mr: '7px', width: 'stretch' }}>
                 <Stack useFlexGap direction='row' spacing={1} sx={{ flex: '1 1 auto' }}>
                     <Stack>
@@ -124,8 +131,8 @@ function PilotCard() {
                     </Stack>
                 </Grid>
             </Grid>
-            <TextField variant='outlined' fullWidth sx={{ mt: '15px' }} label='Route' value={flightplan.route} />
-            <TextField variant='outlined' fullWidth sx={{ mt: '15px' }} label='Remarks' value={flightplan.remarks} />
+            <TextBox label='Route' value={flightplan.route} />
+            <TextBox label='Remarks' value={flightplan.remarks} />
         </InfoBox>
     );
 }

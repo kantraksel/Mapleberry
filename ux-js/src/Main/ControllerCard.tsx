@@ -1,13 +1,17 @@
-import { Stack, TextField, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
 import { Controller, NetworkStations } from '../Network/VATSIM';
-import { getControllerRating, getStation, getTimeOnline, InfoBox } from './CardsShared';
+import { getControllerRating, getStation, getTimeOnline, InfoBox, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 function ControllerCard() {
     const [data, setData] = useState<Controller>();
+    const [present, setPresent] = useState(true);
 
     useEffect(() => {
-        cards.controllerRef = setData;
+        cards.controllerRef = data => {
+            setData(data);
+            setPresent(true);
+        };
 
         return () => {
             cards.controllerRef = undefined;
@@ -15,19 +19,22 @@ function ControllerCard() {
     }, []);
 
     useEffect(() => {
-        const handler = (networkData?: NetworkStations) => {
-            if (!data) {
-                return;
-            }
+        if (!data) {
+            return;
+        }
 
+        const handler = (networkData?: NetworkStations) => {
             if (!networkData) {
                 cards.close();
                 return;
             }
 
-            const value = networkData.controllers.find((value) => (value.cid === data.cid));
+            const value = networkData.controllers.find(value => (value.cid === data.cid));
             if (value) {
                 setData(value);
+                setPresent(true);
+            } else {
+                setPresent(false);
             }
         };
         vatsim.Update.add(handler);
@@ -46,9 +53,11 @@ function ControllerCard() {
     const station = getStation(data);
     const info = data.text_atis?.join('\n') ?? 'N/A';
 
+    const headerColor = present ? 'inherit' : '#8b8b8b';
+
     return (
         <InfoBox width='auto' maxWidth='100vw'>
-            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5' }}>{data.callsign}</Typography>
+            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5', color: headerColor }}>{data.callsign}</Typography>
             <Stack direction='row' spacing={3} sx={{ ml: '7px', mr: '7px' }}>
                 <Stack direction='row' spacing={1}>
                     <Stack>
@@ -71,7 +80,7 @@ function ControllerCard() {
                     </Stack>
                 </Stack>
             </Stack>
-            <TextField variant='outlined' multiline fullWidth sx={{ mt: '15px', '& .MuiInputBase-inputMultiline': { whiteSpace: 'pre', overflowX: 'auto' } }} label='Information' value={info} />
+            <TextBox label='Information' value={info} />
         </InfoBox>
     );
 }

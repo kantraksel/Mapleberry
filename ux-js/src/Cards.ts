@@ -18,9 +18,12 @@ class Cards {
             const feature = e[0];
             if (
                 trafficRadar.onSelectStation(feature) ||
-                controlRadar.onSelectStation(feature) ||
-                feature.get('cards_ignore')
+                controlRadar.onSelectStation(feature)
             ) {
+                this.backList = [ this.backList.pop()! ];
+                return;
+            }
+            if (feature.get('cards_ignore')) {
                 return;
             }
             this.controllerRef?.call(null, undefined);

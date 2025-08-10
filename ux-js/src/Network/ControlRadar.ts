@@ -142,7 +142,6 @@ class ControlRadar {
 
         const facilities = vatsim.getFacilities();
         const local_facilities = new Set<number>();
-        const area_facilities = new Set<number>();
         facilities.forEach(value => {
             switch (value.short) {
                 case 'DEL':
@@ -151,62 +150,91 @@ class ControlRadar {
                 case 'APP':
                     local_facilities.add(value.id);
                     break;
-                case 'FSS':
-                case 'CTR':
-                    area_facilities.add(value.id);
-                    break;
             }
         });
 
-        const field_controllers: Controller[] = [];
-        const area_controllers: Controller[] = [];
-        networkData.controllers.forEach(controller => {
-            if (local_facilities.has(controller.facility)) {
-                field_controllers.push(controller);
-            } else if (area_facilities.has(controller.facility)) {
-                area_controllers.push(controller);
-            }
-        });
-
-        this.updateFields(field_controllers, networkData.atis);
-        this.updateAreas(area_controllers);
-        this.update.invoke();
-    }
-
-    private updateFields(controllers: ControllerEx[], atis: AtisEx[]) {
         const fields = this.fields;
         fields.forEach(field => {
             field.controllers = [];
+            field.atis = [];
         });
-
         const old_fields = new Map(fields);
-        controllers.forEach(controller => {
+
+        const areas = this.areas;
+        areas.forEach(area => {
+            area.controllers = [];
+        });
+        const old_areas = new Map(areas);
+
+        networkData.controllers.forEach((controller: ControllerEx) => {
             const callsign = controller.callsign;
             controller.type = BroadcastType.Control;
+            controller.station = false;
 
-            const airport = controlStations.getAirport(callsign);
-            if (!airport) {
-                console.warn(`Cannot find airport for ${callsign}`);
-                controller.station = false;
-                return;
-            }
-            controller.station = true;
-            const id = airport.icao;
-
-            let field = fields.get(id);
-            if (field) {
-                old_fields.delete(id);
-
-                if (field.isOutlined) {
-                    field.setFill();
+            if (local_facilities.has(controller.facility)) {
+                const airport = controlStations.getAirport(callsign);
+                if (airport) {
+                    this.setFieldController(controller, old_fields, airport);
+                } else {
+                    const region = controlStations.getRegion(callsign);
+                    if (region) {
+                        this.setAreaController(controller, old_areas, region);
+                    } else {
+                        console.warn(`Cannot find airport for ${callsign}`);
+                    }
                 }
             } else {
-                field = new VatsimField(airport);
-                fields.set(id, field);
-                controlLayers.addField(field.field);
+                const region = controlStations.getRegion(callsign);
+                if (region) {
+                    this.setAreaController(controller, old_areas, region);
+                } else {
+                    const airport = controlStations.getAirport(callsign);
+                    if (airport) {
+                        this.setFieldController(controller, old_fields, airport);
+                    } else {
+                        console.warn(`Cannot find FIR/UIR for ${callsign}`);
+                    }
+                }
             }
-            field.controllers.push(controller);
         });
+        this.updateAtis(networkData.atis, old_fields);
+
+        old_fields.forEach((field, icao) => {
+            fields.delete(icao);
+            controlLayers.removeField(field.field);
+        });
+        old_areas.forEach((area, icao) => {
+            areas.delete(icao);
+            controlLayers.removeArea(area.area);
+        });
+
+        this.update.invoke();
+    }
+
+    private setFieldController(controller: ControllerEx, old_fields: typeof this.fields, airport: Airport_ext) {
+        const fields = this.fields;
+
+        controller.station = true;
+        const id = airport.icao;
+
+        let field = fields.get(id);
+        if (field) {
+            old_fields.delete(id);
+
+            if (field.isOutlined) {
+                field.setFill();
+            }
+        } else {
+            field = new VatsimField(airport);
+            fields.set(id, field);
+            controlLayers.addField(field.field);
+        }
+        field.controllers.push(controller);
+    }
+
+    private updateAtis(atis: AtisEx[], old_fields: typeof this.fields) {
+        const fields = this.fields;
+
         atis.forEach(atis => {
             const callsign = atis.callsign;
             atis.type = BroadcastType.ATIS;
@@ -236,55 +264,23 @@ class ControlRadar {
             }
             field.atis.push(atis);
         });
-
-        old_fields.forEach((field, icao) => {
-            fields.delete(icao);
-            controlLayers.removeField(field.field);
-        });
     }
 
-    private updateAreas(controllers: ControllerEx[]) {
+    private setAreaController(controller: ControllerEx, old_areas: typeof this.areas, area_desc: StationDesc) {
         const areas = this.areas;
-        areas.forEach(area => {
-            area.controllers = [];
-        });
 
-        const old_areas = new Map(areas);
-        controllers.forEach(controller => {
-            const callsign = controller.callsign;
+        controller.station = true;
+        const id = area_desc.icao;
 
-            let area_desc;
-            const uir = controlStations.getUIR(callsign);
-            if (!uir) {
-                const fir = controlStations.getFIR(callsign);
-                if (!fir) {
-                    console.warn(`Cannot find FIR/UIR for ${callsign}`);
-                    controller.station = false;
-                    return;
-                }
-
-                area_desc = fir;
-            } else {
-                area_desc = uir;
-            }
-            controller.station = true;
-            const id = area_desc.icao;
-
-            let area = areas.get(id);
-            if (area) {
-                old_areas.delete(id);
-            } else {
-                area = new VatsimArea(area_desc);
-                areas.set(id, area);
-                controlLayers.addArea(area.area);
-            }
-            area.controllers.push(controller);
-        });
-
-        old_areas.forEach((area, icao) => {
-            areas.delete(icao);
-            controlLayers.removeArea(area.area);
-        });
+        let area = areas.get(id);
+        if (area) {
+            old_areas.delete(id);
+        } else {
+            area = new VatsimArea(area_desc);
+            areas.set(id, area);
+            controlLayers.addArea(area.area);
+        }
+        area.controllers.push(controller);
     }
 
     public getStation(icao: string): VatsimControl | undefined {

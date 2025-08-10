@@ -441,6 +441,7 @@ function Scoreboard(props: { open: boolean }) {
 export default Scoreboard;
 
 function FacilityStationsList() {
+    const [refresh, setRefresh] = useState(0);
     const [facility, setFacility] = useState<VatsimControl>();
     const hasFacility = facility != undefined;
 
@@ -455,8 +456,10 @@ function FacilityStationsList() {
         if (!facility) {
             return;
         }
+        const icao = facility.icao;
         const onUpdate = () => {
-            setFacility(controlRadar.getStation(facility.icao));
+            setRefresh(refresh + 1);
+            setFacility(controlRadar.getStation(icao));
         };
         controlRadar.update.add(onUpdate);
         return () => {

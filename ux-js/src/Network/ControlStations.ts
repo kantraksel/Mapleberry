@@ -576,6 +576,41 @@ class ControlStations {
         return obj;
     }
 
+    public getRegion(callsign: string): FIR_ext | UIR_ext | undefined {
+        const id_parts = callsign.split('_');
+        const id = id_parts[0];
+
+        const uirs = this.uirs.get(id);
+        if (uirs) {
+            if (uirs instanceof Map) {
+                const uir = uirs.get(id_parts[1] ?? '');
+                if (uir) {
+                    return uir;
+                }
+                return uirs.get('');
+            }
+            return uirs;
+        }
+        
+        const obj = this.firs_prefix.get(id);
+        if (!obj) {
+            return this.firs.get(id);
+        } else if (obj instanceof Map) {
+            let fir = obj.get(id_parts[1] ?? '');
+            if (fir) {
+                return fir;
+            }
+            fir = obj.get('');
+            if (fir) {
+                return fir;
+            }
+            // fixes invalid callsign prefixes
+            // detected in Minsk Control: main is UMMM, but partials start with UMMV
+            return this.firs.get(id);
+        }
+        return obj;
+    }
+
     public getAirport(callsign: string): Airport_ext | undefined {
         const id_parts = callsign.split('_');
         const id = id_parts[0];
