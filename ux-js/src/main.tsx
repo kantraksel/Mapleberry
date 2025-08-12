@@ -21,6 +21,7 @@ import ControlLayers from './Map/ControlLayers.ts';
 import ControlStations from './Network/ControlStations.ts';
 import ControlRadar from './Network/ControlRadar.ts';
 import TrafficRadar from './Network/TrafficRadar.ts';
+import NetworkWorld from './Network/NetworkWorld.ts';
 
 declare global {
 	var hostBridge: HostBridge;
@@ -37,6 +38,7 @@ declare global {
 	var controlStations: ControlStations;
 	var controlRadar: ControlRadar;
 	var trafficRadar: TrafficRadar;
+	var network: NetworkWorld;
 }
 window.options = new Options();
 window.hostBridge = new HostBridge();
@@ -48,6 +50,7 @@ window.radar = new Radar();
 window.traffic = new LocalTraffic();
 window.tracker = new UserTracker();
 window.vatsim = new VATSIM();
+window.network = new NetworkWorld();
 window.controlStations = new ControlStations();
 window.controlRadar = new ControlRadar();
 window.trafficRadar = new TrafficRadar();

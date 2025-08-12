@@ -1,5 +1,3 @@
-import Event from "../Event";
-
 export interface FlightPlan {
     flight_rules: string,
     aircraft: string,
@@ -69,7 +67,7 @@ export interface Atis {
     logon_time: string,
 }
 
-interface Server {
+export interface Server {
     ident: string,
     hostname_or_ip: string,
     location: string,
@@ -86,25 +84,26 @@ export interface Prefile {
     last_updated: string,
 }
 
-interface Facility {
+export interface Facility {
     id: number,
     short: string,
     long: string,
 }
 
-interface Rating {
+export interface Rating {
     id: number,
     short_name: string,
     long_name: string,
 }
 
-interface RatingOld {
+export interface RatingOld {
     id: number,
-    short: string,
-    long: string,
+    short_name?: string,
+    long_name?: string,
+    short?: string,
+    long?: string,
 }
 
-// https://vatsim.dev/api/data-api/get-network-data/
 export interface LiveNetworkData {
     general: {
         version: number,
@@ -123,36 +122,14 @@ export interface LiveNetworkData {
     military_ratings: Rating[],
 }
 
-interface NetPropsCache {
-    facilities: Facility[],
-    ratings: RatingOld[],
-    pilot_ratings: Rating[],
-    military_ratings: Rating[],
-}
-
-export interface NetworkStations {
-    observers: Controller[],
-    pilots: Pilot[],
-    prefiles: Prefile[],
-    controllers: Controller[],
-    atis: Atis[],
-}
-
-type UpdateEvent = (data?: NetworkStations) => void;
-
 class VATSIM {
-    private networkData?: LiveNetworkData & NetworkStations;
     private dataRefreshTask: number;
-    private propsCache?: NetPropsCache;
-
-    public readonly Update: Event<UpdateEvent>;
 
     static readonly defaultRefreshRate = 35;
     static readonly minimumRefreshRate = 15;
 
     public constructor() {
         this.dataRefreshTask = 0;
-        this.Update = new Event();
 
         if (this.enabled) {
             this.start();
@@ -170,46 +147,22 @@ class VATSIM {
         if (this.dataRefreshTask == 0) {
             return;
         }
-        this.Update.invoke();
+        network.updateState(undefined);
 
         clearTimeout(this.dataRefreshTask);
         this.dataRefreshTask = 0;
     }
 
+    // https://vatsim.dev/api/data-api/get-network-data/
     private async processNetworkData() {
-        const data = await VATSIM.getObject<LiveNetworkData & Partial<NetworkStations>>('https://data.vatsim.net/v3/vatsim-data.json');
-        
-        // update cache
-        this.propsCache = {
-            facilities: data.facilities,
-            ratings: data.ratings,
-            pilot_ratings: data.pilot_ratings,
-            military_ratings: data.military_ratings,
-        };
-
-        // separate observers from controllers
-        const observerId = data.facilities.find(facility => facility.short == 'OBS')?.id ?? 0;
-        const observers: Controller[] = [];
-        const controllers: Controller[] = [];
-
-        data.controllers.forEach(controller => {
-            if (controller.facility === observerId) {
-                observers.push(controller);
-            } else {
-                controllers.push(controller);
-            }
-        });
-        data.controllers = controllers;
-        data.observers = observers;
-
-        this.networkData = data as Required<typeof data>;
-        this.Update.invoke(data as NetworkStations);
+        const data = await VATSIM.getObject<LiveNetworkData>('https://data.vatsim.net/v3/vatsim-data.json');
+        network.updateState(data);
     }
 
     private fetchNetworkData() {
         const fn = async () => {
             try {
-                this.processNetworkData();
+                await this.processNetworkData();
             } catch (e) {
                 const err = e as Error;
                 console.error(`VATSIM network fetch failed: ${err.message}`);
@@ -250,26 +203,6 @@ class VATSIM {
 
     public get enabled() {
         return options.get<boolean>('vatsim_enabled', true);
-    }
-
-    public getNetworkData(): NetworkStations | undefined {
-        return this.networkData;
-    }
-
-    public getPilotRatings() {
-        return this.propsCache?.pilot_ratings ?? [];
-    }
-
-    public getMilitaryRatings() {
-        return this.propsCache?.military_ratings ?? [];
-    }
-
-    public getControllerRatings() {
-        return this.propsCache?.ratings ?? [];
-    }
-
-    public getFacilities() {
-        return this.propsCache?.facilities ?? [];
     }
 }
 

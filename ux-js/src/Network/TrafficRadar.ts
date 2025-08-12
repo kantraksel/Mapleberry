@@ -1,6 +1,6 @@
 import { FeatureLike } from "ol/Feature";
 import MapPlane from "../Map/MapPlane";
-import { NetworkStations, Pilot } from "./VATSIM";
+import { NetworkState, Pilot } from "./NetworkWorld";
 import RadarPlane from "../Radar/RadarPlane";
 
 export class VatsimPlane {
@@ -51,7 +51,7 @@ class TrafficRadar {
             pilot.external = undefined;
         });
 
-        vatsim.Update.add(data => {
+        network.Update.add(data => {
             if (!data) {
                 this.clear();
             } else {
@@ -90,7 +90,7 @@ class TrafficRadar {
         }
     }
 
-    private onRefresh(data: NetworkStations) {
+    private onRefresh(data: NetworkState) {
         const planes = this.planes;
 
         const old_planes = new Map(planes);

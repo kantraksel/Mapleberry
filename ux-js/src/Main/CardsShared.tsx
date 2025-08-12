@@ -68,15 +68,15 @@ export function TextBox(props: { label: string, value: string }) {
 
 export function getPilotRating(pilot: Pilot) {
     if (pilot.military_rating > 0) {
-        const ratings = vatsim.getMilitaryRatings();
-        const value = ratings.find((value) => (value.id === pilot.military_rating));
+        const ratings = network.getMilitaryRatings();
+        const value = ratings.find(value => (value.id === pilot.military_rating));
         if (value) {
             return `${value.short_name} ${value.long_name}`;
         }
     }
 
-    const ratings = vatsim.getPilotRatings();
-    const value = ratings.find((value) => (value.id === pilot.pilot_rating));
+    const ratings = network.getPilotRatings();
+    const value = ratings.find(value => (value.id === pilot.pilot_rating));
     if (value) {
         return `${value.short_name} ${value.long_name}`;
     }
@@ -85,18 +85,18 @@ export function getPilotRating(pilot: Pilot) {
 }
 
 export function getControllerRating(controller: Controller) {
-    const ratings = vatsim.getControllerRatings();
-    const value = ratings.find((value) => (value.id === controller.rating));
+    const ratings = network.getControllerRatings();
+    const value = ratings.find(value => (value.id === controller.rating));
     if (value) {
-        return `${value.short} ${value.long}`;
+        return `${value.short_name} ${value.long_name}`;
     }
 
     return 'Unknown';
 }
 
 export function getStation(controller: Controller) {
-    const facilities = vatsim.getFacilities();
-    const value = facilities.find((value) => (value.id === controller.facility));
+    const facilities = network.getFacilities();
+    const value = facilities.find(value => (value.id === controller.facility));
     if (value) {
         return `${value.long} ${controller.frequency}`;
     }
@@ -164,7 +164,7 @@ export function getEnrouteTime(plan: FlightPlan) {
     }
 }
 
-interface StationNames {
+export interface StationNames {
     departure: string,
     arrival: string,
     alternate: string,

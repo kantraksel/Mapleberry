@@ -2,7 +2,7 @@ import { FeatureLike } from 'ol/Feature';
 import MapArea, { StationDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
 import { Airport_ext } from './ControlStations';
-import { Atis, Controller, NetworkStations } from './VATSIM';
+import { Atis, Controller, NetworkState } from './NetworkWorld';
 import Event from '../Event';
 
 export class VatsimArea {
@@ -72,7 +72,7 @@ class ControlRadar {
         this.waitTimer = 0;
         this.update = new Event();
 
-        vatsim.Update.add(networkData => {
+        network.Update.add(networkData => {
             if (controlStations.isReady()) {
                 this.onRefresh(networkData);
                 return;
@@ -86,7 +86,7 @@ class ControlRadar {
                     clearInterval(this.waitTimer);
                     this.waitTimer = 0;
 
-                    this.onRefresh(vatsim.getNetworkData());
+                    this.onRefresh(network.getState());
                 }
             }, 1000);
         });
@@ -134,24 +134,12 @@ class ControlRadar {
         this.update.invoke();
     }
 
-    private onRefresh(networkData?: NetworkStations) {
+    private onRefresh(networkData?: NetworkState) {
         if (!networkData) {
             this.clear();
             return;
         }
-
-        const facilities = vatsim.getFacilities();
-        const local_facilities = new Set<number>();
-        facilities.forEach(value => {
-            switch (value.short) {
-                case 'DEL':
-                case 'GND':
-                case 'TWR':
-                case 'APP':
-                    local_facilities.add(value.id);
-                    break;
-            }
-        });
+        const local_facilities = network.getLocalFacilities();
 
         const fields = this.fields;
         fields.forEach(field => {

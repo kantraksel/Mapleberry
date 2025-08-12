@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@mui/material';
-import { Controller, NetworkStations } from '../Network/VATSIM';
+import { Controller, NetworkState } from '../Network/NetworkWorld';
 import { getControllerRating, getStation, getTimeOnline, InfoBox, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
@@ -23,13 +23,13 @@ function ControllerCard() {
             return;
         }
 
-        const handler = (networkData?: NetworkStations) => {
-            if (!networkData) {
+        const handler = (state?: NetworkState) => {
+            if (!state) {
                 cards.close();
                 return;
             }
 
-            const value = networkData.controllers.find(value => (value.cid === data.cid));
+            const value = state.controllers.find(value => (value.cid === data.cid));
             if (value) {
                 setData(value);
                 setPresent(true);
@@ -37,10 +37,10 @@ function ControllerCard() {
                 setPresent(false);
             }
         };
-        vatsim.Update.add(handler);
+        network.Update.add(handler);
 
         return () => {
-            vatsim.Update.delete(handler);
+            network.Update.delete(handler);
         };
     }, [data]);
 

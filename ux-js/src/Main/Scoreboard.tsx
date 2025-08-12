@@ -1,7 +1,7 @@
 import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, SyntheticEvent, useEffect, useRef, useState } from 'react';
-import { Controller, NetworkStations, Pilot, Prefile } from '../Network/VATSIM';
+import { Controller, NetworkState, Pilot, Prefile } from '../Network/NetworkWorld';
 import NotesIcon from '@mui/icons-material/Notes';
 import CloseIcon from '@mui/icons-material/Close';
 import { AtisEx, BroadcastType, ControllerEx, VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
@@ -370,15 +370,15 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
     );
 }
 
-function PilotList(props: { enabled: boolean, netData?: NetworkStations }) {
+function PilotList(props: { enabled: boolean, netData?: NetworkState }) {
     return <DynamicList enabled={props.enabled} columns={pilotColumns} values={props.netData?.pilots} />;
 }
 
-function ControllerList(props: { enabled: boolean, netData?: NetworkStations }) {
+function ControllerList(props: { enabled: boolean, netData?: NetworkState }) {
     return <DynamicList enabled={props.enabled} columns={controllerColumns} values={props.netData?.controllers} />;
 }
 
-function PrefileList(props: { enabled: boolean, netData?: NetworkStations }) {
+function PrefileList(props: { enabled: boolean, netData?: NetworkState }) {
     return <DynamicList enabled={props.enabled} columns={prefileColumns} values={props.netData?.prefiles} />;
 }
 
@@ -403,15 +403,15 @@ function EmptyList({ enabled }: { enabled: boolean }) {
 
 function Scoreboard(props: { open: boolean }) {
     const [tab, setTab] = useState(0);
-    const [netData, setNetData] = useState(vatsim.getNetworkData());
+    const [netData, setNetData] = useState(network.getState());
 
     useEffect(() => {
-        const handler = (networkData?: NetworkStations) => {
+        const handler = (networkData?: NetworkState) => {
             setNetData(networkData);
         };
-        vatsim.Update.add(handler);
+        network.Update.add(handler);
         return () => {
-            vatsim.Update.delete(handler);
+            network.Update.delete(handler);
         };
     }, []);
 

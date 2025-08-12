@@ -1,5 +1,5 @@
 import { Stack, Typography } from '@mui/material';
-import { Atis, NetworkStations } from '../Network/VATSIM';
+import { Atis, NetworkState } from '../Network/NetworkWorld';
 import { getTimeOnline, InfoBox, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
@@ -22,13 +22,13 @@ function AtisCard() {
         if (!data) {
             return;
         }
-        const handler = (networkData?: NetworkStations) => {
-            if (!networkData) {
+        const handler = (state?: NetworkState) => {
+            if (!state) {
                 cards.close();
                 return;
             }
 
-            const value = networkData.atis.find(value => (value.cid === data.cid));
+            const value = state.atis.find(value => (value.cid === data.cid));
             if (value) {
                 setData(value);
                 setPresent(true);
@@ -36,10 +36,10 @@ function AtisCard() {
                 setPresent(false);
             }
         };
-        vatsim.Update.add(handler);
+        network.Update.add(handler);
 
         return () => {
-            vatsim.Update.delete(handler);
+            network.Update.delete(handler);
         };
     }, [data]);
 
