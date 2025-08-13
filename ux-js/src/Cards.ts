@@ -26,12 +26,7 @@ class Cards {
             if (feature.get('cards_ignore')) {
                 return;
             }
-            this.controllerRef?.call(null, undefined);
-            this.pilotRef?.call(null, undefined);
-            this.facilityRef?.call(null, undefined);
-            this.prefileRef?.call(null, undefined);
-            this.atisRef?.call(null, undefined);
-            this.stationsRef?.call(null, false);
+            this.close();
         });
     }
 
@@ -46,7 +41,10 @@ class Cards {
         this.stationsRef?.call(null, false);
     }
 
-    showPilotCard(data: Pilot) {
+    showPilotCard(data: Pilot, replaceHistory?: boolean) {
+        if (replaceHistory) {
+            this.backList.pop();
+        }
         this.backList.push(() => {});
 
         this.controllerRef?.call(null, undefined);

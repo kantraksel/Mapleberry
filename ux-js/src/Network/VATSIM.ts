@@ -194,7 +194,7 @@ class VATSIM {
 
     public get refreshRate() {
         const value = options.get<number>('vatsim_refresh_rate', VATSIM.defaultRefreshRate);
-        return value < VATSIM.minimumRefreshRate ? VATSIM.defaultRefreshRate : value;
+        return Math.max(value, VATSIM.minimumRefreshRate);
     }
 
     public set enabled(value: boolean) {

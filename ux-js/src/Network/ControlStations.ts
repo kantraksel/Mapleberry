@@ -612,7 +612,7 @@ class ControlStations {
     }
 
     public getAirport(callsign: string): Airport_ext | undefined {
-        const id_parts = callsign.split('_');
+        const id_parts = callsign.split(/[_-]/);
         const id = id_parts[0];
 
         const airport = this.airports.get(id);
@@ -630,9 +630,8 @@ class ControlStations {
         return obj;
     }
 
-    public getAirportByIcao(callsign: string): Airport_ext | undefined {
-        const id_parts = callsign.split('_');
-        return this.airports.get(id_parts[0]);
+    public getAirportByIcao(icao: string): Airport_ext | undefined {
+        return this.airports.get(icao);
     }
 
     public isReady() {

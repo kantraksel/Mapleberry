@@ -37,7 +37,12 @@ function PrefileCard() {
                 setStationNames(createStationNames(value));
                 setPresent(true);
             } else {
-                setPresent(false);
+                const pilot = state.pilots.find(value => value.cid == data.cid);
+                if (pilot) {
+                    cards.showPilotCard(pilot, true);
+                } else {
+                    setPresent(false);
+                }
             }
         };
         network.Update.add(handler);

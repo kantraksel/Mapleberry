@@ -41,7 +41,7 @@ class MapField {
     }
 
     public setFilled() {
-        this.point.setStyle(controlLayers.filledPointStyle);
+        this.point.setStyle(undefined);
         this.label.set('control_field_outlined', undefined);
     }
 

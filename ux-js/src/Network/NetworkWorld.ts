@@ -23,7 +23,10 @@ function splitObservers(data: LiveNetworkData) {
     const controllers: Controller[] = [];
 
     data.controllers.forEach(controller => {
-        if (controller.facility === observerId) {
+        if (controller.facility === observerId ||
+            controller.callsign.endsWith('OBS') ||
+            controller.callsign.endsWith('SUP')
+        ) {
             observers.push(controller);
         } else {
             controllers.push(controller);

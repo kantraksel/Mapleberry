@@ -16,7 +16,7 @@ class ControlLayer {
     private areaLabelLayer?: VectorLayer;
     private areaLabelSource: VectorSource;
 
-    public readonly filledPointStyle: StyleLike;
+    private readonly filledPointStyle: StyleLike;
     public readonly outlinedPointStyle: StyleLike;
 
     public constructor() {
@@ -30,6 +30,7 @@ class ControlLayer {
                 radius: 5,
                 fill: new OlFill({ color: [135, 58, 235] }),
             }),
+            zIndex: 0,
         });
         this.outlinedPointStyle = new OlStyle({
             image: new OlCircle({
@@ -37,6 +38,7 @@ class ControlLayer {
                 fill: new OlFill({ color: [1, 1, 1, 0.01] }),
                 stroke: new OlStroke({ color: [135, 58, 235], width: 3 }),
             }),
+            zIndex: -1,
         });
 
         this.createAreaLayers();
@@ -75,8 +77,10 @@ class ControlLayer {
             text.setText(callsign);
             if (MapField.getOutlined(feature)) {
                 text.setFont('italic 14px "Cascadia Code"');
+                labelStyleObj.setZIndex(-1);
             } else {
                 text.setFont('14px "Cascadia Code"');
+                labelStyleObj.setZIndex(0);
             }
             return labelStyleObj;
         };
