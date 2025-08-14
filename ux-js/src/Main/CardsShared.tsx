@@ -1,10 +1,13 @@
 import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Controller, FlightPlan, Pilot } from '../Network/VATSIM';
-import { Box, IconButton, Stack } from '@mui/material';
+import { Box, IconButton, Stack, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import { NetworkState } from '../Network/NetworkWorld';
 
-export function InfoBox(props: { children?: ReactNode, width: number | string, maxWidth: number | string }) {
+export function StationCard(props: { children?: ReactNode, width: number | string, maxWidth: number | string, title: string, absent: boolean }) {
+    const titleColor = props.absent ? '#8b8b8b' : 'inherit';
+
     const style = {
         position: 'relative',
         border: `3px solid #2c2c2c`,
@@ -28,6 +31,7 @@ export function InfoBox(props: { children?: ReactNode, width: number | string, m
             <Stack direction='row' sx={{ position: 'absolute', left: '5px', mt: '3px' }}>
                 <IconButton onClick={() => cards.goBack()}><ArrowBackIosNewIcon /></IconButton>
             </Stack>
+            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5', color: titleColor }}>{props.title}</Typography>
             {props.children}
         </Stack>
     );
@@ -198,4 +202,77 @@ export function createStationNames(data?: { flight_plan?: FlightPlan }): Station
         names.alternate = airport.name;
     }
     return names;
+}
+
+export function createNetUpdate(onUpdate: (state: NetworkState) => void) {
+    const handler = (state?: NetworkState) => {
+        if (!state) {
+            cards.close();
+            return;
+        }
+        onUpdate(state);
+    };
+    network.Update.add(handler);
+
+    return () => {
+        network.Update.delete(handler);
+    };
+}
+
+export function DataTable(props: { data: string[][][] }) {
+    let i = 0; // ignore react warning - data layout is always fixed
+    const parts = props.data.map(part => {
+        const columns = part.map(column => {
+            const names = column.map(name => {
+                return <Typography key={++i}>{name}</Typography>;
+            });
+            return <Stack key={++i}>{names}</Stack>;
+        });
+        return <Stack useFlexGap direction='row' spacing={1} sx={{ flex: '1 1 auto' }} key={++i}>{columns}</Stack>;
+    });
+    return <Stack useFlexGap direction='row' spacing={3} sx={{ ml: '7px', mr: '7px', width: 'stretch' }}>{parts}</Stack>;
+}
+
+export function RouteBox(props: { flight_plan: FlightPlan }) {
+    const [stationNames, setStationNames] = useState(createStationNames());
+
+    useEffect(() => {
+        setStationNames(createStationNames(props));
+    }, [props.flight_plan]);
+
+    const flightplan = props.flight_plan;
+    const flightRules = getFlightRules(flightplan);
+    const enrouteTime = getEnrouteTime(flightplan);
+
+    const table = [
+        [
+            ['Flight Rules:', 'Enroute Time:'],
+            [flightRules, enrouteTime],
+        ],
+        [
+            ['Cruise Altitude:', 'Cruise TAS:'],
+            [flightplan.altitude, flightplan.cruise_tas],
+        ],
+    ];
+
+    return (
+        <>
+            <Typography variant='h5'>Flight Plan</Typography>
+            <Stack useFlexGap direction='row' spacing={1} sx={{ mt: '5px', ml: '7px', mr: '7px', width: 'stretch' }}>
+                <Stack>
+                    <Typography>Departure:</Typography>
+                    <Typography>Arrival:</Typography>
+                    <Typography>Alternate:</Typography>
+                </Stack>
+                <Stack>
+                    <Typography>{flightplan.departure} {stationNames.departure}</Typography>
+                    <Typography>{flightplan.arrival} {stationNames.arrival}</Typography>
+                    <Typography>{flightplan.alternate} {stationNames.alternate}</Typography>
+                </Stack>
+            </Stack>
+            <DataTable data={table} />
+            <TextBox label='Route' value={flightplan.route} />
+            <TextBox label='Remarks' value={flightplan.remarks} />
+        </>
+    );
 }
