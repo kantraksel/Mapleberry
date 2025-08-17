@@ -27,13 +27,7 @@ class RadarAnimator {
         });
 
         map.moveStartEvent.add(() => {
-            if (this.trackedId == -1) {
-                return;
-            }
-            const info = radar.getById(this.trackedId);
-            this.trackedId = -1;
-
-            info?.restoreStyle();
+            this.unfollowPlane();
         });
 
         map.changeResEvent.add(value => {
@@ -210,6 +204,16 @@ class RadarAnimator {
         if (lastStep) {
             this.moveMapWithPlane(lastStep);
         }
+    }
+
+    public unfollowPlane() {
+        if (this.trackedId == -1) {
+            return;
+        }
+        const info = radar.getById(this.trackedId);
+        this.trackedId = -1;
+
+        info?.restoreStyle();
     }
 
     private adjustUpdateRate(resolution?: number) {

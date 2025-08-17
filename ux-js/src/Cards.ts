@@ -1,8 +1,8 @@
-import { VatsimControl } from './Network/ControlRadar';
-import { Atis, Controller, Pilot, Prefile } from './Network/VATSIM';
+import { ControllerEx, VatsimControl } from './Network/ControlRadar';
+import { Atis, Pilot, Prefile } from './Network/VATSIM';
 
 class Cards {
-    controllerRef?: (data: Controller | undefined) => void;
+    controllerRef?: (data: ControllerEx | undefined) => void;
     pilotRef?: (data: Pilot | undefined) => void;
     facilityRef?: (data: VatsimControl | undefined) => void;
     prefileRef?: (data: Prefile | undefined) => void;
@@ -30,8 +30,20 @@ class Cards {
         });
     }
 
-    showControllerCard(data: Controller) {
-        this.backList.push(() => {});
+    showControllerCard(data: ControllerEx) {
+        const cid = data.cid;
+        const callsign = data.callsign;
+        this.backList.push(() => {
+            const state = network.getState();
+            if (state) {
+                const controller = state.controllers.find(value => value.cid === cid && value.callsign === callsign);
+                if (controller) {
+                    this.showControllerCard(controller);
+                    return;
+                }
+            }
+            this.goBack();
+        });
 
         this.pilotRef?.call(null, undefined);
         this.controllerRef?.call(null, data);
@@ -127,7 +139,6 @@ class Cards {
             this.close();
             return;
         }
-        list.push(func);
         func();
     }
 }

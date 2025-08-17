@@ -1,13 +1,11 @@
 import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Controller, FlightPlan, Pilot } from '../Network/VATSIM';
-import { Box, IconButton, Stack, Typography } from '@mui/material';
+import { Box, Button, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { NetworkState } from '../Network/NetworkWorld';
 
-export function StationCard(props: { children?: ReactNode, width: number | string, maxWidth: number | string, title: string, absent: boolean }) {
-    const titleColor = props.absent ? '#8b8b8b' : 'inherit';
-
+export function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string }) {
     const style = {
         position: 'relative',
         border: `3px solid #2c2c2c`,
@@ -25,13 +23,63 @@ export function StationCard(props: { children?: ReactNode, width: number | strin
     };
     return (
         <Stack sx={style}>
-            <Stack direction='row-reverse' sx={{ position: 'absolute', right: '5px', mt: '3px' }}>
-                <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>
-            </Stack>
-            <Stack direction='row' sx={{ position: 'absolute', left: '5px', mt: '3px' }}>
-                <IconButton onClick={() => cards.goBack()}><ArrowBackIosNewIcon /></IconButton>
-            </Stack>
-            <Typography variant='h4' sx={{ fontSize: '2.0rem', lineHeight: '1.5', color: titleColor }}>{props.title}</Typography>
+            {props.children}
+        </Stack>
+    );
+}
+
+export function StationTitle(props: { title: string, absent: boolean, onClick?: () => void }) {
+    const style = {
+        fontSize: '2.0rem',
+        lineHeight: '1.5',
+        color: props.absent ? '#8b8b8b' : 'inherit',
+    };
+
+    if (props.onClick) {
+        return (
+            <Tooltip title='Go to blip'>
+                <Button sx={{ padding: 0, color: 'inherit' }} onClick={props.onClick}>
+                    <Typography variant='h4' sx={style}>{props.title}</Typography>
+                </Button>
+            </Tooltip>
+        );
+    }
+    return <Typography variant='h4' sx={style}>{props.title}</Typography>;
+}
+
+export function StationCardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string, title: string, absent: boolean, onTitleClick?: () => void }) {
+    return (
+        <CardBase width={props.width} maxWidth={props.maxWidth}>
+            <StationTitle title={props.title} absent={props.absent} onClick={props.onTitleClick} />
+            {props.children}
+        </CardBase>
+    );
+}
+
+export function StationCard(props: { children?: ReactNode, width: number | string, maxWidth: number | string, title: string, absent: boolean, onTitleClick?: () => void }) {
+    return (
+        <CardBase width={props.width} maxWidth={props.maxWidth}>
+            <CardLeftToolbar />
+            <CardRightToolbar />
+            <StationTitle title={props.title} absent={props.absent} onClick={props.onTitleClick} />
+            {props.children}
+        </CardBase>
+    );
+}
+
+export function CardRightToolbar(props: { children?: ReactNode }) {
+    return (
+        <Stack direction='row-reverse' sx={{ position: 'absolute', right: '5px', mt: '3px' }}>
+            <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>
+            {props.children}
+        </Stack>
+    );
+}
+
+export function CardLeftToolbar(props: { children?: ReactNode }) {
+    return (
+        <Stack direction='row' sx={{ position: 'absolute', left: '5px', mt: '3px' }}>
+            <IconButton onClick={() => cards.goBack()}><ArrowBackIosNewIcon /></IconButton>
             {props.children}
         </Stack>
     );

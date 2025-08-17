@@ -57,8 +57,8 @@ export enum BroadcastType {
 }
 
 export type VatsimControl = VatsimArea | VatsimField;
-export type ControllerEx = Controller & { station?: boolean, type?: BroadcastType };
-export type AtisEx = Atis & { station?: boolean, type?: BroadcastType };
+export type ControllerEx = Controller & { station?: VatsimControl, type?: BroadcastType };
+export type AtisEx = Atis & { station?: VatsimControl, type?: BroadcastType };
 
 class ControlRadar {
     private fields: Map<string, VatsimField>;
@@ -108,7 +108,7 @@ class ControlRadar {
         if (obj2) {
             const controllers = obj2.controllers;
             const atis = obj2.atis;
-            if ((controllers.length + atis.length) > 1) {
+            if (controllers.length > 1 || atis.length > 1) {
                 cards.showFacilityList(obj2);
             } else if (controllers.length > 0) {
                 cards.showControllerCard(controllers[0]);
@@ -157,7 +157,7 @@ class ControlRadar {
         networkData.controllers.forEach((controller: ControllerEx) => {
             const callsign = controller.callsign;
             controller.type = BroadcastType.Control;
-            controller.station = false;
+            controller.station = undefined;
 
             if (local_facilities.has(controller.facility)) {
                 const airport = controlStations.getAirport(callsign);
@@ -201,8 +201,6 @@ class ControlRadar {
 
     private setFieldController(controller: ControllerEx, old_fields: typeof this.fields, airport: Airport_ext) {
         const fields = this.fields;
-
-        controller.station = true;
         const id = airport.icao;
 
         let field = fields.get(id);
@@ -218,6 +216,7 @@ class ControlRadar {
             controlLayers.addField(field.field);
         }
         field.controllers.push(controller);
+        controller.station = field;
     }
 
     private updateAtis(atis: AtisEx[], old_fields: typeof this.fields) {
@@ -230,10 +229,9 @@ class ControlRadar {
             const airport = controlStations.getAirport(callsign);
             if (!airport) {
                 console.warn(`Cannot find airport for ${callsign}`);
-                atis.station = false;
+                atis.station = undefined;
                 return;
             }
-            atis.station = true;
             const id = airport.icao;
 
             let field = fields.get(id);
@@ -251,13 +249,12 @@ class ControlRadar {
                 field.setOutline();
             }
             field.atis.push(atis);
+            atis.station = field;
         });
     }
 
     private setAreaController(controller: ControllerEx, old_areas: typeof this.areas, area_desc: StationDesc) {
         const areas = this.areas;
-
-        controller.station = true;
         const id = area_desc.icao;
 
         let area = areas.get(id);
@@ -269,6 +266,7 @@ class ControlRadar {
             controlLayers.addArea(area.area);
         }
         area.controllers.push(controller);
+        controller.station = area;
     }
 
     public getStation(icao: string): VatsimControl | undefined {

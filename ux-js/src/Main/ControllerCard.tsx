@@ -1,15 +1,33 @@
-import { Controller } from '../Network/NetworkWorld';
-import { createNetUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCard, TextBox } from './CardsShared';
-import { useEffect, useState } from 'react';
+import { IconButton } from '@mui/material';
+import { ControllerEx, VatsimArea, VatsimField } from '../Network/ControlRadar';
+import { CardLeftToolbar, CardRightToolbar, createNetUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCardBase, TextBox } from './CardsShared';
+import { useEffect, useRef, useState } from 'react';
+import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+
+function updateAtis(atisHandler: { current: (() => void) | undefined }, data: ControllerEx | undefined) {
+    atisHandler.current = undefined;
+    if (!data) {
+        return;
+    }
+
+    const field = data.station;
+    if (field instanceof VatsimField && field.atis.length == 1) {
+        atisHandler.current = () => {
+            cards.showAtisCard(field.atis[0]);
+        };
+    }
+}
 
 function ControllerCard() {
-    const [data, setData] = useState<Controller>();
+    const [data, setData] = useState<ControllerEx>();
     const [absent, setAbsent] = useState(false);
+    const atisHandler = useRef<() => void>(undefined);
 
     useEffect(() => {
         cards.controllerRef = data => {
             setData(data);
             setAbsent(false);
+            updateAtis(atisHandler, data);
         };
 
         return () => {
@@ -27,8 +45,10 @@ function ControllerCard() {
             if (value) {
                 setData(value);
                 setAbsent(false);
+                updateAtis(atisHandler, value);
             } else {
                 setAbsent(true);
+                updateAtis(atisHandler, data);
             }
         });
     }, [data]);
@@ -41,6 +61,7 @@ function ControllerCard() {
     const timeOnline = getTimeOnline(data);
     const station = getStation(data);
     const info = data.text_atis?.join('\n') ?? 'N/A';
+    const hasAtis = atisHandler.current ? 'unset' : 'hidden';
 
     const table = [
         [
@@ -53,11 +74,38 @@ function ControllerCard() {
         ],
     ];
 
+    let onFocus;
+    const control = data.station;
+    if (control instanceof VatsimField) {
+        const lon = control.station.longitude;
+        const lat = control.station.latitude;
+        onFocus = () => {
+            radar.animator.unfollowPlane();
+            map.setCenterZoom(lon, lat);
+        };
+    } else if (control instanceof VatsimArea) {
+        let point = control.station.label_pos;
+        if (!point) {
+            const labels = control.station.labels_pos;
+            point = labels && labels[0];
+        }
+        if (point) {
+            onFocus = () => {
+                radar.animator.unfollowPlane();
+                map.setCenterZoom(point[0], point[1]);
+            };
+        }
+    }
+
     return (
-        <StationCard width='auto' maxWidth='100vw' title={data.callsign} absent={absent}>
+        <StationCardBase width='auto' maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>
+            <CardLeftToolbar />
+            <CardRightToolbar>
+                <IconButton onClick={atisHandler.current} sx={{ visibility: hasAtis }}><CloudOutlinedIcon /></IconButton>
+            </CardRightToolbar>
             <DataTable data={table} />
             <TextBox label='Information' value={info} />
-        </StationCard>
+        </StationCardBase>
     );
 }
 export default ControllerCard;

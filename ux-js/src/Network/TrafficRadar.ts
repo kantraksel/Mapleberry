@@ -19,6 +19,8 @@ export class VatsimPlane {
     }
 }
 
+export type PilotEx = Pilot & { plane?: VatsimPlane };
+
 class TrafficRadar {
     private planes: Map<string, VatsimPlane>;
 
@@ -94,7 +96,7 @@ class TrafficRadar {
         const planes = this.planes;
 
         const old_planes = new Map(planes);
-        data.pilots.forEach(pilot => {
+        data.pilots.forEach((pilot: PilotEx) => {
             const callsign = pilot.callsign;
 
             let plane = planes.get(callsign);
@@ -125,6 +127,7 @@ class TrafficRadar {
                 verticalSpeed: 0,
             };
             plane.plane.physicParams = params;
+            pilot.plane = plane;
         });
 
         old_planes.forEach((pilot, callsign) => {

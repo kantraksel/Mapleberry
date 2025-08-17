@@ -1,10 +1,10 @@
 import { Divider } from '@mui/material';
-import { Pilot } from '../Network/NetworkWorld';
+import { PilotEx, VatsimPlane } from '../Network/TrafficRadar';
 import { createNetUpdate, DataTable, getFlightplan, getPilotRating, getTimeOnline, RouteBox, StationCard } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 function PilotCard() {
-    const [data, setData] = useState<Pilot>();
+    const [data, setData] = useState<PilotEx>();
     const [absent, setAbsent] = useState(false);
 
     useEffect(() => {
@@ -53,8 +53,24 @@ function PilotCard() {
         ],
     ];
 
+    let onFocus;
+    const plane = data.plane;
+    if (plane instanceof VatsimPlane) {
+        onFocus = () => {
+            if (plane.external) {
+                radar.animator.followPlane(plane.external);
+                return;
+            }
+            const params = plane.plane.getPhysicParams();
+            if (params) {
+                radar.animator.unfollowPlane();
+                map.setCenterZoom(params.longitude, params.latitude);
+            }
+        };
+    }
+
     return (
-        <StationCard width='auto' maxWidth='100vw' title={data.callsign} absent={absent}>
+        <StationCard width='auto' maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>
             <DataTable data={table} />
             <Divider flexItem sx={{ mt: '5px', mb: '5px' }} />
             <RouteBox flight_plan={flightplan} />

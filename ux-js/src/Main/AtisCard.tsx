@@ -1,9 +1,9 @@
-import { Atis } from '../Network/NetworkWorld';
+import { AtisEx, VatsimField } from '../Network/ControlRadar';
 import { createNetUpdate, DataTable, getTimeOnline, StationCard, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 function AtisCard() {
-    const [data, setData] = useState<Atis>();
+    const [data, setData] = useState<AtisEx>();
     const [absent, setAbsent] = useState(false);
 
     useEffect(() => {
@@ -51,8 +51,19 @@ function AtisCard() {
         ],
     ];
 
+    let onFocus;
+    const station = data.station;
+    if (station instanceof VatsimField) {
+        const lon = station.station.longitude;
+        const lat = station.station.latitude;
+        onFocus = () => {
+            radar.animator.unfollowPlane();
+            map.setCenterZoom(lon, lat);
+        };
+    }
+
     return (
-        <StationCard width={500} maxWidth='100vw' title={data.callsign} absent={absent}>
+        <StationCard width={500} maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>
             <DataTable data={table} />
             <TextBox label='Information' value={info} />
         </StationCard>
