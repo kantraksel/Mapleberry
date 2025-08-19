@@ -1,9 +1,11 @@
 import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
-import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Controller, NetworkState, Pilot, Prefile } from '../Network/NetworkWorld';
 import NotesIcon from '@mui/icons-material/Notes';
 import CloseIcon from '@mui/icons-material/Close';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { AtisEx, BroadcastType, ControllerEx, VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
@@ -28,7 +30,7 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
 
 const VirtuosoTableComponents: TableComponents = {
     Scroller: forwardRef<HTMLDivElement>((props, ref) => (
-        <TableContainer component={Paper} {...props} ref={ref} />
+        <TableContainer component={Paper} {...props} ref={ref} sx={{ scrollbarWidth: 'thin', scrollbarColor: 'gray #4C4C4C' }} />
     )),
     Table: (props) => (
         <Table {...props} sx={{ borderCollapse: 'separate', tableLayout: 'fixed' }} />
@@ -220,6 +222,42 @@ const prefileColumns: Column<Prefile>[] = [
     },
 ];
 
+const observerColumns: Column<ControllerEx>[] = [
+    {
+        width: 120,
+        id: 'callsign',
+        label: 'Callsign',
+        data: 'callsign',
+        compare: (a, b) => compareIgnoreCase(a.callsign, b.callsign),
+    },
+    {
+        width: 100,
+        id: 'freq',
+        label: 'Frequency',
+        data: 'frequency',
+        compare: (a, b) => compareIgnoreCase(a.frequency, b.frequency),
+        alignData: 'center',
+    },
+    {
+        width: 180,
+        id: 'name',
+        label: 'Name',
+        data: 'name',
+        compare: (a, b) => compareIgnoreCase(a.name, b.name),
+    },
+    {
+        width: 50,
+        id: 'buttons',
+        label: '',
+        data: data => {
+            const onClick = () => {
+                cards.showControllerCard(data);
+            };
+            return <IconButton onClick={onClick} size='small'><NotesIcon fontSize='small' /></IconButton>;
+        },
+    },
+];
+
 function compareIgnoreCase(a: string, b: string) {
     a = a.toLowerCase();
     b = b.toLowerCase();
@@ -382,6 +420,14 @@ function PrefileList(props: { enabled: boolean, netData?: NetworkState }) {
     return <DynamicList enabled={props.enabled} columns={prefileColumns} values={props.netData?.prefiles} />;
 }
 
+function ObserverList(props: { enabled: boolean, netData?: NetworkState }) {
+    return <DynamicList enabled={props.enabled} columns={observerColumns} values={props.netData?.observers} />;
+}
+
+function AtisList(props: { enabled: boolean, netData?: NetworkState }) {
+    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={props.netData?.atis} />;
+}
+
 function EmptyList({ enabled }: { enabled: boolean }) {
     if (!enabled) {
         return <></>;
@@ -401,39 +447,81 @@ function EmptyList({ enabled }: { enabled: boolean }) {
     );
 }
 
-function Scoreboard(props: { open: boolean }) {
+function ActiveStationList(props: { open: boolean, state?: NetworkState }) {
     const [tab, setTab] = useState(0);
-    const [netData, setNetData] = useState(network.getState());
 
-    useEffect(() => {
-        const handler = (networkData?: NetworkState) => {
-            setNetData(networkData);
-        };
-        network.Update.add(handler);
-        return () => {
-            network.Update.delete(handler);
-        };
-    }, []);
-
-    const tabIdx = props.open && netData ? tab : -1;
-
-    const onClickTab = (_e: SyntheticEvent, newValue: number) => {
+    const display = props.open ? 'unset' : 'none';
+    const tabIdx = props.open && props.state ? tab : -1;
+    const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
 
     return (
-        <InfoBox width={530} height='100%' visible={props.open}>
-            <Tabs value={tab} onChange={onClickTab} centered>
+        <>
+            <Tabs value={tab} onChange={onClickTab} centered sx={{ display }}>
                 <Tab label='Pilots' />
                 <Tab label='Controllers' />
-                <Tab label='Prefiles' />
             </Tabs>
-            <Paper style={{ height: '100%', width: '100%' }}>
+            <Paper style={{ height: '100%', width: '100%', display }}>
                 <EmptyList enabled={tabIdx == -1} />
-                <PilotList enabled={tabIdx == 0} netData={netData} />
-                <ControllerList enabled={tabIdx == 1} netData={netData} />
-                <PrefileList enabled={tabIdx == 2} netData={netData} />
+                <PilotList enabled={tabIdx == 0} netData={props.state} />
+                <ControllerList enabled={tabIdx == 1} netData={props.state} />
             </Paper>
+        </>
+    );
+}
+
+function PassiveStationList(props: { open: boolean, state?: NetworkState }) {
+    const [tab, setTab] = useState(0);
+
+    const display = props.open ? 'unset' : 'none';
+    const tabIdx = props.open && props.state ? tab : -1;
+    const onClickTab = (_e: unknown, newValue: number) => {
+        setTab(newValue);
+    };
+
+    return (
+        <>
+            <Tabs value={tab} onChange={onClickTab} centered sx={{ display }}>
+                <Tab label='Prefiles' />
+                <Tab label='Observers' />
+                <Tab label='ATIS' />
+            </Tabs>
+            <Paper style={{ height: '100%', width: '100%', display }}>
+                <EmptyList enabled={tabIdx == -1} />
+                <PrefileList enabled={tabIdx == 0} netData={props.state} />
+                <ObserverList enabled={tabIdx == 1} netData={props.state} />
+                <AtisList enabled={tabIdx == 2} netData={props.state} />
+            </Paper>
+        </>
+    );
+}
+
+function Scoreboard(props: { open: boolean }) {
+    const [row, setRow] = useState(0);
+    const [state, setState] = useState(network.getState());
+
+    useEffect(() => {
+        network.Update.add(setState);
+        return () => {
+            network.Update.delete(setState);
+        };
+    }, []);
+
+    let rowButton;
+    if (row == 0) {
+        rowButton = <IconButton onClick={() => setRow(1)}><ExpandMoreIcon /></IconButton>;
+    } else if (row == 1) {
+        rowButton = <IconButton onClick={() => setRow(0)}><ExpandLessIcon /></IconButton>;
+    }
+
+    return (
+        <InfoBox width={530} height='100%' visible={props.open}>
+            <Stack direction='row-reverse' sx={{ position: 'absolute', right: '5px', mt: '3px' }}>
+                {rowButton}
+            </Stack>
+            <ActiveStationList open={props.open && row == 0} state={state} />
+            <PassiveStationList open={props.open && row == 1} state={state} />
         </InfoBox>
     );
 }
