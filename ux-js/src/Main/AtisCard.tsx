@@ -39,6 +39,10 @@ function AtisCard() {
 
     const timeOnline = getTimeOnline(data);
     const info = data.text_atis?.join(' ') ?? 'N/A';
+    let code = data.atis_code;
+    if (code.length == 0) {
+        code = 'N/A';
+    }
 
     const table = [
         [
@@ -47,7 +51,7 @@ function AtisCard() {
         ],
         [
             ['Time Online:', 'ATIS Code:'],
-            [timeOnline, data.atis_code],
+            [timeOnline, code],
         ],
     ];
 

@@ -17,6 +17,7 @@ class MapField {
 
         this.point.set('station', station, true);
         this.label.set('station', station, true);
+        this.setFilled();
     }
 
     public static getStation(feature: FeatureLike): Airport_ext | null {
@@ -43,11 +44,15 @@ class MapField {
     public setFilled() {
         this.point.setStyle(undefined);
         this.label.set('control_field_outlined', undefined);
+        this.point.set('ol_z-index', 0, true);
+        this.label.set('ol_z-index', 0, true);
     }
 
     public setOutlined() {
         this.point.setStyle(controlLayers.outlinedPointStyle);
         this.label.set('control_field_outlined', true);
+        this.point.set('ol_z-index', -1, true);
+        this.label.set('ol_z-index', -1, true);
     }
 
     public static getOutlined(feature: FeatureLike): boolean | undefined {

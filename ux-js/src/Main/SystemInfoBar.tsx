@@ -4,22 +4,28 @@ import ErrorIcon from '@mui/icons-material/Error';
 import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
 import WifiTetheringOffIcon from '@mui/icons-material/WifiTetheringOff';
 import SettingsRemoteIcon from '@mui/icons-material/SettingsRemote';
+import LanguageIcon from '@mui/icons-material/Language';
 import { ServerStatus, SimulatorStatus } from '../Host/HostState';
+import { NetworkStatus } from '../Network/VATSIM';
 
 function SystemInfoBar() {
     const [status, setStatus] = useState(hostState.getHostStatus());
+    const [netStatus, setNetStatus] = useState(NetworkStatus.Disabled);
 
     useEffect(() => {
         hostState.statusEvent.add(setStatus);
+        vatsim.StatusUpdate.add(setNetStatus);
 
         return () => {
             hostState.statusEvent.delete(setStatus);
+            vatsim.StatusUpdate.delete(setNetStatus);
         }
     }, []);
 
     return (
         <Stack direction='row-reverse' spacing={1.5}>
             <SimulatorStatusElement status={status.simStatus} />
+            <NetworkStatusElement status={netStatus} />
             <ServerStatusElement status={status.srvStatus} />
         </Stack>
     );
@@ -75,6 +81,36 @@ function ServerStatusElement(props: { status: ServerStatus }) {
         default: {
             icon = <ErrorIcon color='error' sx={ iconSize } />;
             label = 'Unknown Device Server Status';
+            break;
+        }
+    }
+
+    return <Tooltip title={label}>{icon}</Tooltip>;
+}
+
+function NetworkStatusElement(props: { status: NetworkStatus }) {
+    let icon;
+    let label;
+
+    switch (props.status) {
+        case NetworkStatus.Disabled: {
+            icon = <LanguageIcon color='error' sx={ iconSize } />;
+            label = 'Network Disabled';
+            break;
+        }
+        case NetworkStatus.Updating: {
+            icon = <LanguageIcon color='warning' sx={ iconSize } />;
+            label = 'Refreshing Network';
+            break;
+        }
+        case NetworkStatus.UpToDate: {
+            icon = <LanguageIcon color='success' sx={ iconSize } />;
+            label = 'Network Active';
+            break;
+        }
+        default: {
+            icon = <ErrorIcon color='error' sx={ iconSize } />;
+            label = 'Unknown Network Status';
             break;
         }
     }

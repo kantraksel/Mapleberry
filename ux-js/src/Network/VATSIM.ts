@@ -1,3 +1,5 @@
+import Event from "../Event";
+
 export interface FlightPlan {
     flight_rules: string,
     aircraft: string,
@@ -122,14 +124,30 @@ export interface LiveNetworkData {
     military_ratings: Rating[],
 }
 
+export enum NetworkStatus {
+    Disabled,
+    Updating,
+    UpToDate,
+}
+
 class VATSIM {
     private dataRefreshTask: number;
+    private lastUpdate: number;
+    private refreshInterval: number;
+    private currentStatus: NetworkStatus;
+    public StatusUpdate: Event<(status: NetworkStatus) => void>;
 
     static readonly defaultRefreshRate = 35;
     static readonly minimumRefreshRate = 15;
 
     public constructor() {
         this.dataRefreshTask = 0;
+        this.lastUpdate = 0;
+        this.currentStatus = NetworkStatus.Disabled;
+        this.StatusUpdate = new Event();
+
+        const value = options.get<number>('vatsim_refresh_rate', VATSIM.defaultRefreshRate);
+        this.refreshInterval = Math.max(value, VATSIM.minimumRefreshRate);
 
         if (this.enabled) {
             this.start();
@@ -140,7 +158,7 @@ class VATSIM {
         if (this.dataRefreshTask > 0) {
             return;
         }
-        this.dataRefreshTask = this.fetchNetworkData();
+        this.fetchNetworkData();
     }
 
     public stop() {
@@ -149,8 +167,10 @@ class VATSIM {
         }
         network.updateState(undefined);
 
-        clearTimeout(this.dataRefreshTask);
+        clearInterval(this.dataRefreshTask);
         this.dataRefreshTask = 0;
+        this.lastUpdate = 0;
+        this.updateStatus(NetworkStatus.Disabled);
     }
 
     // https://vatsim.dev/api/data-api/get-network-data/
@@ -161,6 +181,12 @@ class VATSIM {
 
     private fetchNetworkData() {
         const fn = async () => {
+            if ((Date.now() - this.lastUpdate) < (this.refreshInterval * 1000)) {
+                return;
+            }
+            this.lastUpdate = Number.POSITIVE_INFINITY;
+            this.updateStatus(NetworkStatus.Updating);
+
             try {
                 await this.processNetworkData();
             } catch (e) {
@@ -168,12 +194,10 @@ class VATSIM {
                 console.error(`VATSIM network fetch failed: ${err.message}`);
             }
 
-            if (this.dataRefreshTask == 0) {
-                return;
-            }
-            this.dataRefreshTask = setTimeout(fn, this.refreshRate * 1000);
+            this.updateStatus(NetworkStatus.UpToDate);
+            this.lastUpdate = Date.now();
         };
-        return setTimeout(fn, 500);
+        this.dataRefreshTask = setInterval(fn, 500);
     }
 
     // https://vatsim.dev/api/metar-api/get-metar
@@ -189,12 +213,12 @@ class VATSIM {
 
     public set refreshRate(value: number) {
         value = Math.max(value, VATSIM.minimumRefreshRate);
+        this.refreshInterval = value;
         options.set('vatsim_refresh_rate', value);
     }
 
     public get refreshRate() {
-        const value = options.get<number>('vatsim_refresh_rate', VATSIM.defaultRefreshRate);
-        return Math.max(value, VATSIM.minimumRefreshRate);
+        return this.refreshInterval;
     }
 
     public set enabled(value: boolean) {
@@ -203,6 +227,15 @@ class VATSIM {
 
     public get enabled() {
         return options.get<boolean>('vatsim_enabled', true);
+    }
+
+    public get status() {
+        return this.currentStatus;
+    }
+
+    private updateStatus(status: NetworkStatus) {
+        this.currentStatus = status;
+        this.StatusUpdate.invoke(status);
     }
 }
 

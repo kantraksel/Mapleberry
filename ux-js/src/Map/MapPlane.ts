@@ -14,6 +14,7 @@ class MapPlane {
         this.pos = new Point([ 0, 0 ]);
         this.point = new Feature(this.pos);
         this.label = new Feature(this.pos);
+        this.setDefaultStyle();
     }
 
     public set callsign(callsign: string) {
@@ -54,16 +55,22 @@ class MapPlane {
     public setMainStyle() {
         this.point.setStyle(planeLayers.mainPointStyle);
         this.label.setStyle(planeLayers.mainLabelStyle);
+        this.point.set('ol_z-index', 1, true);
+        this.label.set('ol_z-index', 1, true);
     }
 
     public setSelectedStyle() {
         this.point.setStyle(planeLayers.selectedPointStyle);
         this.label.setStyle(planeLayers.selectedLabelStyle);
+        this.point.set('ol_z-index', 2, true);
+        this.label.set('ol_z-index', 2, true);
     }
 
     public setDefaultStyle() {
-        this.point.setStyle();
-        this.label.setStyle();
+        this.point.setStyle(undefined);
+        this.label.setStyle(undefined);
+        this.point.set('ol_z-index', 0, true);
+        this.label.set('ol_z-index', 0, true);
     }
 
     public set radarState(object: RadarPlane) {

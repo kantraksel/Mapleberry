@@ -176,12 +176,16 @@ function sortFeatures(features: FeatureLike[]) {
     let layers = features.map<VectorLayer | undefined>(feature => feature.get('ol_layer'));
     let startLayer = layers[0];
     let startLayerIdx = 0;
+    let startFeatureZ = features[0].get('ol_z-index');
     let result: FeatureLike[] = [];
 
     for (let i = 1; i < features.length; ++i) {
+        const feature = features[i];
         const layer = layers[i];
         if (startLayer == layer) {
-            continue;
+            if (startFeatureZ === feature.get('ol_z-index')) {
+                continue;
+            }
         }
 
         const set = features.slice(startLayerIdx, i);
@@ -192,6 +196,7 @@ function sortFeatures(features: FeatureLike[]) {
 
         startLayer = layer;
         startLayerIdx = i;
+        startFeatureZ = feature.get('ol_z-index');
     }
 
     const set = features.slice(startLayerIdx);
