@@ -63,12 +63,16 @@ export type AtisEx = Atis & { station?: VatsimControl, type?: BroadcastType };
 class ControlRadar {
     private fields: Map<string, VatsimField>;
     private areas: Map<string, VatsimArea>;
+    private airportCache: Map<string, VatsimField>;
+    private regionCache: Map<string, VatsimArea>;
     private waitTimer: number;
     public readonly update: Event<() => void>;
 
     constructor() {
         this.fields = new Map();
         this.areas = new Map();
+        this.airportCache = new Map();
+        this.regionCache = new Map();
         this.waitTimer = 0;
         this.update = new Event();
 
@@ -130,6 +134,8 @@ class ControlRadar {
             controlLayers.removeArea(area.area);
         });
         this.areas.clear();
+        this.airportCache.clear();
+        this.regionCache.clear();
 
         this.update.invoke();
     }
@@ -147,12 +153,14 @@ class ControlRadar {
             field.atis = [];
         });
         const old_fields = new Map(fields);
+        const oldAirportCache = new Map(this.airportCache);
 
         const areas = this.areas;
         areas.forEach(area => {
             area.controllers = [];
         });
         const old_areas = new Map(areas);
+        const oldRegionCache = new Map(this.regionCache);
 
         networkData.controllers.forEach((controller: ControllerEx) => {
             const callsign = controller.callsign;
@@ -160,10 +168,18 @@ class ControlRadar {
             controller.station = undefined;
 
             if (local_facilities.has(controller.facility)) {
+                if (this.trySetAirportFromCache(controller, old_fields)) {
+                    oldAirportCache.delete(callsign);
+                    return;
+                }
                 const airport = controlStations.getAirport(callsign);
                 if (airport) {
                     this.setFieldController(controller, old_fields, airport);
                 } else {
+                    if (this.trySetRegionFromCache(controller, old_areas)) {
+                        oldRegionCache.delete(callsign);
+                        return;
+                    }
                     const region = controlStations.getRegion(callsign);
                     if (region) {
                         this.setAreaController(controller, old_areas, region);
@@ -172,10 +188,18 @@ class ControlRadar {
                     }
                 }
             } else {
+                if (this.trySetRegionFromCache(controller, old_areas)) {
+                    oldRegionCache.delete(callsign);
+                    return;
+                }
                 const region = controlStations.getRegion(callsign);
                 if (region) {
                     this.setAreaController(controller, old_areas, region);
                 } else {
+                    if (this.trySetAirportFromCache(controller, old_fields)) {
+                        oldAirportCache.delete(callsign);
+                        return;
+                    }
                     const airport = controlStations.getAirport(callsign);
                     if (airport) {
                         this.setFieldController(controller, old_fields, airport);
@@ -185,7 +209,7 @@ class ControlRadar {
                 }
             }
         });
-        this.updateAtis(networkData.atis, old_fields);
+        this.updateAtis(networkData.atis, old_fields, oldAirportCache);
 
         old_fields.forEach((field, icao) => {
             fields.delete(icao);
@@ -194,6 +218,12 @@ class ControlRadar {
         old_areas.forEach((area, icao) => {
             areas.delete(icao);
             controlLayers.removeArea(area.area);
+        });
+        oldAirportCache.forEach((_, callsign) => {
+            this.airportCache.delete(callsign);
+        });
+        oldRegionCache.forEach((_, callsign) => {
+            this.regionCache.delete(callsign);
         });
 
         this.update.invoke();
@@ -217,14 +247,29 @@ class ControlRadar {
         }
         field.controllers.push(controller);
         controller.station = field;
+
+        this.airportCache.set(controller.callsign, field);
     }
 
-    private updateAtis(atis: AtisEx[], old_fields: typeof this.fields) {
+    private updateAtis(atis: AtisEx[], old_fields: typeof this.fields, oldAirportCache: typeof this.airportCache) {
         const fields = this.fields;
 
         atis.forEach(atis => {
             const callsign = atis.callsign;
             atis.type = BroadcastType.ATIS;
+
+            let field = this.airportCache.get(callsign);
+            if (field) {
+                old_fields.delete(field.station.icao);
+                field.atis.push(atis);
+                atis.station = field;
+
+                if (!field.isOutlined && field.controllers.length == 0) {
+                    field.setOutline();
+                }
+                oldAirportCache.delete(callsign);
+                return;
+            }
 
             const airport = controlStations.getAirport(callsign);
             if (!airport) {
@@ -234,7 +279,7 @@ class ControlRadar {
             }
             const id = airport.icao;
 
-            let field = fields.get(id);
+            field = fields.get(id);
             if (field) {
                 old_fields.delete(id);
 
@@ -250,6 +295,8 @@ class ControlRadar {
             }
             field.atis.push(atis);
             atis.station = field;
+
+            this.airportCache.set(callsign, field);
         });
     }
 
@@ -267,6 +314,34 @@ class ControlRadar {
         }
         area.controllers.push(controller);
         controller.station = area;
+
+        this.regionCache.set(controller.callsign, area);
+    }
+
+    private trySetAirportFromCache(controller: ControllerEx, old_fields: typeof this.fields) {
+        const airport = this.airportCache.get(controller.callsign);
+        if (airport) {
+            old_fields.delete(airport.station.icao);
+            airport.controllers.push(controller);
+            controller.station = airport;
+
+            if (airport.isOutlined) {
+                airport.setFill();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private trySetRegionFromCache(controller: ControllerEx, old_areas: typeof this.areas) {
+        const region = this.regionCache.get(controller.callsign);
+        if (region) {
+            old_areas.delete(region.station.icao);
+            region.controllers.push(controller);
+            controller.station = region;
+            return true;
+        }
+        return false;
     }
 
     public getStation(icao: string): VatsimControl | undefined {
