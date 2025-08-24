@@ -1,9 +1,9 @@
 import { ReactNode, useEffect, useId, useRef, useState } from 'react';
-import { Controller, FlightPlan, Pilot } from '../Network/VATSIM';
+import { Controller, FlightPlan, Pilot } from '../../Network/VATSIM';
 import { Box, Button, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import { NetworkState } from '../Network/NetworkWorld';
+import { NetworkState } from '../../Network/NetworkWorld';
 
 export function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string }) {
     const style = {

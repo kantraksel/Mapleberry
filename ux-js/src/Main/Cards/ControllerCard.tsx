@@ -1,5 +1,5 @@
 import { IconButton } from '@mui/material';
-import { ControllerEx, VatsimArea, VatsimField } from '../Network/ControlRadar';
+import { ControllerEx, VatsimArea, VatsimField } from '../../Network/ControlRadar';
 import { CardLeftToolbar, CardRightToolbar, createNetUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCardBase, TextBox } from './CardsShared';
 import { useEffect, useRef, useState } from 'react';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';

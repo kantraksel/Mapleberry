@@ -10,11 +10,11 @@ import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
 import OptionsBox from './OptionsBox';
 import Scoreboard, { FacilityStationsList } from './Scoreboard';
-import ControllerCard from './ControllerCard';
-import PilotCard from './PilotCard';
+import ControllerCard from './Cards/ControllerCard';
+import PilotCard from './Cards/PilotCard';
 import SystemInfoBar from './SystemInfoBar';
-import PrefileCard from './PrefileCard';
-import AtisCard from './AtisCard';
+import PrefileCard from './Cards/PrefileCard';
+import AtisCard from './Cards/AtisCard';
 
 const MainDrawerContext = createContext(true);
 
@@ -203,16 +203,13 @@ export default App;
 
 /*
 TODO:
-- add fallback: when controller chooses wrong station type, search the station in other types (airport services may select Center, Center may select Approach, etc)
-- expose stationless controllers on map
-- on station disappear mark current card as old
-- add scrolling context to controller information (station+atis)
-
 - add VATSIM metar query
 - add local airplane button
 - /and/or/ add local planes in Stations Lists (as a tab)
 - try to autodetect local airplane, show toast with suggestion
 
+- add search bar in lists
+- draw TRACON area
 - cache VATSpy data + update mechanism (self-host and github)
 - try to eliminate large, thin holes in UIRs
 - option: airport label icao or iata
@@ -220,12 +217,10 @@ TODO:
 - option: hide areas, planes, airports
 - option: hide fields with ATIS only
 - better contrast for net planes and area labels
-- add network status icon
-- redesign network data (flow), single source of truth for UX + less useless objects + add ATIS+Controller array
-- option: draw 50 NM TRACON circle
 
 - implement OSM Vector Tiles
-- handle observers on different station types, e.g. Supervisors
+- expose stationless controllers on map
+- fallback for FIR/UIR without boundary
 - write FIR/UIR/Aiport benchmarks
 - investigate KZNY & SUEO - determine oceanic flag
 - integrate VATSIM AIP, accurate station names
@@ -241,22 +236,17 @@ vatsim.networkData = JSON.parse(localStorage.getItem('vatsim_list'));
 vatsim.propsCache = vatsim.networkData;
 vatsim.Update.invoke(vatsim.networkData);
 https://vatspy-data.kantraksel.workers.dev/release.json
+https://github.com/vatsimnetwork/simaware-tracon-project
 
 Dataset errors:
 [NOT EXPLORED] Boundaries.geojson: some entries (above 700) have numeric properties instead of strings
-[FIXED] Boundaries.geojson: 300 & 301 - LKAA is duplicated [CONFIRM USING PROGRAM]
 VATSpy.dat: 9704 - OAKB is not a FIR (most likely OAKX)
 VATSpy.dat: 13029 - FIR UULL doesn't exist (most likely ULLL)
 VATSpy.dat: 13624 - FIR VMSN doesn't exist (most likely VNSM)
 VATSpy.dat: 14234 - UHPP is not a FIR (most likely UHMM)
 VATSpy.dat: 12903 & 14234 - XHPL defined twice (slightly different names and coords, second entry has invalid FIR)
-VATSpy.dat: 18193 - ICAO FAJA_NE is malformed (the only ICAO with underscore - line above is FAJA-NE and every other repeated ICAOs stick to the rule)
-VATSpy.dat: 18482 - FIR boundary is OBBB_S, while in Boundary.geojson is OBBB-S
-VATSpy.dat: 18487 - FIR boundary is OTDF_N, while in Boundary.geojson is OTDF-N
-VATSpy.dat: 18488 - FIR boundary is OTDF_S, while in Boundary.geojson is OTDF-S
-VATSpy.dat: 19079 - FIR EDWW-D doesn't exist
 
 Warnings:
 VATSpy.dat: 7702 & 7703 - duplicate entry, but only one is pseudo
-VATSpy.dat: 7784 - callsign prefix UMMM seems to be invalid, see next UUMV_X
+VATSpy.dat: 18784 - callsign prefix UMMM seems to be invalid, see next UMMV_X
 */

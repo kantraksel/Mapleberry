@@ -1,5 +1,5 @@
 import { Divider } from '@mui/material';
-import { PilotEx, VatsimPlane } from '../Network/TrafficRadar';
+import { PilotEx, VatsimPlane } from '../../Network/TrafficRadar';
 import { createNetUpdate, DataTable, getFlightplan, getPilotRating, getTimeOnline, RouteBox, StationCard } from './CardsShared';
 import { useEffect, useState } from 'react';
 

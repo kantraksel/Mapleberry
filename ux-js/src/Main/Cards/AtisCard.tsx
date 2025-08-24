@@ -1,4 +1,4 @@
-import { AtisEx, VatsimField } from '../Network/ControlRadar';
+import { AtisEx, VatsimField } from '../../Network/ControlRadar';
 import { createNetUpdate, DataTable, getTimeOnline, StationCard, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
