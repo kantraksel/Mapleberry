@@ -4,6 +4,7 @@ import MapField from '../Map/MapField';
 import { Airport_ext } from './ControlStations';
 import { Atis, Controller, NetworkState } from './NetworkWorld';
 import Event from '../Event';
+import MapTracon from '../Map/MapTracon';
 
 export class VatsimArea {
     icao: string;
@@ -24,6 +25,7 @@ export class VatsimArea {
 export class VatsimField {
     icao: string;
     field: MapField;
+    tracons: MapTracon[];
     controllers: Controller[];
     atis: Atis[];
     station: Airport_ext;
@@ -36,6 +38,7 @@ export class VatsimField {
         this.station = station;
         this.icao = station.icao;
         this.isOutlined = false;
+        this.tracons = [];
 
         this.field.netState = this;
     }
@@ -57,7 +60,7 @@ export enum BroadcastType {
 }
 
 export type VatsimControl = VatsimArea | VatsimField;
-export type ControllerEx = Controller & { station?: VatsimControl, type?: BroadcastType };
+export type ControllerEx = Controller & { station?: VatsimControl, type?: BroadcastType, substation?: MapTracon };
 export type AtisEx = Atis & { station?: VatsimControl, type?: BroadcastType };
 
 class ControlRadar {
@@ -65,6 +68,7 @@ class ControlRadar {
     private areas: Map<string, VatsimArea>;
     private airportCache: Map<string, VatsimField>;
     private regionCache: Map<string, VatsimArea>;
+    private standaloneTracons: Map<string, MapTracon>;
     private waitTimer: number;
     public readonly update: Event<() => void>;
 
@@ -73,6 +77,7 @@ class ControlRadar {
         this.areas = new Map();
         this.airportCache = new Map();
         this.regionCache = new Map();
+        this.standaloneTracons = new Map();
         this.waitTimer = 0;
         this.update = new Event();
 
@@ -128,6 +133,9 @@ class ControlRadar {
     private clear() {
         this.fields.forEach(field => {
             controlLayers.removeField(field.field);
+            field.tracons.forEach(tracon => {
+                controlLayers.removeTracon(tracon);
+            });
         });
         this.fields.clear();
         this.areas.forEach(area => {
@@ -149,11 +157,25 @@ class ControlRadar {
 
         const fields = this.fields;
         fields.forEach(field => {
+            field.controllers.forEach((controller: ControllerEx) => {
+                const newController = networkData.controllers.find(value => value.callsign === controller.callsign) as ControllerEx | undefined;
+                if (newController) {
+                    newController.station = controller.station;
+                    newController.substation = controller.substation;
+                }
+            });
+
             field.controllers = [];
             field.atis = [];
+            field.tracons.forEach(tracon => {
+                tracon.refCount = 0;
+            });
         });
         const old_fields = new Map(fields);
         const oldAirportCache = new Map(this.airportCache);
+        this.standaloneTracons.forEach(tracon => {
+            tracon.refCount = 0;
+        });
 
         const areas = this.areas;
         areas.forEach(area => {
@@ -184,6 +206,9 @@ class ControlRadar {
                     if (region) {
                         this.setAreaController(controller, old_areas, region);
                     } else {
+                        if (this.setStandaloneTraconController(controller)) {
+                            return;
+                        }
                         console.warn(`Cannot find airport for ${callsign}`);
                     }
                 }
@@ -204,6 +229,9 @@ class ControlRadar {
                     if (airport) {
                         this.setFieldController(controller, old_fields, airport);
                     } else {
+                        if (this.setStandaloneTraconController(controller)) {
+                            return;
+                        }
                         console.warn(`Cannot find FIR/UIR for ${callsign}`);
                     }
                 }
@@ -214,6 +242,9 @@ class ControlRadar {
         old_fields.forEach((field, icao) => {
             fields.delete(icao);
             controlLayers.removeField(field.field);
+            field.tracons.forEach(tracon => {
+                controlLayers.removeTracon(tracon);
+            });
         });
         old_areas.forEach((area, icao) => {
             areas.delete(icao);
@@ -224,6 +255,21 @@ class ControlRadar {
         });
         oldRegionCache.forEach((_, callsign) => {
             this.regionCache.delete(callsign);
+        });
+        fields.forEach(field => {
+            field.tracons = field.tracons.filter(tracon => {
+                if (tracon.refCount <= 0) {
+                    controlLayers.removeTracon(tracon);
+                    return false;
+                }
+                return true;
+            })
+        });
+        this.standaloneTracons.forEach((tracon, callsign) => {
+            if (tracon.refCount <= 0) {
+                controlLayers.removeTracon(tracon);
+                this.standaloneTracons.delete(callsign);
+            }
         });
 
         this.update.invoke();
@@ -249,6 +295,8 @@ class ControlRadar {
         controller.station = field;
 
         this.airportCache.set(controller.callsign, field);
+
+        this.setTraconController(controller, field);
     }
 
     private updateAtis(atis: AtisEx[], old_fields: typeof this.fields, oldAirportCache: typeof this.airportCache) {
@@ -324,6 +372,9 @@ class ControlRadar {
             old_fields.delete(airport.station.icao);
             airport.controllers.push(controller);
             controller.station = airport;
+            if (controller.substation) {
+                controller.substation.refCount++;
+            }
 
             if (airport.isOutlined) {
                 airport.setFill();
@@ -340,6 +391,87 @@ class ControlRadar {
             region.controllers.push(controller);
             controller.station = region;
             return true;
+        }
+        return false;
+    }
+
+    private setTraconController(controller: ControllerEx, field: VatsimField) {
+        if (controller.substation) {
+            controller.substation.refCount++;
+            return;
+        }
+
+        const station = controlStations.getTracon(controller.callsign);
+        if (station) {
+            let tracon = field.tracons.find(value => station === value.substation);
+            if (!tracon) {
+                tracon = MapTracon.create(station, field.station);
+                field.tracons.push(tracon);
+                controlLayers.addTracon(tracon);
+            } else {
+                tracon.refCount++;
+            }
+            controller.substation = tracon;
+        } else {
+            const app_facility = network.getFacilities().find(value => value.short === 'APP')?.id ?? 0;
+            if (controller.facility == app_facility) {
+                let tracon = field.tracons.find(value => value.substation.geometry.length === 0);
+                if (tracon) {
+                    controller.substation = tracon;
+                    tracon.refCount++;
+                    return;
+                }
+
+                const id_parts = controller.callsign.split(/[_-]/);
+                const suffix = id_parts.pop() ?? 'APP';
+                const substation = {
+                    prefix: [ id_parts.join('_') ],
+                    suffix: suffix,
+                    name: 'Approach',
+                    geometry: [],
+
+                    airport: field.station,
+                };
+                tracon = MapTracon.create(substation, field.station);
+                controller.substation = tracon;
+                field.tracons.push(tracon);
+                controlLayers.addTracon(tracon);
+            }
+        }
+    }
+
+    private setStandaloneTraconController(controller: ControllerEx) {
+        if (controller.substation) {
+            controller.substation.refCount++;
+            return true;
+        }
+
+        const station = controlStations.getTracon(controller.callsign);
+        if (station) {
+            const tracon = MapTracon.createStandalone(station);
+            controller.substation = tracon;
+            this.standaloneTracons.set(controller.callsign, tracon);
+            controlLayers.addTracon(tracon);
+            return true;
+        } else {
+            const app_facility = network.getFacilities().find(value => value.short === 'APP')?.id ?? 0;
+            if (controller.facility == app_facility) {
+                const id_parts = controller.callsign.split(/[_-]/);
+                const suffix = id_parts.pop() ?? 'APP';
+                const substation = {
+                    prefix: [ id_parts.join('_') ],
+                    suffix: suffix,
+                    name: 'Approach',
+                    geometry: [],
+
+                    airport: undefined,
+                };
+                const tracon = MapTracon.createStandalone(substation);
+                controller.substation = tracon;
+                this.standaloneTracons.set(controller.callsign, tracon);
+                controlLayers.addTracon(tracon);
+                return true;
+            }
         }
         return false;
     }

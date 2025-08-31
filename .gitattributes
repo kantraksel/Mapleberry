@@ -1,3 +1,4 @@
 ux-js/public/playlist.txt filter=lfs diff=lfs merge=lfs -text
 ux-js/public/Boundaries.geojson filter=lfs diff=lfs merge=lfs -text
 ux-js/public/VATSpy.dat filter=lfs diff=lfs merge=lfs -text
+ux-js/public/TRACONBoundaries.geojson filter=lfs diff=lfs merge=lfs -text

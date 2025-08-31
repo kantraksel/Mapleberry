@@ -1,7 +1,7 @@
 import { fromLonLat } from 'ol/proj';
 import polygonClipping from 'polygon-clipping';
 import polylabel from 'polylabel';
-import DefinitionLoader, { BoundaryFeature, Country } from './DefinitionLoader';
+import DefinitionLoader, { BoundaryFeature, Country, TraconFeature } from './DefinitionLoader';
 
 enum RegionType {
     FIR,
@@ -50,6 +50,15 @@ export interface AirportStation_ext {
     name: string,
 }
 
+export interface Tracon {
+    prefix: string[],
+    suffix: string,
+    name: string,
+    geometry: number[][][][],
+
+    airport: Airport_ext | undefined,
+}
+
 type Region = FIR_ext | UIR_ext;
 
 function checkCountryCode(code: string) {
@@ -93,20 +102,26 @@ function checkAirportIATA_LID(iata_lid: string) {
     }
 }
 
+function checkTraconPrefix(prefix: string) {
+    const parts = prefix.split(/[-_]/);
+    if (parts.length > 2) {
+        console.warn(`TRACON prefix ${prefix} is non-standard. Immediate fix needed`);
+    }
+}
+
 function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map<string, Obj>>) {
     const parts = id.split(/[-_]/);
     let map = objMap.get(parts[0]);
     if (parts.length > 1) {
-        if (!map) {
+        if (!(map instanceof Map)) {
+            const obj = map;
             map = new Map<string, Obj>();
             objMap.set(parts[0], map);
-        } else if (!(map instanceof Map)) {
-            const rootObj = map;
-            map = new Map<string, Obj>();
-            objMap.set(parts[0], map);
-            map.set('', rootObj);
+            if (obj) {
+                map.set('', obj);
+            }
         }
-        const suffix = parts.slice(1).join('_');
+        const suffix = parts[1];
         map.set(suffix, obj);
     } else if (map instanceof Map) {
         map.set('', obj);
@@ -118,11 +133,13 @@ function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map
 class ControlStations {
     readonly airports: Map<string, Airport_ext | Map<string, Airport_ext>>;
     readonly regions: Map<string, Region | Map<string, Region>>;
+    readonly tracons: Map<string, Tracon | Map<string, Tracon>>;
     private ready: boolean;
 
     constructor() {
         this.airports = new Map();
         this.regions = new Map();
+        this.tracons = new Map();
         this.ready = false;
 
         this.loadDefs();
@@ -132,6 +149,7 @@ class ControlStations {
         this.ready = false;
         const list = await DefinitionLoader.loadMainDefs();
         const boundaries = await DefinitionLoader.loadBoundaries();
+        const tracons = await DefinitionLoader.loadTracons();
 
         const boundary_map = new Map<string, BoundaryFeature>();
         boundaries.features.forEach(value => {
@@ -314,7 +332,86 @@ class ControlStations {
             }
         });
 
+        tracons.features.forEach(value => {
+            if (value.type == 'Feature') {
+                this.parseTraconFeature(value);
+            } else if (value.type == 'FeatureCollection') {
+                value.features.forEach(value => {
+                    this.parseTraconFeature(value);
+                });
+            }
+        });
+
         this.ready = true;
+    }
+
+    private parseTraconFeature(value: TraconFeature) {
+        const prefixes = value.properties.prefix;
+        if (prefixes instanceof Array) {
+            const tracon = this.createTraconObject(value);
+            prefixes.forEach(prefix => {
+                checkTraconPrefix(prefix);
+                tracon.prefix.push(prefix);
+                addToObjectMap(prefix, tracon, this.tracons);
+            });
+
+            prefixes.find(prefix => {
+                const airport = this.findAirport(value, prefix);
+                if (airport) {
+                    tracon.airport = airport;
+                    return true;
+                }
+            });
+        } else {
+            checkTraconPrefix(prefixes);
+            const tracon = this.createTraconObject(value);
+            tracon.airport = this.findAirport(value, prefixes);
+            tracon.prefix.push(prefixes);
+            addToObjectMap(prefixes, tracon, this.tracons);
+        }
+    }
+
+    private findAirport(feature: TraconFeature, prefix: string) {
+        let airport = this.getAirport(prefix);
+        if (!airport) {
+            const props = feature.properties;
+            airport = this.getAirport(props.id);
+            if (!airport) {
+                const region = this.getRegion(prefix);
+                if (region) {
+                    console.info(`Found region ${region.icao} for TRACON ${props.id}/${prefix}/${props.name}`);
+                } else {
+                    console.warn(`Cannot find airport for TRACON ${props.id}/${prefix}/${props.name}`);
+                }
+            } else {
+                const newPrefix = airport.stations[0]?.iata_lid ?? airport.icao;
+                console.info(`Replacing invalid prefix for TRACON ${props.id}/${prefix}/${props.name}: ${prefix} -> ${newPrefix}`);
+                prefix = newPrefix;
+            }
+        }
+        return airport;
+    }
+
+    private createTraconObject(feature: TraconFeature): Tracon {
+        let coordinates;
+        const geometry = feature.geometry;
+        if (geometry.type == 'Polygon') {
+            coordinates = [ geometry.coordinates ];
+        } else {
+            coordinates = geometry.coordinates;
+        }
+
+        // prebake geometry
+        coordinates = coordinates.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
+
+        const props = feature.properties;
+        return {
+            name: props.name,
+            prefix: [],
+            suffix: props.suffix ?? 'APP',
+            geometry: coordinates,
+            airport: undefined,
+        };
     }
 
     public getRegion(callsign: string): FIR_ext | UIR_ext | undefined {
@@ -353,6 +450,17 @@ class ControlStations {
             return obj.get('');
         }
         return obj;
+    }
+
+    public getTracon(callsign: string) {
+        const id_parts = callsign.split(/[_-]/);
+
+        const obj = this.tracons.get(id_parts[0]);
+        if (obj instanceof Map) {
+            return obj.get(id_parts.length > 2 ? id_parts[1] : '');
+        } else if (obj && obj.suffix == id_parts[id_parts.length - 1]) {
+            return obj;
+        }
     }
 
     public isReady() {

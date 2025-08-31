@@ -5,6 +5,7 @@ import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, C
 import { StyleLike } from 'ol/style/Style';
 import MapField from './MapField';
 import MapArea from './MapArea';
+import MapTracon from './MapTracon';
 
 class ControlLayer {
     private fieldLayer?: VectorLayer;
@@ -15,6 +16,8 @@ class ControlLayer {
     private areaSource: VectorSource;
     private areaLabelLayer?: VectorLayer;
     private areaLabelSource: VectorSource;
+    private traconLayer?: VectorLayer;
+    private traconSource: VectorSource;
 
     private readonly filledPointStyle: StyleLike;
     public readonly outlinedPointStyle: StyleLike;
@@ -24,6 +27,7 @@ class ControlLayer {
         this.fieldLabelSource = new VectorSource();
         this.areaSource = new VectorSource();
         this.areaLabelSource = new VectorSource();
+        this.traconSource = new VectorSource();
 
         this.filledPointStyle = new OlStyle({
             image: new OlCircle({
@@ -43,11 +47,13 @@ class ControlLayer {
 
         this.createAreaLayers();
         this.createFieldLayers();
+        this.createTraconLayers();
     }
 
     public setupLayers() {
         const map = window.map.map;
         map.addLayer(this.areaLayer!);
+        map.addLayer(this.traconLayer!);
         map.addLayer(this.fieldLayer!);
     }
 
@@ -134,6 +140,35 @@ class ControlLayer {
         });
     }
 
+    private createTraconLayers() {
+        const shapeStyleObj = new OlStyle({
+            fill: new OlFill({ color: [255, 0, 255, 0.2] }),
+            stroke: new OlStroke({ color: [255, 0, 255] }),
+        });
+        const pointStyleObj = new OlStyle({
+            image: new OlCircle({
+                radius: 50,
+                fill: new OlFill({ color: [255, 0, 255, 0.2] }),
+                stroke: new OlStroke({ color: [255, 0, 255] }),
+            }),
+        });
+        const style = (feature: FeatureLike, resolution: number) => {
+            if (MapTracon.hasDefaultStyle(feature)) {
+                const nautic_mile_meters = 40000 / (360 * 60) * 1000;
+                const shape = pointStyleObj.getImage() as OlCircle;
+                shape.setRadius(50 * nautic_mile_meters / resolution);
+                return pointStyleObj;
+            }
+            return shapeStyleObj;
+        };
+
+        this.traconLayer = new VectorLayer({
+            style: style,
+            source: this.traconSource,
+            updateWhileAnimating: true,
+        });
+    }
+
     public addField(field: MapField) {
         field.point.set('ol_layer', this.fieldLayer);
         field.label.set('ol_layer', this.fieldLabelLayer);
@@ -160,6 +195,15 @@ class ControlLayer {
         area.labels.forEach(label => {
             this.areaLabelSource.removeFeature(label);
         });
+    }
+
+    public addTracon(tracon: MapTracon) {
+        tracon.area.set('ol_layer', this.traconLayer);
+        this.traconSource.addFeature(tracon.area);
+    }
+
+    public removeTracon(tracon: MapTracon) {
+        this.traconSource.removeFeature(tracon.area);
     }
 }
 
