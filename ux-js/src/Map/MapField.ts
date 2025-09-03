@@ -3,7 +3,7 @@ import { FeatureLike } from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Airport_ext } from '../Network/ControlStations';
-import { VatsimField } from '../Network/ControlRadar';
+import { NetworkField } from '../Network/ControlRadar';
 
 class MapField {
     private pos: Point;
@@ -28,17 +28,17 @@ class MapField {
         return value;
     }
 
-    public set netState(obj: VatsimField) {
+    public set netState(obj: NetworkField) {
         this.label.set('control_field_net_state', obj, true);
         this.point.set('control_field_net_state', obj, true);
     }
 
-    public static getNetState(feature: FeatureLike): VatsimField | null {
+    public static getNetState(feature: FeatureLike): NetworkField | null {
         const value = feature.get('control_field_net_state') as unknown;
         if (typeof value !== 'object') {
             return null;
         }
-        return value as VatsimField;
+        return value as NetworkField;
     }
 
     public setFilled() {

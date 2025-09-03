@@ -1,15 +1,17 @@
-import { AtisEx, VatsimField } from '../../Network/ControlRadar';
-import { createNetUpdate, DataTable, getTimeOnline, StationCard, TextBox } from './CardsShared';
+import { NetworkAtis, NetworkField } from '../../Network/ControlRadar';
+import { createControlRadarUpdate, DataTable, getTimeOnline, StationCard, TextBox } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 function AtisCard() {
-    const [data, setData] = useState<AtisEx>();
+    const [object, setObject] = useState<NetworkAtis>();
     const [absent, setAbsent] = useState(false);
+    const [rev, setRev] = useState(0);
 
     useEffect(() => {
         cards.atisRef = data => {
-            setData(data);
+            setObject(data);
             setAbsent(false);
+            setRev(rev + 1);
         };
 
         return () => {
@@ -18,24 +20,30 @@ function AtisCard() {
     }, []);
 
     useEffect(() => {
-        if (!data) {
+        if (!object) {
             return;
         }
 
-        return createNetUpdate(state => {
-            const value = state.atis.find(value => value.callsign === data.callsign);
-            if (value) {
-                setData(value);
-                setAbsent(false);
+        return createControlRadarUpdate(() => {
+            if (!object.expired()) {
+                setRev(rev + 1);
             } else {
-                setAbsent(true);
+                const controller = controlRadar.findAtis(object);
+                if (controller) {
+                    setObject(controller);
+                    setAbsent(false);
+                    setRev(rev + 1);
+                } else {
+                    setAbsent(true);
+                }
             }
         });
-    }, [data]);
+    }, [object]);
 
-    if (!data) {
+    if (!object) {
         return <></>;
     }
+    const data = object.data;
 
     const timeOnline = getTimeOnline(data);
     const info = data.text_atis?.join(' ') ?? 'N/A';
@@ -56,8 +64,8 @@ function AtisCard() {
     ];
 
     let onFocus;
-    const station = data.station;
-    if (station instanceof VatsimField) {
+    const station = object.station;
+    if (station instanceof NetworkField) {
         const lon = station.station.longitude;
         const lat = station.station.latitude;
         onFocus = () => {

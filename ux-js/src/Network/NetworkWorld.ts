@@ -15,6 +15,7 @@ interface NetPropsCache {
     pilot_ratings: Rating[],
     military_ratings: Rating[],
     local_facilities: Set<number>,
+    facility_approach: number,
 }
 
 function splitObservers(data: LiveNetworkData) {
@@ -57,6 +58,7 @@ function createPropsCache(data: LiveNetworkData) {
                 break;
         }
     });
+    const facility_approach = data.facilities.find(value => value.short === 'APP')?.id ?? 0;
 
     return {
         facilities: data.facilities,
@@ -64,6 +66,7 @@ function createPropsCache(data: LiveNetworkData) {
         pilot_ratings: data.pilot_ratings,
         military_ratings: data.military_ratings,
         local_facilities,
+        facility_approach,
     };
 }
 
@@ -122,6 +125,10 @@ class NetworkWorld {
 
     public getLocalFacilities() {
         return this.propsCache?.local_facilities ?? new Set();
+    }
+
+    public getApproachId() {
+        return this.propsCache?.facility_approach ?? 0;
     }
 }
 

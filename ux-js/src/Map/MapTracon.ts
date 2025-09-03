@@ -3,17 +3,15 @@ import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { Airport_ext, Tracon } from '../Network/ControlStations';
-import { VatsimField } from '../Network/ControlRadar';
+import { NetworkField } from '../Network/ControlRadar';
 
 class MapTracon {
     public readonly area: Feature;
     public readonly substation: Tracon;
-    public refCount: number;
 
     private constructor(area: Feature, substation: Tracon) {
         this.area = area;
         this.substation = substation;
-        this.refCount = 1;
     }
 
     public static create(substation: Tracon, station: Airport_ext) {
@@ -35,16 +33,16 @@ class MapTracon {
         return new MapTracon(area, substation);
     }
 
-    public set netState(obj: VatsimField) {
+    public set netState(obj: NetworkField) {
         this.area.set('control_field_net_state', obj, true);
     }
 
-    public static getNetState(feature: FeatureLike): VatsimField | null {
+    public static getNetState(feature: FeatureLike): NetworkField | null {
         const value = feature.get('control_field_net_state') as unknown;
         if (typeof value !== 'object') {
             return null;
         }
-        return value as VatsimField;
+        return value as NetworkField;
     }
 
     public static hasDefaultStyle(feature: FeatureLike): boolean | undefined {

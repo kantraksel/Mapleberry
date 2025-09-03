@@ -1,17 +1,17 @@
 import { IconButton } from '@mui/material';
-import { ControllerEx, VatsimArea, VatsimField } from '../../Network/ControlRadar';
-import { CardLeftToolbar, CardRightToolbar, createNetUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCardBase, TextBox } from './CardsShared';
+import { CardLeftToolbar, CardRightToolbar, createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCardBase, TextBox } from './CardsShared';
 import { useEffect, useRef, useState } from 'react';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
+import { NetworkArea, NetworkController, NetworkField } from '../../Network/ControlRadar';
 
-function updateAtis(atisHandler: { current: (() => void) | undefined }, data: ControllerEx | undefined) {
+function updateAtis(atisHandler: { current: (() => void) | undefined }, data: NetworkController | undefined) {
     atisHandler.current = undefined;
     if (!data) {
         return;
     }
 
     const field = data.station;
-    if (field instanceof VatsimField && field.atis.length == 1) {
+    if (field instanceof NetworkField && field.atis.length == 1) {
         atisHandler.current = () => {
             cards.showAtisCard(field.atis[0]);
         };
@@ -19,15 +19,17 @@ function updateAtis(atisHandler: { current: (() => void) | undefined }, data: Co
 }
 
 function ControllerCard() {
-    const [data, setData] = useState<ControllerEx>();
+    const [object, setObject] = useState<NetworkController>();
     const [absent, setAbsent] = useState(false);
+    const [rev, setRev] = useState(0);
     const atisHandler = useRef<() => void>(undefined);
 
     useEffect(() => {
         cards.controllerRef = data => {
-            setData(data);
+            setObject(data);
             setAbsent(false);
             updateAtis(atisHandler, data);
+            setRev(rev + 1);
         };
 
         return () => {
@@ -36,26 +38,33 @@ function ControllerCard() {
     }, []);
 
     useEffect(() => {
-        if (!data) {
+        if (!object) {
             return;
         }
 
-        return createNetUpdate(state => {
-            const value = state.controllers.find(value => value.cid === data.cid && value.callsign === data.callsign);
-            if (value) {
-                setData(value);
-                setAbsent(false);
-                updateAtis(atisHandler, value);
+        return createControlRadarUpdate(() => {
+            if (!object.expired()) {
+                updateAtis(atisHandler, object);
+                setRev(rev + 1);
             } else {
-                setAbsent(true);
-                updateAtis(atisHandler, data);
+                const controller = controlRadar.findController(object);
+                if (controller) {
+                    setObject(controller);
+                    setAbsent(false);
+                    updateAtis(atisHandler, controller);
+                    setRev(rev + 1);
+                } else {
+                    setAbsent(true);
+                    updateAtis(atisHandler, object);
+                }
             }
         });
-    }, [data]);
+    }, [object]);
 
-    if (!data) {
+    if (!object) {
         return <></>;
     }
+    const data = object.data;
 
     const rating = getControllerRating(data);
     const timeOnline = getTimeOnline(data);
@@ -75,15 +84,15 @@ function ControllerCard() {
     ];
 
     let onFocus;
-    const control = data.station;
-    if (control instanceof VatsimField) {
+    const control = object.station;
+    if (control instanceof NetworkField) {
         const lon = control.station.longitude;
         const lat = control.station.latitude;
         onFocus = () => {
             radar.animator.unfollowPlane();
             map.setCenterZoom(lon, lat);
         };
-    } else if (control instanceof VatsimArea) {
+    } else if (control instanceof NetworkArea) {
         let point = control.station.label_pos;
         if (!point) {
             const labels = control.station.labels_pos;

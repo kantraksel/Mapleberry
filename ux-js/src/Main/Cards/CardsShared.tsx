@@ -267,6 +267,17 @@ export function createNetUpdate(onUpdate: (state: NetworkState) => void) {
     };
 }
 
+export function createControlRadarUpdate(onUpdate: () => void) {
+    const handler = () => {
+        onUpdate();
+    };
+    controlRadar.Update.add(handler);
+
+    return () => {
+        controlRadar.Update.delete(handler);
+    };
+}
+
 export function DataTable(props: { data: string[][][] }) {
     let i = 0; // ignore react warning - data layout is always fixed
     const parts = props.data.map(part => {

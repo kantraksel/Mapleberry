@@ -1,12 +1,13 @@
 import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, useEffect, useRef, useState } from 'react';
-import { Controller, NetworkState, Pilot, Prefile } from '../Network/NetworkWorld';
+import { Controller, Pilot, Prefile } from '../Network/NetworkWorld';
 import NotesIcon from '@mui/icons-material/Notes';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import { AtisEx, BroadcastType, ControllerEx, VatsimArea, VatsimControl, VatsimField } from '../Network/ControlRadar';
+import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from '../Network/ControlRadar';
+import { createNetUpdate } from './Cards/CardsShared';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
     return (
@@ -112,17 +113,17 @@ const pilotColumns: Column<Pilot>[] = [
     },
 ];
 
-const controllerColumns: Column<ControllerEx | AtisEx>[] = [
+const controllerColumns: Column<NetworkController | NetworkAtis>[] = [
     {
         width: 120,
         id: 'callsign',
         label: 'Callsign',
         data: data => {
             const color = data.station ? undefined : 'error';
-            return <Typography color={color} variant='inherit'>{data.callsign}</Typography>;
+            return <Typography color={color} variant='inherit'>{data.data.callsign}</Typography>;
         },
         compare: (a, b) => {
-            return compareIgnoreCase(a.callsign, b.callsign);
+            return compareIgnoreCase(a.data.callsign, b.data.callsign);
         },
     },
     {
@@ -130,10 +131,10 @@ const controllerColumns: Column<ControllerEx | AtisEx>[] = [
         id: 'freq',
         label: 'Frequency',
         data: data => {
-            return data.frequency;
+            return data.data.frequency;
         },
         compare: (a, b) => {
-            return compareIgnoreCase(a.frequency, b.frequency);
+            return compareIgnoreCase(a.data.frequency, b.data.frequency);
         },
         alignData: 'center',
     },
@@ -141,9 +142,9 @@ const controllerColumns: Column<ControllerEx | AtisEx>[] = [
         width: 180,
         id: 'name',
         label: 'Name',
-        data: 'name',
+        data: data => data.data.name,
         compare: (a, b) => {
-            return compareIgnoreCase(a.name, b.name);
+            return compareIgnoreCase(a.data.name, b.data.name);
         },
     },
     {
@@ -152,8 +153,8 @@ const controllerColumns: Column<ControllerEx | AtisEx>[] = [
         label: '',
         data: data => {
             const onClick = () => {
-                if (data.type == BroadcastType.ATIS) {
-                    cards.showAtisCard(data as AtisEx);
+                if (data instanceof NetworkAtis) {
+                    cards.showAtisCard(data);
                 } else {
                     cards.showControllerCard(data);
                 }
@@ -222,7 +223,7 @@ const prefileColumns: Column<Prefile>[] = [
     },
 ];
 
-const observerColumns: Column<ControllerEx>[] = [
+const observerColumns: Column<Controller>[] = [
     {
         width: 120,
         id: 'callsign',
@@ -251,7 +252,7 @@ const observerColumns: Column<ControllerEx>[] = [
         label: '',
         data: data => {
             const onClick = () => {
-                cards.showControllerCard(data);
+                cards.showControllerCard(new NetworkController(data, undefined));
             };
             return <IconButton onClick={onClick} size='small'><NotesIcon fontSize='small' /></IconButton>;
         },
@@ -408,24 +409,29 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
     );
 }
 
-function PilotList(props: { enabled: boolean, netData?: NetworkState }) {
-    return <DynamicList enabled={props.enabled} columns={pilotColumns} values={props.netData?.pilots} />;
+function PilotList(props: { enabled: boolean }) {
+    const state = network.getState();
+    return <DynamicList enabled={props.enabled} columns={pilotColumns} values={state?.pilots} />;
 }
 
-function ControllerList(props: { enabled: boolean, netData?: NetworkState }) {
-    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={props.netData?.controllers} />;
+function ControllerList(props: { enabled: boolean }) {
+    const data = controlRadar.getControllerList();
+    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={data} />;
 }
 
-function PrefileList(props: { enabled: boolean, netData?: NetworkState }) {
-    return <DynamicList enabled={props.enabled} columns={prefileColumns} values={props.netData?.prefiles} />;
+function PrefileList(props: { enabled: boolean }) {
+    const state = network.getState();
+    return <DynamicList enabled={props.enabled} columns={prefileColumns} values={state?.prefiles} />;
 }
 
-function ObserverList(props: { enabled: boolean, netData?: NetworkState }) {
-    return <DynamicList enabled={props.enabled} columns={observerColumns} values={props.netData?.observers} />;
+function ObserverList(props: { enabled: boolean }) {
+    const state = network.getState();
+    return <DynamicList enabled={props.enabled} columns={observerColumns} values={state?.observers} />;
 }
 
-function AtisList(props: { enabled: boolean, netData?: NetworkState }) {
-    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={props.netData?.atis} />;
+function AtisList(props: { enabled: boolean }) {
+    const data = controlRadar.getAtisList();
+    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={data} />;
 }
 
 function EmptyList({ enabled }: { enabled: boolean }) {
@@ -447,11 +453,18 @@ function EmptyList({ enabled }: { enabled: boolean }) {
     );
 }
 
-function ActiveStationList(props: { open: boolean, state?: NetworkState }) {
+function ActiveStationList(props: { open: boolean }) {
     const [tab, setTab] = useState(0);
+    const [rev, setRev] = useState(0);
+
+    useEffect(() => {
+        return createNetUpdate(() => {
+            setRev(rev + 1);
+        });
+    }, []);
 
     const display = props.open ? 'unset' : 'none';
-    const tabIdx = props.open && props.state ? tab : -1;
+    const tabIdx = props.open && network.getState() ? tab : -1;
     const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
@@ -464,18 +477,25 @@ function ActiveStationList(props: { open: boolean, state?: NetworkState }) {
             </Tabs>
             <Paper style={{ height: '100%', width: '100%', display }}>
                 <EmptyList enabled={tabIdx == -1} />
-                <PilotList enabled={tabIdx == 0} netData={props.state} />
-                <ControllerList enabled={tabIdx == 1} netData={props.state} />
+                <PilotList enabled={tabIdx == 0} />
+                <ControllerList enabled={tabIdx == 1} />
             </Paper>
         </>
     );
 }
 
-function PassiveStationList(props: { open: boolean, state?: NetworkState }) {
+function PassiveStationList(props: { open: boolean }) {
     const [tab, setTab] = useState(0);
+    const [rev, setRev] = useState(0);
+
+    useEffect(() => {
+        return createNetUpdate(() => {
+            setRev(rev + 1);
+        });
+    }, []);
 
     const display = props.open ? 'unset' : 'none';
-    const tabIdx = props.open && props.state ? tab : -1;
+    const tabIdx = props.open && network.getState() ? tab : -1;
     const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
@@ -489,9 +509,9 @@ function PassiveStationList(props: { open: boolean, state?: NetworkState }) {
             </Tabs>
             <Paper style={{ height: '100%', width: '100%', display }}>
                 <EmptyList enabled={tabIdx == -1} />
-                <PrefileList enabled={tabIdx == 0} netData={props.state} />
-                <ObserverList enabled={tabIdx == 1} netData={props.state} />
-                <AtisList enabled={tabIdx == 2} netData={props.state} />
+                <PrefileList enabled={tabIdx == 0} />
+                <ObserverList enabled={tabIdx == 1} />
+                <AtisList enabled={tabIdx == 2} />
             </Paper>
         </>
     );
@@ -499,14 +519,6 @@ function PassiveStationList(props: { open: boolean, state?: NetworkState }) {
 
 function Scoreboard(props: { open: boolean }) {
     const [row, setRow] = useState(0);
-    const [state, setState] = useState(network.getState());
-
-    useEffect(() => {
-        network.Update.add(setState);
-        return () => {
-            network.Update.delete(setState);
-        };
-    }, []);
 
     let rowButton;
     if (row == 0) {
@@ -520,8 +532,8 @@ function Scoreboard(props: { open: boolean }) {
             <Stack direction='row-reverse' sx={{ position: 'absolute', right: '5px', mt: '3px' }}>
                 {rowButton}
             </Stack>
-            <ActiveStationList open={props.open && row == 0} state={state} />
-            <PassiveStationList open={props.open && row == 1} state={state} />
+            <ActiveStationList open={props.open && row == 0} />
+            <PassiveStationList open={props.open && row == 1} />
         </InfoBox>
     );
 }
@@ -530,7 +542,7 @@ export default Scoreboard;
 
 function FacilityStationsList() {
     const [refresh, setRefresh] = useState(0);
-    const [facility, setFacility] = useState<VatsimControl>();
+    const [facility, setFacility] = useState<NetworkControl>();
     const hasFacility = facility != undefined;
 
     useEffect(() => {
@@ -549,19 +561,19 @@ function FacilityStationsList() {
             setRefresh(refresh + 1);
             setFacility(controlRadar.getStation(icao));
         };
-        controlRadar.update.add(onUpdate);
+        controlRadar.Update.add(onUpdate);
         return () => {
-            controlRadar.update.delete(onUpdate);
+            controlRadar.Update.delete(onUpdate);
         };
     }, [facility]);
 
-    let list: Controller[] | undefined;
+    let list: (NetworkController | NetworkAtis)[] | undefined;
     let stationName = '';
     if (facility) {
-        if (facility instanceof VatsimArea) {
+        if (facility instanceof NetworkArea) {
             list = facility.controllers;
             stationName = facility.station.name;
-        } else if (facility instanceof VatsimField) {
+        } else if (facility instanceof NetworkField) {
             list = [...facility.controllers, ...facility.atis];
             stationName = facility.station.name;
         }

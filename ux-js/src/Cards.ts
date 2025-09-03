@@ -1,12 +1,12 @@
-import { ControllerEx, VatsimControl } from './Network/ControlRadar';
-import { Atis, Pilot, Prefile } from './Network/VATSIM';
+import { NetworkAtis, NetworkControl, NetworkController } from './Network/ControlRadar';
+import { Pilot, Prefile } from './Network/VATSIM';
 
 class Cards {
-    controllerRef?: (data: ControllerEx | undefined) => void;
+    controllerRef?: (data: NetworkController | undefined) => void;
     pilotRef?: (data: Pilot | undefined) => void;
-    facilityRef?: (data: VatsimControl | undefined) => void;
+    facilityRef?: (data: NetworkControl | undefined) => void;
     prefileRef?: (data: Prefile | undefined) => void;
-    atisRef?: (data: Atis | undefined) => void;
+    atisRef?: (data: NetworkAtis | undefined) => void;
     stationsRef?: (show: boolean) => void;
 
     private backList: (() => void)[];
@@ -30,13 +30,13 @@ class Cards {
         });
     }
 
-    showControllerCard(data: ControllerEx) {
-        const cid = data.cid;
-        const callsign = data.callsign;
+    showControllerCard(data: NetworkController) {
         this.backList.push(() => {
-            const state = network.getState();
-            if (state) {
-                const controller = state.controllers.find(value => value.cid === cid && value.callsign === callsign);
+            if (!data.expired()) {
+                this.showControllerCard(data);
+                return;
+            } else {
+                const controller = controlRadar.findController(data);
                 if (controller) {
                     this.showControllerCard(controller);
                     return;
@@ -78,7 +78,7 @@ class Cards {
         this.stationsRef?.call(null, false);
     }
 
-    showFacilityList(data: VatsimControl) {
+    showFacilityList(data: NetworkControl) {
         const icao = data.icao;
         this.backList.push(() => {
             const data = controlRadar.getStation(icao);
@@ -97,7 +97,7 @@ class Cards {
         this.stationsRef?.call(null, false);
     }
 
-    showAtisCard(data: Atis) {
+    showAtisCard(data: NetworkAtis) {
         this.backList.push(() => {});
 
         this.controllerRef?.call(null, undefined);

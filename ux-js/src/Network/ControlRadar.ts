@@ -1,18 +1,35 @@
 import { FeatureLike } from 'ol/Feature';
 import MapArea, { StationDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
-import { Airport_ext } from './ControlStations';
+import { Airport_ext, Tracon } from './ControlStations';
 import { Atis, Controller, NetworkState } from './NetworkWorld';
 import Event from '../Event';
 import MapTracon from '../Map/MapTracon';
 
-export class VatsimArea {
-    icao: string;
-    area: MapArea;
-    controllers: Controller[];
-    station: StationDesc;
+class RefObject {
+    refCount: number;
+
+    constructor() {
+        this.refCount = 1;
+    }
+
+    addRef() {
+        this.refCount++;
+    }
+
+    expired() {
+        return this.refCount <= 0;
+    }
+}
+
+export class NetworkArea extends RefObject {
+    readonly icao: string;
+    readonly area: MapArea;
+    controllers: NetworkController[];
+    readonly station: StationDesc;
 
     constructor(desc: StationDesc) {
+        super();
         this.area = new MapArea(desc);
         this.controllers = [];
         this.station = desc;
@@ -22,16 +39,17 @@ export class VatsimArea {
     }
 }
 
-export class VatsimField {
-    icao: string;
-    field: MapField;
-    tracons: MapTracon[];
-    controllers: Controller[];
-    atis: Atis[];
-    station: Airport_ext;
+export class NetworkField extends RefObject {
+    readonly icao: string;
+    readonly field: MapField;
+    tracons: NetworkTracon[];
+    controllers: NetworkController[];
+    atis: NetworkAtis[];
+    readonly station: Airport_ext;
     isOutlined: boolean;
 
     constructor(station: Airport_ext) {
+        super();
         this.field = new MapField(station);
         this.controllers = [];
         this.atis = [];
@@ -54,50 +72,93 @@ export class VatsimField {
     }
 }
 
-export enum BroadcastType {
-    Control,
-    ATIS,
+export class NetworkController extends RefObject {
+    readonly station?: NetworkControl;
+    substation?: NetworkTracon;
+    data: Controller;
+
+    constructor(data: Controller, station: NetworkControl | undefined) {
+        super();
+        this.data = data;
+        this.station = station;
+    }
+
+    addTracon(tracon: Tracon) {
+        if (this.station instanceof NetworkField) {
+            this.substation = new NetworkTracon(MapTracon.create(tracon, this.station.station));
+        } else {
+            this.substation = new NetworkTracon(MapTracon.createStandalone(tracon));
+        }
+        return this.substation;
+    }
+
+    isEqual(other: Controller) {
+        const data = this.data;
+        return data.cid === other.cid && data.callsign === other.callsign;
+    }
+
+    addRef() {
+        this.refCount++;
+        this.station?.addRef();
+        this.substation?.addRef();
+    }
 }
 
-export type VatsimControl = VatsimArea | VatsimField;
-export type ControllerEx = Controller & { station?: VatsimControl, type?: BroadcastType, substation?: MapTracon };
-export type AtisEx = Atis & { station?: VatsimControl, type?: BroadcastType };
+export class NetworkAtis extends RefObject {
+    readonly station: NetworkField;
+    data: Atis;
+
+    constructor(data: Atis, station: NetworkField) {
+        super();
+        this.data = data;
+        this.station = station;
+    }
+
+    addRef() {
+        this.refCount++;
+        this.station.addRef();
+    }
+}
+
+export class NetworkTracon extends RefObject {
+    readonly substation: MapTracon;
+
+    constructor(substation: MapTracon) {
+        super();
+        this.substation = substation;
+    }
+}
+
+function createUID(controller: Controller) {
+    return `${controller.callsign};${controller.cid}`;
+}
+
+export type NetworkControl = NetworkArea | NetworkField;
 
 class ControlRadar {
-    private fields: Map<string, VatsimField>;
-    private areas: Map<string, VatsimArea>;
-    private airportCache: Map<string, VatsimField>;
-    private regionCache: Map<string, VatsimArea>;
-    private standaloneTracons: Map<string, MapTracon>;
-    private waitTimer: number;
-    public readonly update: Event<() => void>;
+    private fields: Map<string, NetworkField>;
+    private areas: Map<string, NetworkArea>;
+    private standaloneTracons: Map<string, NetworkController>;
+    private orphans: Map<string, NetworkController>;
+    private controllerCache: Map<string, NetworkController>;
+    private atisCache: Map<string, NetworkAtis>;
+    public readonly Update: Event<() => void>;
 
     constructor() {
         this.fields = new Map();
         this.areas = new Map();
-        this.airportCache = new Map();
-        this.regionCache = new Map();
         this.standaloneTracons = new Map();
-        this.waitTimer = 0;
-        this.update = new Event();
+        this.orphans = new Map();
+        this.controllerCache = new Map();
+        this.atisCache = new Map();
+        this.Update = new Event();
 
-        network.Update.add(networkData => {
-            if (controlStations.isReady()) {
-                this.onRefresh(networkData);
-                return;
-            }
-            if (this.waitTimer > 0) {
-                return;
-            }
-
-            this.waitTimer = setInterval(() => {
-                if (controlStations.isReady()) {
-                    clearInterval(this.waitTimer);
-                    this.waitTimer = 0;
-
-                    this.onRefresh(network.getState());
-                }
-            }, 1000);
+        controlStations.Ready.add(() => {
+            this.onRefresh(network.getState());
+        });
+        network.Update.add(state => {
+            if (controlStations.isReady())
+                this.onRefresh(state);
         });
     }
 
@@ -133,19 +194,24 @@ class ControlRadar {
     private clear() {
         this.fields.forEach(field => {
             controlLayers.removeField(field.field);
-            field.tracons.forEach(tracon => {
-                controlLayers.removeTracon(tracon);
+            field.tracons.forEach(controller => {
+                controlLayers.removeTracon(controller.substation!);
             });
         });
-        this.fields.clear();
         this.areas.forEach(area => {
             controlLayers.removeArea(area.area);
         });
+        this.standaloneTracons.forEach(controller => {
+            controlLayers.removeTracon(controller.substation!.substation);
+        });
+        this.fields.clear();
         this.areas.clear();
-        this.airportCache.clear();
-        this.regionCache.clear();
+        this.standaloneTracons.clear();
+        this.orphans.clear();
+        this.controllerCache.clear();
+        this.atisCache.clear();
 
-        this.update.invoke();
+        this.Update.invoke();
     }
 
     private onRefresh(networkData?: NetworkState) {
@@ -153,276 +219,266 @@ class ControlRadar {
             this.clear();
             return;
         }
-        const local_facilities = network.getLocalFacilities();
 
-        const fields = this.fields;
-        fields.forEach(field => {
-            field.controllers.forEach((controller: ControllerEx) => {
-                const newController = networkData.controllers.find(value => value.callsign === controller.callsign) as ControllerEx | undefined;
-                if (newController) {
-                    newController.station = controller.station;
-                    newController.substation = controller.substation;
-                }
+        this.fields.forEach(field => {
+            field.controllers.forEach(controller => {
+                controller.refCount = 0;
             });
-
-            field.controllers = [];
-            field.atis = [];
+            field.atis.forEach(atis => {
+                atis.refCount = 0;
+            });
             field.tracons.forEach(tracon => {
                 tracon.refCount = 0;
             });
+            field.refCount = 0;
         });
-        const old_fields = new Map(fields);
-        const oldAirportCache = new Map(this.airportCache);
+        this.areas.forEach(area => {
+            area.controllers.forEach(controller => {
+                controller.refCount = 0;
+            });
+            area.refCount = 0;
+        });
         this.standaloneTracons.forEach(tracon => {
             tracon.refCount = 0;
         });
-
-        const areas = this.areas;
-        areas.forEach(area => {
-            area.controllers = [];
+        this.orphans.forEach(controller => {
+            controller.refCount = 0;
         });
-        const old_areas = new Map(areas);
-        const oldRegionCache = new Map(this.regionCache);
 
-        networkData.controllers.forEach((controller: ControllerEx) => {
-            const callsign = controller.callsign;
-            controller.type = BroadcastType.Control;
-            controller.station = undefined;
+        const local_facilities = network.getLocalFacilities();
+        networkData.controllers.forEach(controller => {
+            let obj = this.controllerCache.get(createUID(controller));
+            if (obj) {
+                obj.addRef();
+                obj.data = controller;
 
-            if (local_facilities.has(controller.facility)) {
-                if (this.trySetAirportFromCache(controller, old_fields)) {
-                    oldAirportCache.delete(callsign);
-                    return;
-                }
-                const airport = controlStations.getAirport(callsign);
-                if (airport) {
-                    this.setFieldController(controller, old_fields, airport);
-                } else {
-                    if (this.trySetRegionFromCache(controller, old_areas)) {
-                        oldRegionCache.delete(callsign);
-                        return;
-                    }
-                    const region = controlStations.getRegion(callsign);
-                    if (region) {
-                        this.setAreaController(controller, old_areas, region);
-                    } else {
-                        if (this.setStandaloneTraconController(controller)) {
-                            return;
-                        }
-                        console.warn(`Cannot find airport for ${callsign}`);
+                if (obj.station instanceof NetworkField) {
+                    const airport = obj.station;
+                    if (airport.isOutlined) {
+                        airport.setFill();
                     }
                 }
-            } else {
-                if (this.trySetRegionFromCache(controller, old_areas)) {
-                    oldRegionCache.delete(callsign);
-                    return;
-                }
-                const region = controlStations.getRegion(callsign);
-                if (region) {
-                    this.setAreaController(controller, old_areas, region);
-                } else {
-                    if (this.trySetAirportFromCache(controller, old_fields)) {
-                        oldAirportCache.delete(callsign);
-                        return;
-                    }
-                    const airport = controlStations.getAirport(callsign);
-                    if (airport) {
-                        this.setFieldController(controller, old_fields, airport);
-                    } else {
-                        if (this.setStandaloneTraconController(controller)) {
-                            return;
-                        }
-                        console.warn(`Cannot find FIR/UIR for ${callsign}`);
-                    }
-                }
+                return true;
             }
-        });
-        this.updateAtis(networkData.atis, old_fields, oldAirportCache);
 
-        old_fields.forEach((field, icao) => {
-            fields.delete(icao);
-            controlLayers.removeField(field.field);
-            field.tracons.forEach(tracon => {
-                controlLayers.removeTracon(tracon);
-            });
+            let facility_type;
+            if (local_facilities.has(controller.facility)) {
+                if (this.setFieldController(controller)) {
+                    return;
+                }
+                if (this.setAreaController(controller)) {
+                    return;
+                }
+                facility_type = 'airport';
+            } else {
+                if (this.setAreaController(controller)) {
+                    return;
+                }
+                if (this.setFieldController(controller)) {
+                    return;
+                }
+                facility_type = 'FIR/UIR';
+            }
+
+            if (this.setStandaloneTraconController(controller)) {
+                return;
+            }
+
+            console.warn(`Cannot find ${facility_type} for ${controller.callsign}`);
+            obj = new NetworkController(controller, undefined);
+            const uid = createUID(controller);
+            this.orphans.set(uid, obj);
+            this.controllerCache.set(uid, obj);
         });
-        old_areas.forEach((area, icao) => {
-            areas.delete(icao);
-            controlLayers.removeArea(area.area);
-        });
-        oldAirportCache.forEach((_, callsign) => {
-            this.airportCache.delete(callsign);
-        });
-        oldRegionCache.forEach((_, callsign) => {
-            this.regionCache.delete(callsign);
-        });
-        fields.forEach(field => {
-            field.tracons = field.tracons.filter(tracon => {
-                if (tracon.refCount <= 0) {
-                    controlLayers.removeTracon(tracon);
+        this.updateAtis(networkData.atis);
+
+        this.areas.forEach((area, icao) => {
+            if (area.expired()) {
+                this.areas.delete(icao);
+                controlLayers.removeArea(area.area);
+                area.controllers.forEach(controller => {
+                    this.controllerCache.delete(createUID(controller.data));
+                });
+                return;
+            }
+
+            area.controllers = area.controllers.filter(controller => {
+                if (controller.expired()) {
+                    this.controllerCache.delete(createUID(controller.data));
                     return false;
                 }
                 return true;
-            })
+            });
         });
-        this.standaloneTracons.forEach((tracon, callsign) => {
-            if (tracon.refCount <= 0) {
-                controlLayers.removeTracon(tracon);
-                this.standaloneTracons.delete(callsign);
+        this.fields.forEach((field, icao) => {
+            if (field.expired()) {
+                this.fields.delete(icao);
+                controlLayers.removeField(field.field);
+                field.tracons.forEach(controller => {
+                    controlLayers.removeTracon(controller.substation!);
+                });
+                field.atis.forEach(atis => {
+                    this.atisCache.delete(createUID(atis.data));
+                });
+                field.controllers.forEach(controller => {
+                    this.controllerCache.delete(createUID(controller.data));
+                });
+                return;
+            }
+
+            field.controllers = field.controllers.filter(controller => {
+                if (controller.expired()) {
+                    this.controllerCache.delete(createUID(controller.data));
+                    return false;
+                }
+                return true;
+            });
+            field.atis = field.atis.filter(atis => {
+                if (atis.expired()) {
+                    this.controllerCache.delete(createUID(atis.data));
+                    return false;
+                }
+                return true;
+            });
+            field.tracons = field.tracons.filter(controller => {
+                if (controller.expired()) {
+                    controlLayers.removeTracon(controller.substation!);
+                    return false;
+                }
+                return true;
+            });
+        });
+        this.standaloneTracons.forEach((controller, uid) => {
+            if (controller.expired()) {
+                controlLayers.removeTracon(controller.substation!.substation);
+                this.standaloneTracons.delete(uid);
+                this.controllerCache.delete(uid);
+            }
+        });
+        this.orphans.forEach((controller, uid) => {
+            if (controller.expired()) {
+                this.orphans.delete(uid);
+                this.controllerCache.delete(uid);
             }
         });
 
-        this.update.invoke();
+        this.Update.invoke();
     }
 
-    private setFieldController(controller: ControllerEx, old_fields: typeof this.fields, airport: Airport_ext) {
-        const fields = this.fields;
-        const id = airport.icao;
+    private setFieldController(data: Controller) {
+        const airport = controlStations.getAirport(data.callsign);
+        if (!airport) {
+            return false;
+        }
 
-        let field = fields.get(id);
+        let field = this.fields.get(airport.icao);
         if (field) {
-            old_fields.delete(id);
+            field.addRef();
 
             if (field.isOutlined) {
                 field.setFill();
             }
         } else {
-            field = new VatsimField(airport);
-            fields.set(id, field);
+            field = new NetworkField(airport);
+            this.fields.set(airport.icao, field);
             controlLayers.addField(field.field);
         }
-        field.controllers.push(controller);
-        controller.station = field;
 
-        this.airportCache.set(controller.callsign, field);
+        const obj = new NetworkController(data, field);
+        field.controllers.push(obj);
+        this.controllerCache.set(createUID(data), obj);
 
-        this.setTraconController(controller, field);
+        this.setTraconController(obj, field);
+        return true;
     }
 
-    private updateAtis(atis: AtisEx[], old_fields: typeof this.fields, oldAirportCache: typeof this.airportCache) {
-        const fields = this.fields;
-
+    private updateAtis(atis: Atis[]) {
         atis.forEach(atis => {
-            const callsign = atis.callsign;
-            atis.type = BroadcastType.ATIS;
+            let controller = this.atisCache.get(createUID(atis));
+            if (controller) {
+                controller.addRef();
+                controller.data = atis;
 
-            let field = this.airportCache.get(callsign);
-            if (field) {
-                old_fields.delete(field.station.icao);
-                field.atis.push(atis);
-                atis.station = field;
-
-                if (!field.isOutlined && field.controllers.length == 0) {
-                    field.setOutline();
+                const airport = controller.station;
+                if (!airport.isOutlined && airport.controllers.length == 0) {
+                    airport.setOutline();
                 }
-                oldAirportCache.delete(callsign);
                 return;
             }
 
-            const airport = controlStations.getAirport(callsign);
+            const airport = controlStations.getAirport(atis.callsign);
             if (!airport) {
-                console.warn(`Cannot find airport for ${callsign}`);
-                atis.station = undefined;
+                console.warn(`Cannot find airport for ${atis.callsign}`);
                 return;
             }
-            const id = airport.icao;
 
-            field = fields.get(id);
+            let field = this.fields.get(airport.icao);
             if (field) {
-                old_fields.delete(id);
+                field.addRef();
 
                 if (!field.isOutlined && field.controllers.length == 0) {
                     field.setOutline();
                 }
             } else {
-                field = new VatsimField(airport);
-                fields.set(id, field);
+                field = new NetworkField(airport);
+                this.fields.set(airport.icao, field);
                 controlLayers.addField(field.field);
 
                 field.setOutline();
             }
-            field.atis.push(atis);
-            atis.station = field;
-
-            this.airportCache.set(callsign, field);
+            const obj = new NetworkAtis(atis, field);
+            field.atis.push(obj);
+            this.atisCache.set(createUID(atis), obj);
         });
     }
 
-    private setAreaController(controller: ControllerEx, old_areas: typeof this.areas, area_desc: StationDesc) {
-        const areas = this.areas;
-        const id = area_desc.icao;
+    private setAreaController(data: Controller) {
+        const region = controlStations.getRegion(data.callsign);
+        if (!region) {
+            return false;
+        }
 
-        let area = areas.get(id);
+        let area = this.areas.get(region.icao);
         if (area) {
-            old_areas.delete(id);
+            area.addRef();
         } else {
-            area = new VatsimArea(area_desc);
-            areas.set(id, area);
+            area = new NetworkArea(region);
+            this.areas.set(region.icao, area);
             controlLayers.addArea(area.area);
         }
-        area.controllers.push(controller);
-        controller.station = area;
 
-        this.regionCache.set(controller.callsign, area);
+        const obj = new NetworkController(data, area);
+        area.controllers.push(obj);
+        this.controllerCache.set(createUID(data), obj);
+        return true;
     }
 
-    private trySetAirportFromCache(controller: ControllerEx, old_fields: typeof this.fields) {
-        const airport = this.airportCache.get(controller.callsign);
-        if (airport) {
-            old_fields.delete(airport.station.icao);
-            airport.controllers.push(controller);
-            controller.station = airport;
-            if (controller.substation) {
-                controller.substation.refCount++;
-            }
-
-            if (airport.isOutlined) {
-                airport.setFill();
-            }
-            return true;
-        }
-        return false;
-    }
-
-    private trySetRegionFromCache(controller: ControllerEx, old_areas: typeof this.areas) {
-        const region = this.regionCache.get(controller.callsign);
-        if (region) {
-            old_areas.delete(region.station.icao);
-            region.controllers.push(controller);
-            controller.station = region;
-            return true;
-        }
-        return false;
-    }
-
-    private setTraconController(controller: ControllerEx, field: VatsimField) {
-        if (controller.substation) {
-            controller.substation.refCount++;
-            return;
-        }
-
-        const station = controlStations.getTracon(controller.callsign);
+    private setTraconController(controller: NetworkController, airport: NetworkField) {
+        const station = controlStations.getTracon(controller.data.callsign);
         if (station) {
-            let tracon = field.tracons.find(value => station === value.substation);
-            if (!tracon) {
-                tracon = MapTracon.create(station, field.station);
-                field.tracons.push(tracon);
-                controlLayers.addTracon(tracon);
-            } else {
-                tracon.refCount++;
+            if (!(airport instanceof NetworkField)) {
+                return;
             }
-            controller.substation = tracon;
+            let tracon = airport.tracons.find(value => station === value.substation!.substation);
+            if (!tracon) {
+                tracon = controller.addTracon(station);
+                airport.tracons.push(tracon);
+                controlLayers.addTracon(tracon.substation!);
+            } else {
+                controller.substation = tracon;
+                tracon.addRef();
+            }
         } else {
-            const app_facility = network.getFacilities().find(value => value.short === 'APP')?.id ?? 0;
-            if (controller.facility == app_facility) {
-                let tracon = field.tracons.find(value => value.substation.geometry.length === 0);
+            const approach_id = network.getApproachId();
+            if (controller.data.facility == approach_id) {
+                let tracon = airport.tracons.find(value => value.substation!.substation.geometry.length === 0);
                 if (tracon) {
                     controller.substation = tracon;
-                    tracon.refCount++;
+                    tracon.addRef();
                     return;
                 }
 
-                const id_parts = controller.callsign.split(/[_-]/);
+                const id_parts = controller.data.callsign.split(/[_-]/);
                 const suffix = id_parts.pop() ?? 'APP';
                 const substation = {
                     prefix: [ id_parts.join('_') ],
@@ -430,33 +486,37 @@ class ControlRadar {
                     name: 'Approach',
                     geometry: [],
 
-                    airport: field.station,
+                    airport: airport.station,
                 };
-                tracon = MapTracon.create(substation, field.station);
-                controller.substation = tracon;
-                field.tracons.push(tracon);
-                controlLayers.addTracon(tracon);
+                tracon = controller.addTracon(substation);
+                airport.tracons.push(tracon);
+                controlLayers.addTracon(tracon.substation!);
             }
         }
     }
 
-    private setStandaloneTraconController(controller: ControllerEx) {
-        if (controller.substation) {
-            controller.substation.refCount++;
+    private setStandaloneTraconController(data: Controller) {
+        const tracon = this.standaloneTracons.get(createUID(data));
+        if (tracon) {
+            tracon.addRef();
+            tracon.data = data;
             return true;
         }
 
-        const station = controlStations.getTracon(controller.callsign);
+        const station = controlStations.getTracon(data.callsign);
         if (station) {
-            const tracon = MapTracon.createStandalone(station);
-            controller.substation = tracon;
-            this.standaloneTracons.set(controller.callsign, tracon);
-            controlLayers.addTracon(tracon);
+            const controller = new NetworkController(data, undefined);
+            const tracon = controller.addTracon(station);
+            controlLayers.addTracon(tracon.substation);
+
+            const uid = createUID(data);
+            this.standaloneTracons.set(uid, controller);
+            this.controllerCache.set(uid, controller);
             return true;
         } else {
-            const app_facility = network.getFacilities().find(value => value.short === 'APP')?.id ?? 0;
-            if (controller.facility == app_facility) {
-                const id_parts = controller.callsign.split(/[_-]/);
+            const approach_id = network.getApproachId();
+            if (data.facility == approach_id) {
+                const id_parts = data.callsign.split(/[_-]/);
                 const suffix = id_parts.pop() ?? 'APP';
                 const substation = {
                     prefix: [ id_parts.join('_') ],
@@ -466,17 +526,20 @@ class ControlRadar {
 
                     airport: undefined,
                 };
-                const tracon = MapTracon.createStandalone(substation);
-                controller.substation = tracon;
-                this.standaloneTracons.set(controller.callsign, tracon);
-                controlLayers.addTracon(tracon);
+                const controller = new NetworkController(data, undefined);
+                const tracon = controller.addTracon(substation);
+                controlLayers.addTracon(tracon.substation);
+
+                const uid = createUID(data);
+                this.standaloneTracons.set(uid, controller);
+                this.controllerCache.set(uid, controller);
                 return true;
             }
         }
         return false;
     }
 
-    public getStation(icao: string): VatsimControl | undefined {
+    public getStation(icao: string): NetworkControl | undefined {
         const area = this.areas.get(icao);
         if (area) {
             return area;
@@ -486,6 +549,22 @@ class ControlRadar {
         if (field) {
             return field;
         }
+    }
+
+    public getControllerList() {
+        return Array.from(this.controllerCache.values());
+    }
+
+    public getAtisList() {
+        return Array.from(this.atisCache.values());
+    }
+
+    public findController(controller: NetworkController) {
+        return this.controllerCache.get(createUID(controller.data));
+    }
+
+    public findAtis(atis: NetworkAtis) {
+        return this.atisCache.get(createUID(atis.data));
     }
 }
 

@@ -2,6 +2,7 @@ import { fromLonLat } from 'ol/proj';
 import polygonClipping from 'polygon-clipping';
 import polylabel from 'polylabel';
 import DefinitionLoader, { BoundaryFeature, Country, TraconFeature } from './DefinitionLoader';
+import Event from '../Event';
 
 enum RegionType {
     FIR,
@@ -134,19 +135,18 @@ class ControlStations {
     readonly airports: Map<string, Airport_ext | Map<string, Airport_ext>>;
     readonly regions: Map<string, Region | Map<string, Region>>;
     readonly tracons: Map<string, Tracon | Map<string, Tracon>>;
-    private ready: boolean;
+    Ready: Event<() => void>;
 
     constructor() {
         this.airports = new Map();
         this.regions = new Map();
         this.tracons = new Map();
-        this.ready = false;
+        this.Ready = new Event();
 
         this.loadDefs();
     }
 
     private async loadDefs() {
-        this.ready = false;
         const list = await DefinitionLoader.loadMainDefs();
         const boundaries = await DefinitionLoader.loadBoundaries();
         const tracons = await DefinitionLoader.loadTracons();
@@ -342,7 +342,7 @@ class ControlStations {
             }
         });
 
-        this.ready = true;
+        this.Ready.invoke();
     }
 
     private parseTraconFeature(value: TraconFeature) {
@@ -464,7 +464,7 @@ class ControlStations {
     }
 
     public isReady() {
-        return this.ready;
+        return this.airports.size > 0;
     }
 }
 
