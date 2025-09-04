@@ -63,8 +63,8 @@ export interface Atis {
     rating: number,
     server: string,
     visual_range: number,
-    atis_code: string,
-    text_atis: string[],
+    atis_code?: string,
+    text_atis?: string[],
     last_updated: string,
     logon_time: string,
 }

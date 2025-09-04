@@ -131,6 +131,10 @@ function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map
     }
 }
 
+export function splitCallsign(callsign: string) {
+    return callsign.split(/[-_]/).filter(value => value.length > 0);
+}
+
 class ControlStations {
     readonly airports: Map<string, Airport_ext | Map<string, Airport_ext>>;
     readonly regions: Map<string, Region | Map<string, Region>>;
@@ -274,7 +278,6 @@ class ControlStations {
 
             // prebake geometry
             geometry = geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
-            labels = labels.map(label => fromLonLat(label));
 
             const uir = {
                 type: RegionType.UIR,
@@ -289,7 +292,6 @@ class ControlStations {
 
         // prebake geometry
         firs.forEach(fir => {
-            fir.label_pos = fromLonLat(fir.label_pos);
             fir.geometry = fir.geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
         });
 
@@ -415,7 +417,7 @@ class ControlStations {
     }
 
     public getRegion(callsign: string): FIR_ext | UIR_ext | undefined {
-        const id_parts = callsign.split(/[-_]/);
+        const id_parts = splitCallsign(callsign);
 
         const obj = this.regions.get(id_parts[0]);
         if (!obj) {
@@ -431,7 +433,7 @@ class ControlStations {
     }
 
     public getAirport(callsign: string): Airport_ext | undefined {
-        const id_parts = callsign.split(/[_-]/);
+        const id_parts = splitCallsign(callsign);
 
         const obj = this.airports.get(id_parts[0]);
         if (obj instanceof Map) {
@@ -453,7 +455,7 @@ class ControlStations {
     }
 
     public getTracon(callsign: string) {
-        const id_parts = callsign.split(/[_-]/);
+        const id_parts = splitCallsign(callsign);
 
         const obj = this.tracons.get(id_parts[0]);
         if (obj instanceof Map) {

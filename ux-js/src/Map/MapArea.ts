@@ -2,6 +2,7 @@ import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point } from 'ol/geom';
 import { NetworkArea } from '../Network/ControlRadar';
+import { fromLonLat } from 'ol/proj';
 
 export interface StationDesc {
     icao: string,
@@ -26,7 +27,7 @@ class MapArea {
         }
 
         labels_pos.forEach(label_pos => {
-            const pos = new Point(label_pos);
+            const pos = new Point(fromLonLat(label_pos));
             const label = new Feature(pos);
             label.set('station_desc', desc, true);
             this.labels.push(label);

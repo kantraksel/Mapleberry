@@ -1,7 +1,7 @@
 import { FeatureLike } from 'ol/Feature';
 import MapArea, { StationDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
-import { Airport_ext, Tracon } from './ControlStations';
+import { Airport_ext, splitCallsign, Tracon } from './ControlStations';
 import { Atis, Controller, NetworkState } from './NetworkWorld';
 import Event from '../Event';
 import MapTracon from '../Map/MapTracon';
@@ -129,8 +129,8 @@ export class NetworkTracon extends RefObject {
     }
 }
 
-function createUID(controller: Controller) {
-    return `${controller.callsign};${controller.cid}`;
+function createUID(data: { cid: number, callsign: string }) {
+    return `${data.callsign};${data.cid}`;
 }
 
 export type NetworkControl = NetworkArea | NetworkField;
@@ -478,7 +478,7 @@ class ControlRadar {
                     return;
                 }
 
-                const id_parts = controller.data.callsign.split(/[_-]/);
+                const id_parts = splitCallsign(controller.data.callsign);
                 const suffix = id_parts.pop() ?? 'APP';
                 const substation = {
                     prefix: [ id_parts.join('_') ],
@@ -516,7 +516,7 @@ class ControlRadar {
         } else {
             const approach_id = network.getApproachId();
             if (data.facility == approach_id) {
-                const id_parts = data.callsign.split(/[_-]/);
+                const id_parts = splitCallsign(data.callsign);
                 const suffix = id_parts.pop() ?? 'APP';
                 const substation = {
                     prefix: [ id_parts.join('_') ],
