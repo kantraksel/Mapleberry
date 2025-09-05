@@ -1,9 +1,10 @@
 import { NetworkAtis, NetworkControl, NetworkController } from './Network/ControlRadar';
-import { Pilot, Prefile } from './Network/VATSIM';
+import { NetworkPilot } from './Network/TrafficRadar';
+import { Prefile } from './Network/VATSIM';
 
 class Cards {
     controllerRef?: (data: NetworkController | undefined) => void;
-    pilotRef?: (data: Pilot | undefined) => void;
+    pilotRef?: (data: NetworkPilot | undefined) => void;
     facilityRef?: (data: NetworkControl | undefined) => void;
     prefileRef?: (data: Prefile | undefined) => void;
     atisRef?: (data: NetworkAtis | undefined) => void;
@@ -53,7 +54,7 @@ class Cards {
         this.stationsRef?.call(null, false);
     }
 
-    showPilotCard(data: Pilot, replaceHistory?: boolean) {
+    showPilotCard(data: NetworkPilot, replaceHistory?: boolean) {
         if (replaceHistory) {
             this.backList.pop();
         }

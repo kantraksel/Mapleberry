@@ -1,13 +1,14 @@
 import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, useEffect, useRef, useState } from 'react';
-import { Controller, Pilot, Prefile } from '../Network/NetworkWorld';
+import { Controller, Prefile } from '../Network/NetworkWorld';
 import NotesIcon from '@mui/icons-material/Notes';
 import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from '../Network/ControlRadar';
 import { createNetUpdate } from './Cards/CardsShared';
+import { NetworkPilot } from '../Network/TrafficRadar';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
     return (
@@ -54,14 +55,14 @@ interface Column<Type> {
     alignData?: 'inherit' | 'left' | 'center' | 'right' | 'justify',
 }
 
-const pilotColumns: Column<Pilot>[] = [
+const pilotColumns: Column<NetworkPilot>[] = [
     {
         width: 65,
         id: 'callsign',
         label: 'Callsign',
-        data: 'callsign',
+        data: data => data.pilot.callsign,
         compare: (a, b) => {
-            return compareIgnoreCase(a.callsign, b.callsign);
+            return compareIgnoreCase(a.pilot.callsign, b.pilot.callsign);
         },
     },
     {
@@ -69,14 +70,14 @@ const pilotColumns: Column<Pilot>[] = [
         id: 'type',
         label: 'Type',
         data: (pilot) => {
-            if (!pilot.flight_plan) {
+            if (!pilot.pilot.flight_plan) {
                 return '';
             }
-            return pilot.flight_plan.aircraft_short;
+            return pilot.pilot.flight_plan.aircraft_short;
         },
         compare: (a, b) => {
-            const one = a.flight_plan;
-            const two = b.flight_plan;
+            const one = a.pilot.flight_plan;
+            const two = b.pilot.flight_plan;
 
             if (!one) {
                 if (two) {
@@ -95,9 +96,9 @@ const pilotColumns: Column<Pilot>[] = [
         width: 200,
         id: 'name',
         label: 'Name',
-        data: 'name',
+        data: data => data.pilot.name,
         compare: (a, b) => {
-            return compareIgnoreCase(a.name, b.name);
+            return compareIgnoreCase(a.pilot.name, b.pilot.name);
         },
     },
     {
@@ -410,8 +411,8 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
 }
 
 function PilotList(props: { enabled: boolean }) {
-    const state = network.getState();
-    return <DynamicList enabled={props.enabled} columns={pilotColumns} values={state?.pilots} />;
+    const data = trafficRadar.getPilotList();
+    return <DynamicList enabled={props.enabled} columns={pilotColumns} values={data} />;
 }
 
 function ControllerList(props: { enabled: boolean }) {

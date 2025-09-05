@@ -3,29 +3,39 @@ import MapPlane from "../Map/MapPlane";
 import { NetworkState, Pilot } from "./NetworkWorld";
 import RadarPlane from "../Radar/RadarPlane";
 
-export class VatsimPlane {
+export class NetworkPilot {
     plane: MapPlane;
     pilot: Pilot;
     inMap: boolean;
     external?: RadarPlane;
+    refCount: number;
 
     constructor(pilot: Pilot) {
         this.plane = new MapPlane();
         this.pilot = pilot;
         this.inMap = false;
+        this.refCount = 1;
 
         this.plane.netState = this;
         this.plane.callsign = pilot.callsign;
     }
+
+    addRef() {
+        this.refCount++;
+    }
+
+    expired() {
+        return this.refCount <= 0;
+    }
 }
 
-export type PilotEx = Pilot & { plane?: VatsimPlane };
-
 class TrafficRadar {
-    private planes: Map<string, VatsimPlane>;
+    private planes: Map<string, NetworkPilot>;
+    private cache: Map<number, NetworkPilot>;
 
     public constructor() {
         this.planes = new Map();
+        this.cache = new Map();
 
         radar.planeAdded.add(plane => {
             const pilot = this.planes.get(plane.callsign);
@@ -65,7 +75,7 @@ class TrafficRadar {
     public onSelectStation(e: FeatureLike) {
         const obj = MapPlane.getNetState(e);
         if (obj) {
-            cards.showPilotCard(obj.pilot);
+            cards.showPilotCard(obj);
             return true;
         }
         return false;
@@ -76,16 +86,17 @@ class TrafficRadar {
             this.loseContact(value);
         });
         this.planes.clear();
+        this.cache.clear();
     }
 
-    private establishContact(pilot: VatsimPlane) {
+    private establishContact(pilot: NetworkPilot) {
         if (!pilot.inMap) {
             planeLayers.addFarPlane(pilot.plane);
             pilot.inMap = true;
         }
     }
 
-    private loseContact(pilot: VatsimPlane) {
+    private loseContact(pilot: NetworkPilot) {
         if (pilot.inMap) {
             planeLayers.removeFarPlane(pilot.plane);
             pilot.inMap = false;
@@ -93,16 +104,18 @@ class TrafficRadar {
     }
 
     private onRefresh(data: NetworkState) {
-        const planes = this.planes;
+        this.planes.forEach(plane => {
+            plane.refCount = 0;
+        });
 
-        const old_planes = new Map(planes);
-        data.pilots.forEach((pilot: PilotEx) => {
+        data.pilots.forEach(pilot => {
             const callsign = pilot.callsign;
 
-            let plane = planes.get(callsign);
+            let plane = this.planes.get(callsign);
             if (!plane) {
-                plane = new VatsimPlane(pilot);
-                planes.set(callsign, plane);
+                plane = new NetworkPilot(pilot);
+                this.planes.set(callsign, plane);
+                this.cache.set(pilot.cid, plane);
 
                 const radarPlane = radar.getByCallsign(callsign);
                 if (!radarPlane) {
@@ -113,7 +126,7 @@ class TrafficRadar {
                 }
             } else {
                 plane.pilot = pilot;
-                old_planes.delete(callsign);
+                plane.addRef();
             }
 
             const params = {
@@ -127,11 +140,14 @@ class TrafficRadar {
                 verticalSpeed: 0,
             };
             plane.plane.physicParams = params;
-            pilot.plane = plane;
         });
 
-        old_planes.forEach((pilot, callsign) => {
-            planes.delete(callsign);
+        this.planes.forEach((pilot, callsign) => {
+            if (!pilot.expired()) {
+                return;
+            }
+            this.planes.delete(callsign);
+            this.cache.delete(pilot.pilot.cid);
             this.loseContact(pilot);
 
             const plane = pilot.external;
@@ -139,6 +155,18 @@ class TrafficRadar {
                 plane.plane.netState = null;
             }
         });
+    }
+
+    public getPilotList() {
+        return Array.from(this.planes.values());
+    }
+
+    public findPilot(pilot: NetworkPilot) {
+        return this.planes.get(pilot.pilot.callsign);
+    }
+
+    public findPilotById(cid: number) {
+        return this.cache.get(cid);
     }
 }
 

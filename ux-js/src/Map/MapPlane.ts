@@ -2,7 +2,7 @@ import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
-import { VatsimPlane } from '../Network/TrafficRadar';
+import { NetworkPilot } from '../Network/TrafficRadar';
 import RadarPlane from '../Radar/RadarPlane';
 
 class MapPlane {
@@ -86,17 +86,17 @@ class MapPlane {
         return value as RadarPlane;
     }
 
-    public set netState(obj: VatsimPlane | null) {
+    public set netState(obj: NetworkPilot | null) {
         this.label.set('pilot_net_state', obj, true);
         this.point.set('pilot_net_state', obj, true);
     }
 
-    public static getNetState(feature: FeatureLike): VatsimPlane | null {
+    public static getNetState(feature: FeatureLike): NetworkPilot | null {
         const value = feature.get('pilot_net_state') as unknown;
-        if (typeof value !== 'object') {
-            return null;
+        if (value instanceof NetworkPilot) {
+            return value;
         }
-        return value as VatsimPlane;
+        return null;
     }
 }
 

@@ -1,16 +1,18 @@
 import { Divider } from '@mui/material';
-import { PilotEx, VatsimPlane } from '../../Network/TrafficRadar';
-import { createNetUpdate, DataTable, getFlightplan, getPilotRating, getTimeOnline, RouteBox, StationCard } from './CardsShared';
+import { createControlRadarUpdate, DataTable, getFlightplan, getPilotRating, getTimeOnline, RouteBox, StationCard } from './CardsShared';
 import { useEffect, useState } from 'react';
+import { NetworkPilot } from '../../Network/TrafficRadar';
 
 function PilotCard() {
-    const [data, setData] = useState<PilotEx>();
+    const [object, setObject] = useState<NetworkPilot>();
     const [absent, setAbsent] = useState(false);
+    const [rev, setRev] = useState(0);
 
     useEffect(() => {
         cards.pilotRef = value => {
-            setData(value);
+            setObject(value);
             setAbsent(false);
+            setRev(rev + 1);
         };
 
         return () => {
@@ -19,24 +21,30 @@ function PilotCard() {
     }, []);
 
     useEffect(() => {
-        if (!data) {
+        if (!object) {
             return;
         }
-
-        return createNetUpdate(state => {
-            const value = state.pilots.find(value => (value.cid === data.cid));
-            if (value) {
-                setData(value);
-                setAbsent(false);
+        
+        return createControlRadarUpdate(() => {
+            if (!object.expired()) {
+                setRev(rev + 1);
             } else {
-                setAbsent(true);
+                const pilot = trafficRadar.findPilot(object);
+                if (pilot) {
+                    setObject(pilot);
+                    setAbsent(false);
+                    setRev(rev + 1);
+                } else {
+                    setAbsent(true);
+                }
             }
         });
-    }, [data]);
+    }, [object]);
     
-    if (!data) {
+    if (!object) {
         return <></>;
     }
+    const data = object.pilot;
 
     const flightplan = getFlightplan(data);
     const rating = getPilotRating(data);
@@ -53,21 +61,17 @@ function PilotCard() {
         ],
     ];
 
-    let onFocus;
-    const plane = data.plane;
-    if (plane instanceof VatsimPlane) {
-        onFocus = () => {
-            if (plane.external) {
-                radar.animator.followPlane(plane.external);
-                return;
-            }
-            const params = plane.plane.getPhysicParams();
-            if (params) {
-                radar.animator.unfollowPlane();
-                map.setCenterZoom(params.longitude, params.latitude);
-            }
-        };
-    }
+    const onFocus = () => {
+        if (object.external) {
+            radar.animator.followPlane(object.external);
+            return;
+        }
+        const params = object.plane.getPhysicParams();
+        if (params) {
+            radar.animator.unfollowPlane();
+            map.setCenterZoom(params.longitude, params.latitude);
+        }
+    };
 
     return (
         <StationCard width='auto' maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>

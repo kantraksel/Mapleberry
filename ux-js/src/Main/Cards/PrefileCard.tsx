@@ -29,7 +29,7 @@ function PrefileCard() {
                 setData(value);
                 setAbsent(false);
             } else {
-                const pilot = state.pilots.find(value => value.cid === data.cid);
+                const pilot = trafficRadar.findPilotById(data.cid);
                 if (pilot) {
                     cards.showPilotCard(pilot, true);
                 } else {
