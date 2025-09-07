@@ -110,7 +110,7 @@ function checkTraconPrefix(prefix: string) {
     }
 }
 
-function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map<string, Obj>>) {
+function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map<string, Obj>>, allowReplace?: true) {
     const parts = id.split(/[-_]/);
     let map = objMap.get(parts[0]);
     if (parts.length > 1) {
@@ -123,12 +123,61 @@ function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map
             }
         }
         const suffix = parts[1];
+        if (!allowReplace && map.has(suffix)) {
+            console.warn(`Duplicate identifier ${id} - object ignored`);
+            return;
+        }
         map.set(suffix, obj);
     } else if (map instanceof Map) {
+        if (!allowReplace && map.has('')) {
+            console.warn(`Duplicate identifier ${id} - object ignored`);
+            return;
+        }
         map.set('', obj);
     } else {
+        if (!allowReplace && map) {
+            console.warn(`Duplicate identifier ${id} - object ignored`);
+            return;
+        }
         objMap.set(parts[0], obj);
     }
+}
+
+function addToTraconMap(id: string, obj: Tracon, objMap: Map<string, Tracon>) {
+    const parts = id.split(/[-_]/);
+    const suffix = parts.pop();
+    const partTwo = parts[1];
+    
+    let sid;
+    if (partTwo) {
+        sid = `${parts[0]}_${partTwo}_${suffix}`;
+    } else {
+        sid = `${parts[0]}_${suffix}`;
+    }
+
+    const obj2 = objMap.get(sid);
+    if (obj2) {
+        console.warn(`Duplicate identifier ${id} - object ignored`);
+        return;
+    }
+    objMap.set(sid, obj);
+}
+
+function isCallsignEqual(one: string, other: string) {
+    if (one.length !== other.length) {
+        return false;
+    }
+    const parts = one.split(/[-_]/);
+    const others = other.split(/[-_]/);
+    if (parts.length !== others.length) {
+        return false;
+    }
+    for (let i = 0; i < parts.length; ++i) {
+        if (parts[i] !== others[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 export function splitCallsign(callsign: string) {
@@ -138,7 +187,7 @@ export function splitCallsign(callsign: string) {
 class ControlStations {
     readonly airports: Map<string, Airport_ext | Map<string, Airport_ext>>;
     readonly regions: Map<string, Region | Map<string, Region>>;
-    readonly tracons: Map<string, Tracon | Map<string, Tracon>>;
+    readonly tracons: Map<string, Tracon>;
     Ready: Event<() => void>;
 
     constructor() {
@@ -177,6 +226,8 @@ class ControlStations {
 
         const firs = new Map<string, FIR_ext>();
         const regions = this.regions;
+        const fir_prefixes = new Map<string, Region>();
+
         list.firs.forEach(value => {
             checkFIR_ICAO(value.icao);
             checkFIR_Prefix(value.callsign_prefix);
@@ -226,17 +277,23 @@ class ControlStations {
             }
 
             let callsign_prefix = value.callsign_prefix;
-            if (callsign_prefix.length == 0) {
-                callsign_prefix = value.icao;
-            } else {
-                addToObjectMap<Region>(value.callsign_prefix, region, regions);
-            }
-            
             region.stations.push({
                 prefix: callsign_prefix,
                 name,
             });
+
+            if (callsign_prefix.length > 0 && !isCallsignEqual(callsign_prefix, value.icao)) {
+                if (fir_prefixes.has(callsign_prefix)) {
+                    console.warn(`Duplicate identifier ${callsign_prefix} - object ignored`);
+                } else {
+                    fir_prefixes.set(callsign_prefix, region);
+                }
+            }
         });
+        fir_prefixes.forEach((value, key) => {
+            addToObjectMap<Region>(key, value, regions, true);
+        });
+        fir_prefixes.clear();
 
         const polyUnion = polygonClipping.union as (...geoms: number[][][][][]) => polygonClipping.MultiPolygon;
         const polyDiff = polygonClipping.difference;
@@ -354,14 +411,10 @@ class ControlStations {
             prefixes.forEach(prefix => {
                 checkTraconPrefix(prefix);
                 tracon.prefix.push(prefix);
-                addToObjectMap(prefix, tracon, this.tracons);
-            });
+                addToTraconMap(`${prefix}_${tracon.suffix}`, tracon, this.tracons);
 
-            prefixes.find(prefix => {
-                const airport = this.findAirport(value, prefix);
-                if (airport) {
-                    tracon.airport = airport;
-                    return true;
+                if (!tracon.airport) {
+                    tracon.airport = this.findAirport(value, prefix);
                 }
             });
         } else {
@@ -369,7 +422,7 @@ class ControlStations {
             const tracon = this.createTraconObject(value);
             tracon.airport = this.findAirport(value, prefixes);
             tracon.prefix.push(prefixes);
-            addToObjectMap(prefixes, tracon, this.tracons);
+            addToTraconMap(`${prefixes}_${tracon.suffix}`, tracon, this.tracons);
         }
     }
 
@@ -423,9 +476,12 @@ class ControlStations {
         if (!obj) {
             return obj;
         } else if (obj instanceof Map) {
-            let region = obj.get(id_parts[1] ?? '');
-            if (region) {
-                return region;
+            const id_part = id_parts[1];
+            if (id_part) {
+                const region = obj.get(id_part);
+                if (region) {
+                    return region;
+                }
             }
             return obj.get('');
         }
@@ -437,9 +493,12 @@ class ControlStations {
 
         const obj = this.airports.get(id_parts[0]);
         if (obj instanceof Map) {
-            const airport = obj.get(id_parts[1] ?? '');
-            if (airport) {
-                return airport;
+            const id_part = id_parts[1];
+            if (id_part) {
+                const airport = obj.get(id_part);
+                if (airport) {
+                    return airport;
+                }
             }
             return obj.get('');
         }
@@ -456,13 +515,21 @@ class ControlStations {
 
     public getTracon(callsign: string) {
         const id_parts = splitCallsign(callsign);
+        const suffix = id_parts.pop();
+        const partTwo = id_parts[1];
+        
+        let sid;
+        if (partTwo) {
+            sid = `${id_parts[0]}_${partTwo}_${suffix}`;
+        } else {
+            sid = `${id_parts[0]}_${suffix}`;
+        }
 
-        const obj = this.tracons.get(id_parts[0]);
-        if (obj instanceof Map) {
-            return obj.get(id_parts.length > 2 ? id_parts[1] : '');
-        } else if (obj && obj.suffix == id_parts[id_parts.length - 1]) {
+        const obj = this.tracons.get(sid);
+        if (obj) {
             return obj;
         }
+        return this.tracons.get(`${id_parts[0]}_${suffix}`);
     }
 
     public isReady() {
