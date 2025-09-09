@@ -120,7 +120,8 @@ const controllerColumns: Column<NetworkController | NetworkAtis>[] = [
         id: 'callsign',
         label: 'Callsign',
         data: data => {
-            const color = data.station ? undefined : 'error';
+            const data2 = data as NetworkController;
+            const color = data.station || data2.substation ? undefined : 'error';
             return <Typography color={color} variant='inherit'>{data.data.callsign}</Typography>;
         },
         compare: (a, b) => {

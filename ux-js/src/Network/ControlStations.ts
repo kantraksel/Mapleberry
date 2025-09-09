@@ -513,7 +513,7 @@ class ControlStations {
         return obj;
     }
 
-    public getTracon(callsign: string) {
+    public getTracon(callsign: string) : [ string, Tracon | undefined ] {
         const id_parts = splitCallsign(callsign);
         const suffix = id_parts.pop();
         const partTwo = id_parts[1];
@@ -527,9 +527,10 @@ class ControlStations {
 
         const obj = this.tracons.get(sid);
         if (obj) {
-            return obj;
+            return [sid, obj];
         }
-        return this.tracons.get(`${id_parts[0]}_${suffix}`);
+        sid = `${id_parts[0]}_${suffix}`;
+        return [sid, this.tracons.get(sid)];
     }
 
     public isReady() {

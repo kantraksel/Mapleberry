@@ -24,11 +24,13 @@ class GlobalMap {
     
     private isPointerDragging: boolean;
     private isInteracting: boolean;
+    private cursorInteractIcon: boolean;
     public readonly clickEvent: Event<ClickEvent>;
     public readonly moveStartEvent: Event<GenericEvent>;
     public readonly changeResEvent: Event<ResEvent>;
     public readonly visibilityEvent: Event<VisEvent>;
     public readonly changePosEvent: Event<PosEvent>;
+    public readonly cursorEvent: Event<ClickEvent>;
 
     private lastPos: SavedPos;
     private lastPosUpdate: number;
@@ -36,11 +38,13 @@ class GlobalMap {
     public constructor() {
         this.isPointerDragging = false;
         this.isInteracting = false;
+        this.cursorInteractIcon = false;
         this.clickEvent = new Event();
         this.moveStartEvent = new Event();
         this.changeResEvent = new Event();
         this.visibilityEvent = new Event();
         this.changePosEvent = new Event();
+        this.cursorEvent = new Event();
         this.lastPos = { longitude: 12, latitude: 50, resolution: 4892 };
         this.lastPosUpdate = Number.POSITIVE_INFINITY;
 
@@ -81,6 +85,11 @@ class GlobalMap {
 
         this.map.on('pointerdrag', () => {
             this.isPointerDragging = true;
+        });
+
+        this.map.on('pointermove', (e: MapBrowserEvent<PointerEvent>) => {
+            const features = this.map.getFeaturesAtPixel(e.pixel);
+            this.cursorEvent.invoke(sortFeatures(features));
         });
 
         this.map.on('click', (e: MapBrowserEvent<PointerEvent>) => {
@@ -165,6 +174,19 @@ class GlobalMap {
 
     public get saveLastPosition() {
         return !Number.isNaN(this.lastPosUpdate);
+    }
+
+    public setCursor(interact: boolean) {
+        const isInteract = this.cursorInteractIcon;
+        if ((interact && isInteract) || (!interact && !isInteract)) {
+            return;
+        }
+        const root = this.map.getTargetElement();
+        if (!root) {
+            return;
+        }
+        this.cursorInteractIcon = interact;
+        root.style.cursor = interact ? 'pointer' : 'auto';
     }
 }
 

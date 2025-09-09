@@ -81,6 +81,14 @@ class TrafficRadar {
         return false;
     }
 
+    public isInteractable(e: FeatureLike) {
+        const obj = MapPlane.getNetState(e);
+        if (obj) {
+            return true;
+        }
+        return false;
+    }
+
     public clear() {
         this.planes.forEach(value => {
             this.loseContact(value);

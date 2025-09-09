@@ -16,18 +16,38 @@ class Cards {
         this.backList = [];
 
         map.clickEvent.add(e => {
-            const feature = e[0];
-            if (
-                trafficRadar.onSelectStation(feature) ||
-                controlRadar.onSelectStation(feature)
-            ) {
-                this.backList = [ this.backList.pop()! ];
-                return;
+            for (let i = 0; i < e.length; ++i) {
+                const feature = e[i];
+                if (feature.get('cards_ignore')) {
+                    continue;
+                }
+                if (
+                    trafficRadar.onSelectStation(feature) ||
+                    controlRadar.onSelectStation(feature)
+                ) {
+                    this.backList = [ this.backList.pop()! ];
+                    return;
+                }
+                this.close();
+                break;
             }
-            if (feature.get('cards_ignore')) {
-                return;
+        });
+        map.cursorEvent.add(e => {
+            for (let i = 0; i < e.length; ++i) {
+                const feature = e[i];
+                if (feature.get('cards_ignore')) {
+                    continue;
+                }
+                if (
+                    trafficRadar.isInteractable(feature) ||
+                    controlRadar.isInteractable(feature)
+                ) {
+                    map.setCursor(true);
+                    return;
+                }
+                break;
             }
-            this.close();
+            map.setCursor(false);
         });
     }
 

@@ -104,6 +104,14 @@ function ControllerCard() {
                 map.setCenterZoom(point[0], point[1]);
             };
         }
+    } else if (object.substation) {
+        const point = object.substation.substation.getLabelPos();
+        if (point) {
+            onFocus = () => {
+                radar.animator.unfollowPlane();
+                map.setCenterZoom(point[0], point[1]);
+            };
+        }
     }
 
     return (

@@ -30,6 +30,7 @@ class MapArea {
             const pos = new Point(fromLonLat(label_pos));
             const label = new Feature(pos);
             label.set('station_desc', desc, true);
+            label.set('ol_z-index', 0, true);
             this.labels.push(label);
         });
 

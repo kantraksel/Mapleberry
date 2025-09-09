@@ -83,11 +83,11 @@ export class NetworkController extends RefObject {
         this.station = station;
     }
 
-    addTracon(tracon: Tracon) {
+    addTracon(tracon: Tracon, sid: string) {
         if (this.station instanceof NetworkField) {
             this.substation = new NetworkTracon(MapTracon.create(tracon, this.station.station));
         } else {
-            this.substation = new NetworkTracon(MapTracon.createStandalone(tracon));
+            this.substation = new NetworkTracon(MapTracon.createStandalone(tracon, sid));
         }
         return this.substation;
     }
@@ -122,10 +122,13 @@ export class NetworkAtis extends RefObject {
 
 export class NetworkTracon extends RefObject {
     readonly substation: MapTracon;
+    controllers: NetworkController[];
 
     constructor(substation: MapTracon) {
         super();
         this.substation = substation;
+        this.controllers = [];
+        substation.netState = this;
     }
 }
 
@@ -185,6 +188,31 @@ class ControlRadar {
             } else {
                 cards.showAtisCard(atis[0]);
             }
+            return true;
+        }
+
+        const obj3 = MapTracon.getNetState(e);
+        if (obj3) {
+            cards.showControllerCard(obj3.controllers[0]);
+            return true;
+        }
+
+        return false;
+    }
+
+    public isInteractable(e: FeatureLike) {
+        const obj = MapArea.getNetState(e);
+        if (obj) {
+            return true;
+        }
+
+        const obj2 = MapField.getNetState(e);
+        if (obj2) {
+            return true;
+        }
+
+        const obj3 = MapTracon.getNetState(e);
+        if (obj3) {
             return true;
         }
 
@@ -340,11 +368,12 @@ class ControlRadar {
                 }
                 return true;
             });
-            field.tracons = field.tracons.filter(controller => {
-                if (controller.expired()) {
-                    controlLayers.removeTracon(controller.substation!);
+            field.tracons = field.tracons.filter(tracon => {
+                if (tracon.expired()) {
+                    controlLayers.removeTracon(tracon.substation!);
                     return false;
                 }
+                tracon.controllers = tracon.controllers.filter(controller => !controller.expired());
                 return true;
             });
         });
@@ -454,20 +483,21 @@ class ControlRadar {
     }
 
     private setTraconController(controller: NetworkController, airport: NetworkField) {
-        const station = controlStations.getTracon(controller.data.callsign);
+        const [sid, station] = controlStations.getTracon(controller.data.callsign);
         if (station) {
             if (!(airport instanceof NetworkField)) {
                 return;
             }
             let tracon = airport.tracons.find(value => station === value.substation!.substation);
             if (!tracon) {
-                tracon = controller.addTracon(station);
+                tracon = controller.addTracon(station, sid);
                 airport.tracons.push(tracon);
                 controlLayers.addTracon(tracon.substation!);
             } else {
                 controller.substation = tracon;
                 tracon.addRef();
             }
+            tracon.controllers.push(controller);
         } else {
             const approach_id = network.getApproachId();
             if (controller.data.facility == approach_id) {
@@ -475,6 +505,7 @@ class ControlRadar {
                 if (tracon) {
                     controller.substation = tracon;
                     tracon.addRef();
+                    tracon.controllers.push(controller);
                     return;
                 }
 
@@ -488,7 +519,8 @@ class ControlRadar {
 
                     airport: airport.station,
                 };
-                tracon = controller.addTracon(substation);
+                tracon = controller.addTracon(substation, sid);
+                tracon.controllers.push(controller);
                 airport.tracons.push(tracon);
                 controlLayers.addTracon(tracon.substation!);
             }
@@ -503,10 +535,11 @@ class ControlRadar {
             return true;
         }
 
-        const station = controlStations.getTracon(data.callsign);
+        const [sid, station] = controlStations.getTracon(data.callsign);
         if (station) {
             const controller = new NetworkController(data, undefined);
-            const tracon = controller.addTracon(station);
+            const tracon = controller.addTracon(station, sid);
+            tracon.controllers.push(controller);
             controlLayers.addTracon(tracon.substation);
 
             const uid = createUID(data);
@@ -527,7 +560,8 @@ class ControlRadar {
                     airport: undefined,
                 };
                 const controller = new NetworkController(data, undefined);
-                const tracon = controller.addTracon(substation);
+                const tracon = controller.addTracon(substation, sid);
+                tracon.controllers.push(controller);
                 controlLayers.addTracon(tracon.substation);
 
                 const uid = createUID(data);

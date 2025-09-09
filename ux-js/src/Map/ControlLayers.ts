@@ -2,7 +2,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { FeatureLike } from 'ol/Feature';
 import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Circle as OlCircle } from 'ol/style';
-import { StyleLike } from 'ol/style/Style';
+import { StyleFunction, StyleLike } from 'ol/style/Style';
 import MapField from './MapField';
 import MapArea from './MapArea';
 import MapTracon from './MapTracon';
@@ -21,6 +21,7 @@ class ControlLayer {
 
     private readonly filledPointStyle: StyleLike;
     public readonly outlinedPointStyle: StyleLike;
+    public areaLabelStyle?: StyleFunction;
 
     public constructor() {
         this.fieldSource = new VectorSource();
@@ -126,6 +127,8 @@ class ControlLayer {
 
             const callsign = MapArea.getStationDesc(feature)?.icao ?? 'unknown';
             text.setText(callsign);
+
+            labelStyleObj.setZIndex(0);
             return labelStyleObj;
         };
 
@@ -138,6 +141,8 @@ class ControlLayer {
             source: this.areaLabelSource,
             updateWhileAnimating: true,
         });
+
+        this.areaLabelStyle = labelStyle;
     }
 
     private createTraconLayers() {
@@ -200,10 +205,17 @@ class ControlLayer {
     public addTracon(tracon: MapTracon) {
         tracon.area.set('ol_layer', this.traconLayer);
         this.traconSource.addFeature(tracon.area);
+        if (tracon.label) {
+            tracon.label.set('ol_layer', this.areaLabelLayer);
+            this.areaLabelSource.addFeature(tracon.label);
+        }
     }
 
     public removeTracon(tracon: MapTracon) {
         this.traconSource.removeFeature(tracon.area);
+        if (tracon.label) {
+            this.areaLabelSource.removeFeature(tracon.label);
+        }
     }
 }
 
