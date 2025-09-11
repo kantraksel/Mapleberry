@@ -181,10 +181,12 @@ class ControlRadar {
         if (obj2) {
             const controllers = obj2.controllers;
             const atis = obj2.atis;
-            if (controllers.length > 1 || atis.length > 1) {
+            if (controllers.length > 1) {
                 cards.showFacilityList(obj2);
             } else if (controllers.length > 0) {
                 cards.showControllerCard(controllers[0]);
+            } else if (atis.length > 1) {
+                cards.showFacilityList(obj2);
             } else {
                 cards.showAtisCard(atis[0]);
             }

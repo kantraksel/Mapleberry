@@ -1,34 +1,58 @@
-import { IconButton } from '@mui/material';
+import { IconButton, Menu, MenuItem } from '@mui/material';
 import { CardLeftToolbar, CardRightToolbar, createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCardBase, TextBox } from './CardsShared';
 import { useEffect, useRef, useState } from 'react';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import { NetworkArea, NetworkController, NetworkField } from '../../Network/ControlRadar';
 
-function updateAtis(atisHandler: { current: (() => void) | undefined }, data: NetworkController | undefined) {
-    atisHandler.current = undefined;
-    if (!data) {
-        return;
+function MetarButton(props: { data: NetworkController | undefined }) {
+    if (!props.data) {
+        return <></>;
     }
 
-    const field = data.station;
-    if (field instanceof NetworkField && field.atis.length == 1) {
-        atisHandler.current = () => {
+    const field = props.data.station;
+    if (!(field instanceof NetworkField) || field.atis.length == 0) {
+        return <></>;
+    }
+
+    if (field.atis.length == 1) {
+        const onClick = () => {
             cards.showAtisCard(field.atis[0]);
         };
+        return <IconButton onClick={onClick}><CloudOutlinedIcon /></IconButton>;
     }
+
+    const [menuOpen, setMenuOpen] = useState(false);
+    const mainButton = useRef<HTMLButtonElement>(null);
+
+    const list = field.atis.map(atis => {
+        const data = atis.data;
+        const key = `${data.callsign};${data.cid}`;
+        const onClick = () => {
+            cards.showAtisCard(atis);
+        };
+
+        return <MenuItem key={key} onClick={onClick}>{data.callsign} {data.frequency}</MenuItem>
+    });
+
+    return (
+        <>
+            <IconButton onClick={() => setMenuOpen(true)} ref={mainButton}><CloudOutlinedIcon /></IconButton>
+            <Menu open={menuOpen} onClose={() => setMenuOpen(false)} anchorEl={mainButton.current}>
+                {list}
+            </Menu>
+        </>
+    );
 }
 
 function ControllerCard() {
     const [object, setObject] = useState<NetworkController>();
     const [absent, setAbsent] = useState(false);
     const [rev, setRev] = useState(0);
-    const atisHandler = useRef<() => void>(undefined);
 
     useEffect(() => {
         cards.controllerRef = data => {
             setObject(data);
             setAbsent(false);
-            updateAtis(atisHandler, data);
             setRev(rev + 1);
         };
 
@@ -44,18 +68,15 @@ function ControllerCard() {
 
         return createControlRadarUpdate(() => {
             if (!object.expired()) {
-                updateAtis(atisHandler, object);
                 setRev(rev + 1);
             } else {
                 const controller = controlRadar.findController(object);
                 if (controller) {
                     setObject(controller);
                     setAbsent(false);
-                    updateAtis(atisHandler, controller);
                     setRev(rev + 1);
                 } else {
                     setAbsent(true);
-                    updateAtis(atisHandler, object);
                 }
             }
         });
@@ -70,7 +91,6 @@ function ControllerCard() {
     const timeOnline = getTimeOnline(data);
     const station = getStation(data);
     const info = data.text_atis?.join('\n') ?? 'N/A';
-    const hasAtis = atisHandler.current ? 'unset' : 'hidden';
 
     const table = [
         [
@@ -118,7 +138,7 @@ function ControllerCard() {
         <StationCardBase width='auto' maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>
             <CardLeftToolbar />
             <CardRightToolbar>
-                <IconButton onClick={atisHandler.current} sx={{ visibility: hasAtis }}><CloudOutlinedIcon /></IconButton>
+                <MetarButton data={object} />
             </CardRightToolbar>
             <DataTable data={table} />
             <TextBox label='Information' value={info} />

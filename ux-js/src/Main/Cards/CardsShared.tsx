@@ -147,13 +147,26 @@ export function getControllerRating(controller: Controller) {
 }
 
 export function getStation(controller: Controller) {
+    let name = 'Unknown';
+
     const facilities = network.getFacilities();
     const value = facilities.find(value => (value.id === controller.facility));
     if (value) {
-        return `${value.long} ${controller.frequency}`;
+        name = value.long;
+        if (value.id === network.getApproachId()) {
+            let suffix = controller.callsign.split(/[-_]/).pop();
+            if (suffix) {
+                suffix = suffix.toUpperCase();
+                if (suffix === 'DEP') {
+                    name = 'Departure';
+                } else if (suffix === 'APP') {
+                    name = 'Approach';
+                }
+            }
+        }
     }
 
-    return `Unknown ${controller.frequency}`;
+    return `${name} ${controller.frequency}`;
 }
 
 export function getTimeOnline(data: { logon_time: string }) {

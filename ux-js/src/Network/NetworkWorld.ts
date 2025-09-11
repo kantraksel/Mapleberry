@@ -58,7 +58,7 @@ function createPropsCache(data: LiveNetworkData) {
                 break;
         }
     });
-    const facility_approach = data.facilities.find(value => value.short === 'APP')?.id ?? 0;
+    const facility_approach = data.facilities.find(value => value.short === 'APP')?.id ?? Number.POSITIVE_INFINITY;
 
     return {
         facilities: data.facilities,
@@ -128,7 +128,7 @@ class NetworkWorld {
     }
 
     public getApproachId() {
-        return this.propsCache?.facility_approach ?? 0;
+        return this.propsCache?.facility_approach ?? Number.POSITIVE_INFINITY;
     }
 }
 
