@@ -74,7 +74,7 @@ function PilotCard() {
     };
 
     return (
-        <StationCard width='auto' maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>
+        <StationCard width='auto' maxWidth='100vw' minWidth={500} title={data.callsign} absent={absent} onTitleClick={onFocus}>
             <DataTable data={table} />
             <Divider flexItem sx={{ mt: '5px', mb: '5px' }} />
             <RouteBox flight_plan={flightplan} />

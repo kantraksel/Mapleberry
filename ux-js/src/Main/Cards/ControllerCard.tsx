@@ -1,5 +1,5 @@
 import { IconButton, Menu, MenuItem } from '@mui/material';
-import { CardLeftToolbar, CardRightToolbar, createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCardBase, TextBox } from './CardsShared';
+import { createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCard, TextBox } from './CardsShared';
 import { useEffect, useRef, useState } from 'react';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import { NetworkArea, NetworkController, NetworkField } from '../../Network/ControlRadar';
@@ -134,15 +134,16 @@ function ControllerCard() {
         }
     }
 
+    const toolsRight = (
+        <>
+            <MetarButton data={object} />
+        </>
+    );
     return (
-        <StationCardBase width='auto' maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>
-            <CardLeftToolbar />
-            <CardRightToolbar>
-                <MetarButton data={object} />
-            </CardRightToolbar>
+        <StationCard width='auto' maxWidth='100vw' minWidth={500} title={data.callsign} absent={absent} onTitleClick={onFocus} toolsRight={toolsRight}>
             <DataTable data={table} />
             <TextBox label='Information' value={info} />
-        </StationCardBase>
+        </StationCard>
     );
 }
 export default ControllerCard;

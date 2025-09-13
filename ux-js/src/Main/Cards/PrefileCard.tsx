@@ -51,7 +51,7 @@ function PrefileCard() {
     ];
 
     return (
-        <StationCard width='100vw' maxWidth={500} title={data.callsign} absent={absent}>
+        <StationCard width={500} title={data.callsign} absent={absent}>
             <DataTable data={table} />
             <Divider flexItem sx={{ mt: '5px', mb: '5px' }} />
             <RouteBox flight_plan={flightplan} />

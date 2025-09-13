@@ -75,7 +75,7 @@ function AtisCard() {
     }
 
     return (
-        <StationCard width={500} maxWidth='100vw' title={data.callsign} absent={absent} onTitleClick={onFocus}>
+        <StationCard width={500} title={data.callsign} absent={absent} onTitleClick={onFocus}>
             <DataTable data={table} />
             <TextBox label='Information' value={info} />
         </StationCard>

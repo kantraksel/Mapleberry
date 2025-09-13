@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { NetworkState } from '../../Network/NetworkWorld';
 
-export function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string }) {
+function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string, minWidth: number | string }) {
     const style = {
         position: 'relative',
         border: `3px solid #2c2c2c`,
@@ -13,10 +13,8 @@ export function CardBase(props: { children?: ReactNode, width: number | string, 
         background: '#2c2c2c',
         width: props.width,
         maxWidth: props.maxWidth,
+        minWidth: props.minWidth,
         margin: '15px',
-        alignItems: 'center',
-        paddingLeft: '7px',
-        paddingRight: '7px',
         paddingBottom: '7px',
         zIndex: 5,
         boxShadow: '0 26px 58px 0 rgba(0, 0, 0, .22), 0 5px 14px 0 rgba(0, 0, 0, .18)',
@@ -28,7 +26,7 @@ export function CardBase(props: { children?: ReactNode, width: number | string, 
     );
 }
 
-export function StationTitle(props: { title: string, absent: boolean, onClick?: () => void }) {
+function StationTitle(props: { title: string, absent: boolean, onClick?: () => void }) {
     const style = {
         fontSize: '2.0rem',
         lineHeight: '1.5',
@@ -47,41 +45,55 @@ export function StationTitle(props: { title: string, absent: boolean, onClick?: 
     return <Typography variant='h4' sx={style}>{props.title}</Typography>;
 }
 
-export function StationCardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string, title: string, absent: boolean, onTitleClick?: () => void }) {
+export function StationCard(props: { children?: ReactNode, width: number | string, maxWidth?: number | string, minWidth?: number | string, title: string, absent: boolean, onTitleClick?: () => void, toolsLeft?: ReactNode, toolsRight?: ReactNode }) {
     return (
-        <CardBase width={props.width} maxWidth={props.maxWidth}>
-            <StationTitle title={props.title} absent={props.absent} onClick={props.onTitleClick} />
-            {props.children}
+        <CardBase width={props.width} maxWidth={props.maxWidth ?? 'none'} minWidth={props.minWidth ?? 'auto'}>
+            <CardHeader>
+                <CardLeftToolbar>{props.toolsLeft}</CardLeftToolbar>
+                <CardRightToolbar>{props.toolsRight}</CardRightToolbar>
+                <StationTitle title={props.title} absent={props.absent} onClick={props.onTitleClick} />
+            </CardHeader>
+            <Stack sx={{ paddingLeft: '7px', paddingRight: '7px', alignItems: 'center' }}>
+                {props.children}
+            </Stack>
         </CardBase>
     );
 }
 
-export function StationCard(props: { children?: ReactNode, width: number | string, maxWidth: number | string, title: string, absent: boolean, onTitleClick?: () => void }) {
-    return (
-        <CardBase width={props.width} maxWidth={props.maxWidth}>
-            <CardLeftToolbar />
-            <CardRightToolbar />
-            <StationTitle title={props.title} absent={props.absent} onClick={props.onTitleClick} />
-            {props.children}
-        </CardBase>
-    );
+export function CardHeader(props: { children?: ReactNode }) {
+    return <Box sx={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>{props.children}</Box>;
+}
+
+function CardToolbar(props: { children?: ReactNode, direction: 'row' | 'row-reverse' }) {
+    const reverse = props.direction === 'row-reverse';
+    const style = {
+        position: 'absolute',
+        left: reverse ? 'unset' : 0,
+        right: reverse ? 0 : 'unset',
+        height: '100%',
+        alignItems: 'center',
+        paddingBottom: `3px`,
+        paddingLeft: reverse ? 'unset' : '2px',
+        paddingRight: reverse ? '2px' : 'unset',
+    };
+    return <Stack direction={props.direction} sx={style}>{props.children}</Stack>;
 }
 
 export function CardRightToolbar(props: { children?: ReactNode }) {
     return (
-        <Stack direction='row-reverse' sx={{ position: 'absolute', right: '5px', mt: '3px' }}>
+        <CardToolbar direction='row-reverse'>
             <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>
             {props.children}
-        </Stack>
+        </CardToolbar>
     );
 }
 
 export function CardLeftToolbar(props: { children?: ReactNode }) {
     return (
-        <Stack direction='row' sx={{ position: 'absolute', left: '5px', mt: '3px' }}>
+        <CardToolbar direction='row'>
             <IconButton onClick={() => cards.goBack()}><ArrowBackIosNewIcon /></IconButton>
             {props.children}
-        </Stack>
+        </CardToolbar>
     );
 }
 

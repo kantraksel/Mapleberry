@@ -1,13 +1,12 @@
-import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
+import { Box, IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Controller, Prefile } from '../Network/NetworkWorld';
 import NotesIcon from '@mui/icons-material/Notes';
-import CloseIcon from '@mui/icons-material/Close';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from '../Network/ControlRadar';
-import { createNetUpdate } from './Cards/CardsShared';
+import { CardHeader, CardRightToolbar, createNetUpdate } from './Cards/CardsShared';
 import { NetworkPilot } from '../Network/TrafficRadar';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
@@ -455,7 +454,7 @@ function EmptyList({ enabled }: { enabled: boolean }) {
     );
 }
 
-function ActiveStationList(props: { open: boolean }) {
+function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     const [tab, setTab] = useState(0);
     const [rev, setRev] = useState(0);
 
@@ -465,28 +464,29 @@ function ActiveStationList(props: { open: boolean }) {
         });
     }, []);
 
-    const display = props.open ? 'unset' : 'none';
+    const display = props.open ? 'flex' : 'none';
     const tabIdx = props.open && network.getState() ? tab : -1;
     const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
 
     return (
-        <>
-            <Tabs value={tab} onChange={onClickTab} centered sx={{ display }}>
-                <Tab label='Pilots' />
-                <Tab label='Controllers' />
-            </Tabs>
-            <Paper style={{ height: '100%', width: '100%', display }}>
-                <EmptyList enabled={tabIdx == -1} />
-                <PilotList enabled={tabIdx == 0} />
-                <ControllerList enabled={tabIdx == 1} />
-            </Paper>
-        </>
+        <Box sx={{ display, width: 'stretch', height: 'stretch', flexDirection: 'column' }}>
+            <CardHeader>
+                <CardRightToolbar>{props.toolsRight}</CardRightToolbar>
+                <Tabs value={tab} onChange={onClickTab} centered>
+                    <Tab label='Controllers' />
+                    <Tab label='Pilots' />
+                </Tabs>
+            </CardHeader>
+            <EmptyList enabled={tabIdx == -1} />
+            <PilotList enabled={tabIdx == 1} />
+            <ControllerList enabled={tabIdx == 0} />
+        </Box>
     );
 }
 
-function PassiveStationList(props: { open: boolean }) {
+function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     const [tab, setTab] = useState(0);
     const [rev, setRev] = useState(0);
 
@@ -496,26 +496,27 @@ function PassiveStationList(props: { open: boolean }) {
         });
     }, []);
 
-    const display = props.open ? 'unset' : 'none';
+    const display = props.open ? 'flex' : 'none';
     const tabIdx = props.open && network.getState() ? tab : -1;
     const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
 
     return (
-        <>
-            <Tabs value={tab} onChange={onClickTab} centered sx={{ display }}>
-                <Tab label='Prefiles' />
-                <Tab label='Observers' />
-                <Tab label='ATIS' />
-            </Tabs>
-            <Paper style={{ height: '100%', width: '100%', display }}>
-                <EmptyList enabled={tabIdx == -1} />
-                <PrefileList enabled={tabIdx == 0} />
-                <ObserverList enabled={tabIdx == 1} />
-                <AtisList enabled={tabIdx == 2} />
-            </Paper>
-        </>
+        <Box sx={{ display, width: 'stretch', height: 'stretch', flexDirection: 'column' }}>
+            <CardHeader>
+                <CardRightToolbar>{props.toolsRight}</CardRightToolbar>
+                <Tabs value={tab} onChange={onClickTab} centered sx={{ display }}>
+                    <Tab label='ATIS' />
+                    <Tab label='Observers' />
+                    <Tab label='Prefiles' />
+                </Tabs>
+            </CardHeader>
+            <EmptyList enabled={tabIdx == -1} />
+            <PrefileList enabled={tabIdx == 2} />
+            <ObserverList enabled={tabIdx == 1} />
+            <AtisList enabled={tabIdx == 0} />
+        </Box>
     );
 }
 
@@ -531,11 +532,8 @@ function Scoreboard(props: { open: boolean }) {
 
     return (
         <InfoBox width={530} height='100%' visible={props.open}>
-            <Stack direction='row-reverse' sx={{ position: 'absolute', right: '5px', mt: '3px' }}>
-                {rowButton}
-            </Stack>
-            <ActiveStationList open={props.open && row == 0} />
-            <PassiveStationList open={props.open && row == 1} />
+            <ActiveStationList open={props.open && row == 0} toolsRight={rowButton} />
+            <PassiveStationList open={props.open && row == 1} toolsRight={rowButton} />
         </InfoBox>
     );
 }
@@ -583,15 +581,13 @@ function FacilityStationsList() {
 
     return (
         <InfoBox width={530} height='100%' visible={hasFacility}>
-            <Box sx={{ padding: 1 }}>
-                <Typography variant='h5'>{stationName}</Typography>
-            </Box>
-            <Stack position='absolute' right='5px' top='3px' direction='row-reverse'>
-                <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>
-            </Stack>
-            <Paper style={{ height: '100%', width: '100%' }}>
-                <DynamicList enabled={hasFacility} columns={controllerColumns} values={list} />
-            </Paper>
+            <CardHeader>
+                <CardRightToolbar />
+                <Box sx={{ padding: '8px', paddingTop: '6.5px' }}>
+                    <Typography variant='h5'>{stationName}</Typography>
+                </Box>
+            </CardHeader>
+            <DynamicList enabled={hasFacility} columns={controllerColumns} values={list} />
         </InfoBox>
     );
 }
