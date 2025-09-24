@@ -41,6 +41,21 @@
       <Filter>InputDevs</Filter>
     </ClCompile>
     <ClCompile Include="App\GlobalScope.cpp" />
+    <ClCompile Include="WebCast\HttpConnection.cpp">
+      <Filter>WebCast</Filter>
+    </ClCompile>
+    <ClCompile Include="WebCast\HttpServer.cpp">
+      <Filter>WebCast</Filter>
+    </ClCompile>
+    <ClCompile Include="WebCast\WebSocket.cpp">
+      <Filter>WebCast</Filter>
+    </ClCompile>
+    <ClCompile Include="WebCast\WebSocketServer.cpp">
+      <Filter>WebCast</Filter>
+    </ClCompile>
+    <ClCompile Include="WebCast\WebCast.cpp">
+      <Filter>WebCast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utils">
@@ -63,6 +78,9 @@
     </Filter>
     <Filter Include="App\SimCom">
       <UniqueIdentifier>{664e362d-ce30-4cea-a48d-64ca64a14a08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="WebCast">
+      <UniqueIdentifier>{e1ef35b1-fa55-4ae2-bf55-a075c1ec6714}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -118,5 +136,26 @@
       <Filter>InputDevs</Filter>
     </ClInclude>
     <ClInclude Include="App\GlobalScope.h" />
+    <ClInclude Include="WebCast\WebSocketServer.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\HttpConnection.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\HttpMessage.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\HttpServer.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\version.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\WebSocket.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\WebCast.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

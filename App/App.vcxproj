@@ -55,6 +55,14 @@
     <IntDir>Intermediate\$(Platform)\$(Configuration)\</IntDir>
     <PublicIncludeDirectories>$(ProjectDir)</PublicIncludeDirectories>
   </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>true</VcpkgUseMD>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>true</VcpkgUseMD>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -108,6 +116,11 @@
     <ClCompile Include="Utils\Logger.cpp" />
     <ClCompile Include="Utils\StringUtils.cpp" />
     <ClCompile Include="Utils\Time.cpp" />
+    <ClCompile Include="WebCast\HttpConnection.cpp" />
+    <ClCompile Include="WebCast\HttpServer.cpp" />
+    <ClCompile Include="WebCast\WebCast.cpp" />
+    <ClCompile Include="WebCast\WebSocket.cpp" />
+    <ClCompile Include="WebCast\WebSocketServer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App\AirplaneRadar.h" />
@@ -128,6 +141,13 @@
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\Time.h" />
     <ClInclude Include="Utils\version.h" />
+    <ClInclude Include="WebCast\HttpConnection.hpp" />
+    <ClInclude Include="WebCast\HttpMessage.hpp" />
+    <ClInclude Include="WebCast\HttpServer.hpp" />
+    <ClInclude Include="WebCast\version.hpp" />
+    <ClInclude Include="WebCast\WebCast.hpp" />
+    <ClInclude Include="WebCast\WebSocket.hpp" />
+    <ClInclude Include="WebCast\WebSocketServer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\WNET\vs\WNET.vcxproj">
