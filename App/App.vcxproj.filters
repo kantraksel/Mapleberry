@@ -56,6 +56,9 @@
     <ClCompile Include="WebCast\WebCast.cpp">
       <Filter>WebCast</Filter>
     </ClCompile>
+    <ClCompile Include="WebCast\WebDriver.cpp">
+      <Filter>WebCast</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utils">
@@ -156,6 +159,18 @@
     </ClInclude>
     <ClInclude Include="WebCast\WebCast.hpp">
       <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\WebDriver.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\FixedArray.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCast\MsgPacker.hpp">
+      <Filter>WebCast</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Boost.h">
+      <Filter>Utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

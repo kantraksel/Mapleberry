@@ -6,6 +6,8 @@ class DeviceManager;
 class LocalAircraft;
 class AirplaneRadar;
 class RealTimeThread;
+class WebCast;
+class WebDriver;
 
 namespace GlobalScope
 {
@@ -15,4 +17,6 @@ namespace GlobalScope
 	LocalAircraft& GetLocalAircraft();
 	AirplaneRadar& GetAirplaneRadar();
 	RealTimeThread& GetRealTimeThread();
+	WebCast& GetWebCast();
+	WebDriver& GetWebDriver();
 }

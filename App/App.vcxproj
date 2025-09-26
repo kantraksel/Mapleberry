@@ -119,6 +119,7 @@
     <ClCompile Include="WebCast\HttpConnection.cpp" />
     <ClCompile Include="WebCast\HttpServer.cpp" />
     <ClCompile Include="WebCast\WebCast.cpp" />
+    <ClCompile Include="WebCast\WebDriver.cpp" />
     <ClCompile Include="WebCast\WebSocket.cpp" />
     <ClCompile Include="WebCast\WebSocketServer.cpp" />
   </ItemGroup>
@@ -135,6 +136,8 @@
     <ClInclude Include="DeviceServer\Transport.h" />
     <ClInclude Include="SimCom\SimCom.h" />
     <ClInclude Include="SimCom\SimConnect.h" />
+    <ClInclude Include="Utils\Boost.h" />
+    <ClInclude Include="Utils\FixedArray.h" />
     <ClInclude Include="Utils\Function.hpp" />
     <ClInclude Include="Utils\Future.h" />
     <ClInclude Include="Utils\Logger.h" />
@@ -144,8 +147,10 @@
     <ClInclude Include="WebCast\HttpConnection.hpp" />
     <ClInclude Include="WebCast\HttpMessage.hpp" />
     <ClInclude Include="WebCast\HttpServer.hpp" />
+    <ClInclude Include="WebCast\MsgPacker.hpp" />
     <ClInclude Include="WebCast\version.hpp" />
     <ClInclude Include="WebCast\WebCast.hpp" />
+    <ClInclude Include="WebCast\WebDriver.hpp" />
     <ClInclude Include="WebCast\WebSocket.hpp" />
     <ClInclude Include="WebCast\WebSocketServer.hpp" />
   </ItemGroup>

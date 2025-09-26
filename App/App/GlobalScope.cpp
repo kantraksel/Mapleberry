@@ -5,6 +5,8 @@
 #include "App/LocalAircraft.h"
 #include "App/AirplaneRadar.h"
 #include "App/RealTimeThread.h"
+#include "WebCast/WebCast.hpp"
+#include "WebCast/WebDriver.hpp"
 
 SimCom simcom;
 DeviceServer deviceServer;
@@ -12,6 +14,8 @@ DeviceManager deviceManager;
 LocalAircraft aircraft;
 AirplaneRadar radar;
 RealTimeThread thread;
+WebCast webcast;
+WebDriver webdriver;
 
 SimCom& GlobalScope::GetSimCom()
 {
@@ -41,4 +45,14 @@ AirplaneRadar& GlobalScope::GetAirplaneRadar()
 RealTimeThread& GlobalScope::GetRealTimeThread()
 {
 	return thread;
+}
+
+WebCast& GlobalScope::GetWebCast()
+{
+	return webcast;
+}
+
+WebDriver& GlobalScope::GetWebDriver()
+{
+	return webdriver;
 }

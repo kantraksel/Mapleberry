@@ -1,6 +1,5 @@
 #include "WebSocketServer.hpp"
-#define WINVER 0x0A00
-#define _WIN32_WINNT 0x0A00
+#include "Utils/Boost.h"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>

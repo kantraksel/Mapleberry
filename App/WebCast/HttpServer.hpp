@@ -1,8 +1,7 @@
 #pragma once
 #include <vector>
 #include <functional>
-#define WINVER 0x0A00
-#define _WIN32_WINNT 0x0A00
+#include "Utils/Boost.h"
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core/flat_buffer.hpp>

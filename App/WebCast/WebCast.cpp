@@ -1,8 +1,8 @@
 #include <filesystem>
-#define WINVER 0x0A00
-#define _WIN32_WINNT 0x0A00
 #include "WebCast.hpp"
 #include "HttpMessage.hpp"
+#include "MsgPacker.hpp"
+#include "Utils/Logger.h"
 
 WebCast::WebCast()
 {
@@ -122,12 +122,54 @@ boost::asio::awaitable<bool> WebCast::ProcessGetFile(HttpConnection& connection)
 void WebCast::OnWebsocketOpen(WebSocket& ws)
 {
 	//std::cout << "Connection opened" << std::endl;
-	ws.onReceive = [](auto& ws, auto message)
+	ws.onReceive = [this](auto& ws, const auto& message)
 		{
 			//std::cout << message << std::endl;
+			FixedArrayCharS buffer;
+
+			size_t offset = 0;
+			auto handle = msgpack::unpack(buffer, buffer.size(), offset);
+			auto& obj = handle.get();
+			if (obj.type != msgpack::type::POSITIVE_INTEGER)
+				return;
+
+			auto type = obj.as<uint8_t>();
+
+			auto i = callbacks.find(static_cast<MsgId>(type));
+			if (i == callbacks.end())
+			{
+				Logger::LogWarn("Message {} has been discarded", type);
+				return;
+			}
+
+			if (offset >= buffer.size())
+				i->second({});
+			else
+				i->second(FixedArrayCharS::CreateArrayRef(buffer + offset, buffer.size() - offset));
 		};
 	ws.onClose = [](auto& ws)
 		{
 			//std::cout << "Connection closed" << std::endl;
 		};
+}
+
+void WebCast::RegisterHandler(MsgId id, const Callback& callback)
+{
+	callbacks[id] = callback;
+}
+
+void WebCast::Send(MsgId id, const FixedArrayCharS& buffer)
+{
+	if (wss.wss.empty())
+		return;
+
+	MsgPacker packer;
+	packer.pack(static_cast<uint8_t>(id));
+	packer.write_raw(buffer);
+	auto data = packer.copy_buffer();
+
+	for (auto i = wss.wss.begin(); i != wss.wss.end(); ++i)
+	{
+		i->Send(data);
+	}
 }

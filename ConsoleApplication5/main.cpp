@@ -7,6 +7,8 @@
 #include "App/LocalAircraft.h"
 #include "App/AirplaneRadar.h"
 #include "App/GlobalScope.h"
+#include "WebCast/WebCast.hpp"
+#include "WebCast/WebDriver.hpp"
 #include "Utils/Logger.h"
 #include "Utils/version.h"
 
@@ -97,13 +99,20 @@ static void CommandLoop()
 int main()
 {
 	auto& thread = GlobalScope::GetRealTimeThread();
+	auto& webcast = GlobalScope::GetWebCast();
+	auto& webdriver = GlobalScope::GetWebDriver();
 
 	Logger::DisableTimestamp();
 	Logger::Log(Version::Title);
+
+	webdriver.Initialize();
+	webcast.Start();
 	thread.Start();
 
 	CommandLoop();
 	
 	thread.Stop();
+	webcast.Stop();
+	webcast.Wait();
 	thread.Wait();
 }

@@ -41,16 +41,11 @@ boost::asio::awaitable<void> WebSocket::RunInternal(TaskRef ref)
 				break;
 		}
 
-		if (ws.got_binary())
-		{
-			co_await CloseInternal(boost::beast::websocket::close_code::unknown_data, runningTasks);
-			continue;
-		}
-
 		if (onReceive)
 		{
 			auto data = buffer.cdata();
-			onReceive(*this, { (char*)data.data(), data.size() });
+			auto ref = FixedArrayCharS::CreateArrayRef((char*)data.data(), data.size());
+			onReceive(*this, { ref, ws.got_text() });
 		}
 	}
 
@@ -63,9 +58,10 @@ boost::asio::awaitable<void> WebSocket::FlushSendInternal(TaskRef ref)
 	while (!sendQueue.empty())
 	{
 		auto& message = sendQueue.front();
+		auto& data = message.buffer;
 
-		boost::asio::const_buffer buffer{ message.data(), message.size() };
-		ws.text(true);
+		boost::asio::const_buffer buffer{ data, data.size() };
+		ws.text(message.isText);
 
 		boost::beast::error_code ec;
 		co_await ws.async_write(buffer, boost::asio::redirect_error(ec));
@@ -86,15 +82,25 @@ boost::asio::awaitable<void> WebSocket::FlushSendInternal(TaskRef ref)
 	}
 }
 
-void WebSocket::Send(std::string message)
+void WebSocket::Send(const std::string& message)
 {
 	if (!ws.is_open())
 		return;
 
-	boost::asio::co_spawn(ctx, SendInternal(std::move(message), runningTasks), boost::asio::detached);
+	Message msg{ FixedArrayCharS::Copy(message.data(), message.size()), true };
+	boost::asio::co_spawn(ctx, SendInternal(std::move(msg), runningTasks), boost::asio::detached);
 }
 
-boost::asio::awaitable<void> WebSocket::SendInternal(std::string message, TaskRef ref)
+void WebSocket::Send(const FixedArrayCharS& message)
+{
+	if (!ws.is_open())
+		return;
+
+	Message msg{ FixedArrayCharS::Copy(message), false };
+	boost::asio::co_spawn(ctx, SendInternal(std::move(msg), runningTasks), boost::asio::detached);
+}
+
+boost::asio::awaitable<void> WebSocket::SendInternal(Message message, TaskRef ref)
 {
 	if (!ws.is_open())
 		co_return;

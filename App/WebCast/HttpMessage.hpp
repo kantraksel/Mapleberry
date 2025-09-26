@@ -1,4 +1,5 @@
 #pragma once
+#include "Utils/Boost.h"
 #include <boost/beast/http.hpp>
 #include "version.hpp"
 
