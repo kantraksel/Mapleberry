@@ -147,34 +147,31 @@ void WebDriver::Initialize()
 								if (obj.type != msgpack::type::MAP)
 									return;
 
+								std::string str;
 								auto& map = obj.via.map;
 								for (auto i = msgpack::begin(map); i != msgpack::end(map); ++i)
 								{
 									auto& key = i->key;
-									if (key.type != msgpack::type::POSITIVE_INTEGER)
+									if (key.type != msgpack::type::STR)
 										continue;
+									str.clear();
+									key.convert(str);
 
 									auto& value = i->val;
-									switch (key.as<uint8_t>())
+									if (str == "0")
 									{
-										case 0:
+										if (value.type == msgpack::type::BOOLEAN)
 										{
-											if (value.type == msgpack::type::BOOLEAN)
-											{
-												bool v = value.as<bool>();
-												PushRxMessage(RxCmd::ChangeSimComStatus, v);
-											}
-											break;
+											bool v = value.as<bool>();
+											PushRxMessage(RxCmd::ChangeSimComStatus, v);
 										}
-
-										case 1:
+									}
+									else if (str == "1")
+									{
+										if (value.type == msgpack::type::BOOLEAN)
 										{
-											if (value.type == msgpack::type::BOOLEAN)
-											{
-												bool v = value.as<bool>();
-												PushRxMessage(RxCmd::ChangeServerStatus, v);
-											}
-											break;
+											bool v = value.as<bool>();
+											PushRxMessage(RxCmd::ChangeServerStatus, v);
 										}
 									}
 								}
@@ -187,24 +184,23 @@ void WebDriver::Initialize()
 								if (obj.type != msgpack::type::MAP)
 									return;
 
+								std::string str;
 								auto& map = obj.via.map;
 								for (auto i = msgpack::begin(map); i != msgpack::end(map); ++i)
 								{
 									auto& key = i->key;
-									if (key.type != msgpack::type::POSITIVE_INTEGER)
+									if (key.type != msgpack::type::STR)
 										continue;
+									str.clear();
+									key.convert(str);
 
 									auto& value = i->val;
-									switch (key.as<uint8_t>())
+									if (str == "0")
 									{
-										case 0:
+										if (value.type == msgpack::type::BOOLEAN)
 										{
-											if (value.type == msgpack::type::BOOLEAN)
-											{
-												bool v = value.as<bool>();
-												PushRxMessage(RxCmd::ReconnectToSim, v);
-											}
-											break;
+											bool v = value.as<bool>();
+											PushRxMessage(RxCmd::ReconnectToSim, v);
 										}
 									}
 								}

@@ -1,4 +1,5 @@
 import Event from '../Event';
+import { MsgId } from './MsgId';
 
 export enum SimulatorStatus {
     Disconnected = 1,
@@ -26,6 +27,7 @@ export enum StatusCmd {
 
 type StatusEvent = (status: HostStatus) => void;
 type ResyncEvent = (obj: Record<string, unknown>) => void;
+type ResyncEvent2 = (obj: Record<number, unknown>) => void;
 
 class HostState {
     private status: HostStatus;
@@ -33,12 +35,14 @@ class HostState {
 
     public readonly statusEvent: Event<StatusEvent>;
     public readonly resyncEvent: Event<ResyncEvent>;
+    public readonly resyncEvent2: Event<ResyncEvent2>;
 
     public constructor() {
         this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
         this.ready = false;
         this.statusEvent = new Event();
         this.resyncEvent = new Event();
+        this.resyncEvent2 = new Event();
 
         hostBridge.registerHandler('SRV_STATE', (data: object) => {
             const status = data as HostStatus;
@@ -59,6 +63,54 @@ class HostState {
             this.resyncEvent.invoke(data as Record<string, unknown>);
         });
 
+        hostBridge.onOpen = () => {
+            if (this.ready) {
+                hostBridge.send2(MsgId.SendAllData);
+            }
+        };
+
+        hostBridge.registerHandler2(MsgId.ModifySystemState, data => {
+            if (data.length === 0) {
+                return;
+            }
+            const args = data[0] as { '0': number | [ number, string ], '1': number };
+            if (typeof args !== 'object' || !args) {
+                return;
+            }
+
+            const sim = args[0];
+
+            let simStatus, simName;
+            if (sim instanceof Array) {
+                simStatus = sim[0];
+                if (typeof sim[1] === 'string') {
+                    simName = sim[1];
+                }
+            } else if (typeof sim === 'number') {
+                simStatus = sim;
+            } else {
+                return;
+            }
+
+            if (typeof args[1] !== 'number') {
+                return;
+            }
+            
+            this.status = { simStatus, srvStatus: args[1], simName };
+            this.statusEvent.invoke(this.status);
+        });
+
+        hostBridge.registerHandler2(MsgId.SendAllData, data => {
+            if (data.length === 0) {
+                return;
+            }
+            const args = data[0] as Record<number, unknown>;
+            if (typeof args !== 'object' || !args) {
+                return;
+            }
+            this.resyncEvent2.invoke(args);
+        });
+
         if (this.launchServerOnStart) {
             this.sendStatusCmd(StatusCmd.StartServer);
         }
@@ -74,40 +126,51 @@ class HostState {
         }
         this.ready = true;
         hostBridge.send('SRV_RESYNC', {});
+
+        if (hostBridge.open) {
+            hostBridge.send2(MsgId.SendAllData);
+        }
     }
 
     public resetApp() {
         this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
         this.statusEvent.invoke(this.status);
         hostBridge.send('SRV_RESYNC', {});
+        hostBridge.send2(MsgId.SendAllData);
     }
 
     public sendStatusCmd(cmd: StatusCmd) {
         const obj: { simConnection?: boolean, serverOpen?: boolean } = {};
+        const obj2: { '0'?: boolean, '1'?: boolean } = {};
         switch (cmd)
         {
             case StatusCmd.ConnectSim: {
                 obj.simConnection = true;
+                obj2[0] = true;
                 break;
             }
                 
             case StatusCmd.DisconnectSim: {
                 obj.simConnection = false;
+                obj2[0] = false;
                 break;
             }
 
             case StatusCmd.StartServer: {
                 obj.serverOpen = true;
+                obj2[1] = true;
                 break;
             }
 
             case StatusCmd.StopServer: {
                 obj.serverOpen = false;
+                obj2[1] = false;
                 break;
             }
         }
 
         hostBridge.send('SRV_MODIFY', obj);
+        hostBridge.send2(MsgId.ModifySystemState, obj2);
     }
 
     public getHostStatus() {
@@ -121,6 +184,7 @@ class HostState {
     public setAllowSimComReconnect(value: boolean) {
         options.set('simcom_reconnect', value);
         hostBridge.send('SRV_PROPS', { reconnectToSim: value });
+        hostBridge.send2(MsgId.ModifySystemProperties, { '0': value });
     }
 
     public getAllowSimComReconnect() {

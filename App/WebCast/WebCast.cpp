@@ -32,12 +32,6 @@ void WebCast::Start()
 
 	wss.onOpen = std::bind(&WebCast::OnWebsocketOpen, this, _1);
 
-	boost::asio::signal_set signals(ctx, SIGINT, SIGTERM);
-	signals.async_wait([&](auto, auto)
-					   {
-						   ctx.stop();
-					   });
-
 	boost::asio::co_spawn(ctx, wss.Run(), boost::asio::detached);
 	boost::asio::co_spawn(ctx, server.Run(std::move(endpoint)), boost::asio::detached);
 
@@ -125,7 +119,7 @@ void WebCast::OnWebsocketOpen(WebSocket& ws)
 	ws.onReceive = [this](auto& ws, const auto& message)
 		{
 			//std::cout << message << std::endl;
-			FixedArrayCharS buffer;
+			auto buffer = message.Binary();
 
 			size_t offset = 0;
 			auto handle = msgpack::unpack(buffer, buffer.size(), offset);

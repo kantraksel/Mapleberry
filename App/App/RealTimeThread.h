@@ -7,7 +7,7 @@ class RealTimeThread
 {
 private:
 	std::jthread thread;
-	std::mutex cmdMutex;
+	std::recursive_mutex cmdMutex;
 
 	void OnSimConnect();
 	void OnSimDisconnect();
@@ -21,7 +21,7 @@ public:
 	void Wait();
 	bool IsStopping();
 
-	std::unique_lock<std::mutex> EnterCmdMode()
+	std::unique_lock<std::recursive_mutex> EnterCmdMode()
 	{
 		return std::unique_lock(cmdMutex);
 	}

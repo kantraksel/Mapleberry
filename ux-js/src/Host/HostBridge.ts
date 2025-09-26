@@ -1,3 +1,6 @@
+import { pack, unpackMultiple } from "msgpackr";
+import { isMsgId, MsgId } from "./MsgId";
+
 type WebViewCallback = (e: { data: unknown }) => void;
 
 interface WebView {
@@ -15,12 +18,20 @@ interface Message {
 }
 
 class HostBridge {
+    private ws?: WebSocket;
     private callbacks: Map<string, (data: object) => void>;
+    private callbacks2: Map<MsgId, (data: unknown[]) => void>;
+    private openEvent?: () => void;
     private playList?: PlaybackMessage[];
     private playbackController?: AbortController;
 
     public constructor() {
         this.callbacks = new Map();
+        this.callbacks2 = new Map();
+
+        setInterval(() => {
+            this.openConnection();
+        }, 1000);
 
         if (!window.chrome || !window.chrome.webview) {
             console.warn('Running in usual browser - cannot register webview handler');
@@ -32,6 +43,33 @@ class HostBridge {
         });
     }
 
+    private openConnection() {
+        if (this.ws) {
+            return;
+        }
+
+        this.ws = new WebSocket('ws://localhost:7777');
+        this.ws.binaryType = 'arraybuffer';
+
+        this.ws.onopen = _ => {
+            console.info('WebCast connection open');
+
+            if (this.openEvent)
+                this.openEvent();
+        };
+        this.ws.onmessage = e => {
+            this.onMessage2(e);
+        };
+        this.ws.onclose = _ => {
+            console.info('WebCast connection closed');
+            this.ws = undefined;
+        };
+        this.ws.onerror = e => {
+            console.info(`WebCast connection failed: `, e);
+            this.ws = undefined;
+        };
+    }
+
     public send(id: string, obj: object) {
         if (!window.chrome || !window.chrome.webview) {
             console.warn(`Tried to send message ${id} in usual browser`);
@@ -39,6 +77,22 @@ class HostBridge {
         }
 
         window.chrome.webview.postMessage({ ...obj, _msg_id: id });
+    }
+
+    public send2(id: MsgId, obj?: unknown) {
+        if (this.ws?.readyState !== WebSocket.OPEN) {
+            console.warn(`WebCast is closed: msg ${id}`);
+            return;
+        }
+
+        const header = pack(id) as Uint8Array;
+        if (obj) {
+            const payload = Array.from(pack(obj) as Uint8Array);
+            const data = Array.from(header).concat(payload);
+            this.ws.send(Uint8Array.from(data));
+        } else {
+            this.ws.send(header);
+        }
     }
 
     private onMessage(e: { data: unknown }) {
@@ -60,8 +114,39 @@ class HostBridge {
         }
     }
 
+    private onMessage2(e: { data: unknown }) {
+        const blob = e.data as ArrayBuffer;
+        if (blob.byteLength == 0) {
+            return;
+        }
+        const objects = unpackMultiple(new Uint8Array(blob));
+        const id = objects[0] as MsgId;
+        if (!isMsgId(id)) {
+            return;
+        }
+
+        const callback = this.callbacks2.get(id);
+        if (callback) {
+            callback(objects.slice(1));
+        } else {
+            console.warn(`Message ${id} has been discarded`);
+        }
+    }
+
     public registerHandler(id: string, callback: (data: object) => void) {
         this.callbacks.set(id, callback);
+    }
+
+    public registerHandler2(id: MsgId, callback: (data: unknown[]) => void) {
+        this.callbacks2.set(id, callback);
+    }
+
+    public get open() {
+        return this.ws?.readyState === WebSocket.OPEN;
+    }
+
+    public set onOpen(callback: () => void) {
+        this.openEvent = callback;
     }
 
     public playback(list: PlaybackMessage[], callback?: (status: boolean) => void) {
