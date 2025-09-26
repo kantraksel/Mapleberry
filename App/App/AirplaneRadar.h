@@ -49,7 +49,6 @@ public:
 
 	struct PlaneAddArgs : PlaneUpdateArgs
 	{
-		unsigned int id;
 		std::string_view model;
 		std::string_view callsign;
 	};

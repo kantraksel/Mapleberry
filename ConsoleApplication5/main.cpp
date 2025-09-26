@@ -12,20 +12,16 @@
 #include "Utils/Logger.h"
 #include "Utils/version.h"
 
-static bool GetArguments(const std::string& line, std::string_view& cmd, std::string_view& args)
+static void GetArguments(const std::string& line, std::string_view& cmd, std::string_view& args)
 {
 	auto i = line.find(' ');
 	if (i != line.npos && i > 0 && i < (line.size() - 1))
 	{
-		cmd = std::string_view(line.data(), i - 1);
+		cmd = std::string_view(line.data(), i);
 		args = std::string_view(line.data() + i + 1);
-		return true;
 	}
 	else
-	{
-		Logger::LogError("No argument!");
-		return false;
-	}
+		cmd = line;
 }
 
 static void CommandLoop()
@@ -64,8 +60,12 @@ static void CommandLoop()
 		else if (line.starts_with("kick"))
 		{
 			std::string_view cmd, args;
-			if (!GetArguments(line, cmd, args))
+			GetArguments(line, cmd, args);
+			if (args.empty())
+			{
+				Logger::LogError("No argument!");
 				continue;
+			}
 			
 			unsigned int id = 0;
 			try
@@ -84,8 +84,12 @@ static void CommandLoop()
 		else if (line.starts_with("device"))
 		{
 			std::string_view cmd, args;
-			if (!GetArguments(line, cmd, args))
+			GetArguments(line, cmd, args);
+			if (args.empty())
+			{
+				Logger::LogError("No argument!");
 				continue;
+			}
 
 			if (args.starts_with("dev"))
 			{
