@@ -118,7 +118,8 @@ void WebCast::OnWebsocketOpen(WebSocket& ws)
 	//std::cout << "Connection opened" << std::endl;
 	ws.onReceive = [this](auto& ws, const auto& message)
 		{
-			//std::cout << message << std::endl;
+			if (message.isText)
+				return;
 			auto buffer = message.Binary();
 
 			size_t offset = 0;
@@ -159,8 +160,9 @@ void WebCast::Send(MsgId id, const FixedArrayCharS& buffer)
 
 	MsgPacker packer;
 	packer.pack(static_cast<uint8_t>(id));
-	packer.write_raw(buffer);
-	auto data = packer.copy_buffer();
+	if (!buffer.empty())
+		packer.write_raw(buffer);
+	auto data = packer.view();
 
 	for (auto i = wss.wss.begin(); i != wss.wss.end(); ++i)
 	{

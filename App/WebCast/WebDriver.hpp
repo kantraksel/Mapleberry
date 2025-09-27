@@ -13,6 +13,7 @@ private:
 	std::queue<std::pair<RxCmd, uint64_t>> rxQueue;
 	std::mutex rxQueueMutex;
 
+	void FinishResync();
 	void PushRxMessage(RxCmd id, uint64_t value);
 	void CommitRxMessages();
 	void HandleRxMessages(RxCmd id, uint64_t value);

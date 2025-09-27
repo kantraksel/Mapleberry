@@ -240,15 +240,8 @@ void WebDriver::Initialize()
 				resyncMsg = std::make_pair(packer.copy_buffer(), FixedArrayCharS{});
 			else
 			{
-				auto buffer = packer.copy_buffer();
-				packer.clear();
-
-				packer.pack_array(2);
-				packer.write_raw(buffer);
-				packer.write_raw(resyncMsg->second);
-				resyncMsg.reset();
-
-				webcast.Send(MsgId::SendAllData, packer.view());
+				resyncMsg.value().second = packer.copy_buffer();
+				FinishResync();
 			}
 		};
 
@@ -278,17 +271,43 @@ void WebDriver::Initialize()
 				resyncMsg = std::make_pair(FixedArrayCharS{}, packer.copy_buffer());
 			else
 			{
-				auto buffer = packer.copy_buffer();
-				packer.clear();
-
-				packer.pack_array(2);
-				packer.write_raw(resyncMsg->first);
-				packer.write_raw(buffer);
-				resyncMsg.reset();
-
-				webcast.Send(MsgId::SendAllData, packer.view());
+				resyncMsg.value().second = packer.copy_buffer();
+				FinishResync();
 			}
 		};
+}
+
+void WebDriver::FinishResync()
+{
+	if (!resyncMsg)
+		return;
+	MsgPacker packer;
+
+	auto& first = resyncMsg->first;
+	auto& second = resyncMsg->second;
+
+	if (!first.empty())
+	{
+		if (!second.empty())
+		{
+			packer.pack_array(2);
+			packer.write_raw(resyncMsg->first);
+			packer.write_raw(resyncMsg->second);
+		}
+		else
+		{
+			packer.pack_array(1);
+			packer.write_raw(resyncMsg->first);
+		}
+	}
+	else if (!second.empty())
+	{
+		packer.pack_array(1);
+		packer.write_raw(resyncMsg->second);
+	}
+	resyncMsg.reset();
+
+	webcast.Send(MsgId::SendAllData, packer.view());
 }
 
 void WebDriver::PushRxMessage(RxCmd id, uint64_t value)
@@ -319,6 +338,7 @@ void WebDriver::HandleRxMessages(RxCmd id, uint64_t value)
 		{
 			radar.Resync();
 			aircraft.Resync();
+			FinishResync();
 			break;
 		}
 

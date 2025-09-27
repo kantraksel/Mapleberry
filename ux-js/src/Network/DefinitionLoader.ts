@@ -346,20 +346,20 @@ function validatePolygon(coords: number[][][], index: number) {
 
 class DefinitionLoader {
     public static async loadMainDefs() {
-        const response = await fetch('/VATSpy.dat');
+        const response = await fetch('/VATSpy.dat', { cache: 'default' });
         const data = await response.text();
         return parseMainDefs(data);
     }
 
     public static async loadBoundaries() {
-        const response = await fetch('/Boundaries.geojson');
+        const response = await fetch('/Boundaries.geojson', { cache: 'default' });
         const data = await response.json() as Boundaries;
         validateBoundaries(data);
         return data;
     }
 
     public static async loadTracons() {
-        const response = await fetch('/TRACONBoundaries.geojson');
+        const response = await fetch('/TRACONBoundaries.geojson', { cache: 'default' });
         const data = await response.json() as Tracon;
         validateTracon(data);
         return data;

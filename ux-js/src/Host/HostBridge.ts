@@ -48,24 +48,32 @@ class HostBridge {
             return;
         }
 
-        this.ws = new WebSocket('ws://localhost:7777');
-        this.ws.binaryType = 'arraybuffer';
+        const ws = new WebSocket('ws://localhost:7777');
+        ws.binaryType = 'arraybuffer';
+        this.ws = ws;
 
-        this.ws.onopen = _ => {
+        ws.onopen = _ => {
             console.info('WebCast connection open');
 
             if (this.openEvent)
                 this.openEvent();
         };
-        this.ws.onmessage = e => {
-            this.onMessage2(e);
+        ws.onmessage = e => {
+            try {
+                this.onMessage2(e);
+            } catch (err: unknown) {
+                console.error('WebCast handler threw an exception:');
+                console.error(err);
+                ws.close();
+                this.ws = undefined;
+            }
         };
-        this.ws.onclose = _ => {
+        ws.onclose = _ => {
             console.info('WebCast connection closed');
             this.ws = undefined;
         };
-        this.ws.onerror = e => {
-            console.info(`WebCast connection failed: `, e);
+        ws.onerror = _ => {
+            console.info('WebCast connection failed');
             this.ws = undefined;
         };
     }
@@ -81,17 +89,21 @@ class HostBridge {
 
     public send2(id: MsgId, obj?: unknown) {
         if (this.ws?.readyState !== WebSocket.OPEN) {
-            console.warn(`WebCast is closed: msg ${id}`);
             return;
         }
 
-        const header = pack(id) as Uint8Array;
-        if (obj) {
-            const payload = Array.from(pack(obj) as Uint8Array);
-            const data = Array.from(header).concat(payload);
-            this.ws.send(Uint8Array.from(data));
-        } else {
-            this.ws.send(header);
+        try {
+            const header = pack(id) as Uint8Array;
+            if (obj) {
+                const payload = Array.from(pack(obj) as Uint8Array);
+                const data = Array.from(header).concat(payload);
+                this.ws.send(Uint8Array.from(data));
+            } else {
+                this.ws.send(header);
+            }
+        } catch (err: unknown) {
+            console.error('WebCast send failed:');
+            console.error(err);
         }
     }
 
@@ -115,6 +127,9 @@ class HostBridge {
     }
 
     private onMessage2(e: { data: unknown }) {
+        if (!(e.data instanceof ArrayBuffer)) {
+            throw new Error('Received non-binary data');
+        }
         const blob = e.data as ArrayBuffer;
         if (blob.byteLength == 0) {
             return;

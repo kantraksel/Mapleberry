@@ -65,7 +65,7 @@ class HostState {
 
         hostBridge.onOpen = () => {
             if (this.ready) {
-                hostBridge.send2(MsgId.SendAllData);
+                this.initializeHost();
             }
         };
 
@@ -111,6 +111,12 @@ class HostState {
             this.resyncEvent2.invoke(args);
         });
 
+        // ux-app compability
+        this.initializeHost();
+    }
+
+    private initializeHost() {
+        hostBridge.send2(MsgId.SendAllData);
         if (this.launchServerOnStart) {
             this.sendStatusCmd(StatusCmd.StartServer);
         }
@@ -126,10 +132,7 @@ class HostState {
         }
         this.ready = true;
         hostBridge.send('SRV_RESYNC', {});
-
-        if (hostBridge.open) {
-            hostBridge.send2(MsgId.SendAllData);
-        }
+        this.initializeHost();
     }
 
     public resetApp() {

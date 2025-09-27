@@ -94,6 +94,7 @@ static http::response<http::string_body> CreateDocumentResponse(http::request<ht
 {
 	auto response = HttpMessage::Create<http::string_body>(request, status);
 	response.set(http::field::content_type, "text/html");
+	response.set(http::field::access_control_allow_origin, "*");
 	return response;
 }
 

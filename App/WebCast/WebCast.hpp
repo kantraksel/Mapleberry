@@ -33,7 +33,7 @@ public:
 	typedef std::function<void(const FixedArrayCharS& buffer)> Callback;
 
 	void RegisterHandler(MsgId id, const Callback& callback);
-	void Send(MsgId id, const FixedArrayCharS& buffer);
+	void Send(MsgId id, const FixedArrayCharS& buffer = {});
 
 private:
 	boost::asio::awaitable<void> ProcessRequest(HttpConnection& connection);
