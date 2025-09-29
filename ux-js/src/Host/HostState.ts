@@ -67,6 +67,23 @@ class HostState {
             if (this.ready) {
                 this.initializeHost();
             }
+            this.status = this.getHostStatus();
+            this.statusEvent.invoke(this.status);
+        };
+
+        hostBridge.onClose = () => {
+            this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+            this.statusEvent.invoke(this.status);
+        };
+
+        hostBridge.onEnable = () => {
+            this.status = this.getHostStatus();
+            this.statusEvent.invoke(this.status);
+        };
+
+        hostBridge.onDisable = () => {
+            this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+            this.statusEvent.invoke(this.status);
         };
 
         hostBridge.registerHandler2(MsgId.ModifySystemState, data => {

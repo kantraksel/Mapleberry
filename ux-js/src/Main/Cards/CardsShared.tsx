@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { NetworkState } from '../../Network/NetworkWorld';
 
-function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string, minWidth: number | string }) {
+export function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string, minWidth: number | string }) {
     const style = {
         position: 'relative',
         border: `3px solid #2c2c2c`,
@@ -64,7 +64,7 @@ export function CardHeader(props: { children?: ReactNode }) {
     return <Box sx={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>{props.children}</Box>;
 }
 
-function CardToolbar(props: { children?: ReactNode, direction: 'row' | 'row-reverse' }) {
+export function CardToolbar(props: { children?: ReactNode, direction: 'row' | 'row-reverse' }) {
     const reverse = props.direction === 'row-reverse';
     const style = {
         position: 'absolute',

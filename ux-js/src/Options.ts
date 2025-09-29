@@ -7,6 +7,9 @@ type OptionKeys =
     'radar_follow_scale_map' | 
     'server_autostart' |
     'simcom_reconnect' |
+    'app_enabled' |
+    'app_port' |
+    'app_reconnect_span' |
     '_unused_';
 
 class Options {

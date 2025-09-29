@@ -202,7 +202,7 @@ class VATSIM {
 
     // https://vatsim.dev/api/metar-api/get-metar
     public async getMetar(airport: string) {
-        const response = await fetch(`https://metar.vatsim.net/${airport}`, { cache: 'no-cache' });
+        const response = await fetch(`https://metar.vatsim.net/${airport}`, { cache: 'default' });
         return await response.text();
     }
 

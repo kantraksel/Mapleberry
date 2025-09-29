@@ -22,24 +22,27 @@ function SystemInfoBar() {
         }
     }, []);
 
+    const disabled = !hostBridge.enabled;
+
     return (
         <Stack direction='row-reverse' spacing={1.5}>
-            <SimulatorStatusElement status={status.simStatus} />
-            <NetworkStatusElement status={netStatus} />
-            <ServerStatusElement status={status.srvStatus} />
+            <SimulatorStatusElement status={status.simStatus} disabled={disabled} />
+            <NetworkStatusElement status={netStatus} disabled={disabled} />
+            <ServerStatusElement status={status.srvStatus} disabled={disabled} />
         </Stack>
     );
 }
 
 const iconSize = { width: '1.8rem', height: '1.8rem' };
 
-function SimulatorStatusElement(props: { status: SimulatorStatus }) {
+function SimulatorStatusElement(props: { status: SimulatorStatus, disabled: boolean }) {
     let icon;
     let label;
 
     switch (props.status) {
         case SimulatorStatus.Disconnected: {
-            icon = <WifiTetheringOffIcon color='error' sx={ iconSize } />;
+            const color = props.disabled ? 'disabled' : 'error';
+            icon = <WifiTetheringOffIcon color={color} sx={ iconSize } />;
             label = 'Simulator Offline';
             break;
         }
@@ -58,13 +61,14 @@ function SimulatorStatusElement(props: { status: SimulatorStatus }) {
     return <Tooltip title={label}>{icon}</Tooltip>;
 }
 
-function ServerStatusElement(props: { status: ServerStatus }) {
+function ServerStatusElement(props: { status: ServerStatus, disabled: boolean }) {
     let icon;
     let label;
 
     switch (props.status) {
         case ServerStatus.Stopped: {
-            icon = <SettingsRemoteIcon color='error' sx={ iconSize } />;
+            const color = props.disabled ? 'disabled' : 'error';
+            icon = <SettingsRemoteIcon color={color} sx={ iconSize } />;
             label = 'Device Server Inactive';
             break;
         }
@@ -88,13 +92,14 @@ function ServerStatusElement(props: { status: ServerStatus }) {
     return <Tooltip title={label}>{icon}</Tooltip>;
 }
 
-function NetworkStatusElement(props: { status: NetworkStatus }) {
+function NetworkStatusElement(props: { status: NetworkStatus, disabled: boolean }) {
     let icon;
     let label;
 
     switch (props.status) {
         case NetworkStatus.Disabled: {
-            icon = <LanguageIcon color='error' sx={ iconSize } />;
+            const color = props.disabled ? 'disabled' : 'error';
+            icon = <LanguageIcon color={color} sx={ iconSize } />;
             label = 'Network Disabled';
             break;
         }

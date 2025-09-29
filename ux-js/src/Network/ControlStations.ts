@@ -1,7 +1,7 @@
 import { fromLonLat } from 'ol/proj';
 import polygonClipping from 'polygon-clipping';
 import polylabel from 'polylabel';
-import DefinitionLoader, { BoundaryFeature, Country, TraconFeature } from './DefinitionLoader';
+import DefinitionLoader, { Boundaries, BoundaryFeature, Country, StationList, Tracon as TraconDef, TraconFeature } from './DefinitionLoader';
 import Event from '../Event';
 
 enum RegionType {
@@ -200,9 +200,14 @@ class ControlStations {
     }
 
     private async loadDefs() {
-        const list = await DefinitionLoader.loadMainDefs();
-        const boundaries = await DefinitionLoader.loadBoundaries();
-        const tracons = await DefinitionLoader.loadTracons();
+        const results = await Promise.all([
+            DefinitionLoader.loadMainDefs(),
+            DefinitionLoader.loadBoundaries(),
+            DefinitionLoader.loadTracons(),
+        ]);
+        const list = results[0] as StationList;
+        const boundaries = results[1] as Boundaries;
+        const tracons = results[2] as TraconDef;
 
         const boundary_map = new Map<string, BoundaryFeature>();
         boundaries.features.forEach(value => {

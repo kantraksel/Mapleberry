@@ -15,7 +15,7 @@ WebCast::~WebCast()
 void WebCast::Start()
 {
 	auto address = boost::asio::ip::make_address("127.0.0.1");
-	unsigned short port = std::atoi("7777");
+	unsigned short port = std::atoi("5170");
 	auto endpoint = boost::asio::ip::tcp::endpoint{ address, port };
 
 	using namespace std::placeholders;

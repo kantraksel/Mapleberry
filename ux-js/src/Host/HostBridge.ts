@@ -21,17 +21,29 @@ class HostBridge {
     private ws?: WebSocket;
     private callbacks: Map<string, (data: object) => void>;
     private callbacks2: Map<MsgId, (data: unknown[]) => void>;
-    private openEvent?: () => void;
+    public onEnable?: () => void;
+    public onDisable?: () => void;
+    public onOpen?: () => void;
+    public onClose?: () => void;
     private playList?: PlaybackMessage[];
     private playbackController?: AbortController;
+    private enabled_: boolean;
+    private reconnectSpan_: number;
+    private port_: number;
+    private reconnectHandle: number;
 
     public constructor() {
         this.callbacks = new Map();
         this.callbacks2 = new Map();
 
-        setInterval(() => {
-            this.openConnection();
-        }, 1000);
+        this.enabled_ = options.get('app_enabled', false);
+        this.reconnectSpan_ = options.get('app_reconnect_span', 60);
+        this.port_ = options.get('app_port', 5170);
+        this.reconnectHandle = 0;
+
+        if (this.enabled_) {
+            this.startConnection();
+        }
 
         if (!window.chrome || !window.chrome.webview) {
             console.warn('Running in usual browser - cannot register webview handler');
@@ -43,20 +55,53 @@ class HostBridge {
         });
     }
 
+    private startConnection() {
+        if (this.reconnectHandle) {
+            return;
+        }
+
+        if (this.onEnable) {
+            this.onEnable();
+        }
+
+        this.reconnectHandle = setTimeout(() => {
+            this.openConnection();
+            this.reconnectHandle = setTimeout(() => {
+                this.openConnection();
+            }, this.reconnectSpan_ * 1000);
+        }, 1000);
+    }
+
+    private stopConnection() {
+        if (this.reconnectHandle) {
+            clearInterval(this.reconnectHandle);
+            this.reconnectHandle = 0;
+
+            if (this.onDisable) {
+                this.onDisable();
+            }
+        }
+
+        if (this.ws) {
+            this.ws.close();
+            this.ws = undefined;
+        }
+    }
+
     private openConnection() {
         if (this.ws) {
             return;
         }
 
-        const ws = new WebSocket('ws://localhost:7777');
+        const ws = new WebSocket(`ws://localhost:${this.port_}`);
         ws.binaryType = 'arraybuffer';
         this.ws = ws;
 
         ws.onopen = _ => {
             console.info('WebCast connection open');
 
-            if (this.openEvent)
-                this.openEvent();
+            if (this.onOpen)
+                this.onOpen();
         };
         ws.onmessage = e => {
             try {
@@ -71,11 +116,53 @@ class HostBridge {
         ws.onclose = _ => {
             console.info('WebCast connection closed');
             this.ws = undefined;
+
+            if (this.onClose)
+                this.onClose();
         };
         ws.onerror = _ => {
             console.info('WebCast connection failed');
             this.ws = undefined;
         };
+    }
+
+    public get enabled() {
+        return this.enabled_;
+    }
+
+    public set enabled(value: boolean) {
+        this.enabled_ = value;
+        options.set('app_enabled', value);
+
+        if (value) {
+            this.startConnection();
+        } else {
+            this.stopConnection();
+        }
+    }
+
+    public get reconnectSpan() {
+        return this.reconnectSpan_;
+    }
+
+    public set reconnectSpan(value: number) {
+        value = Math.max(value, 1);
+        this.reconnectSpan_ = value;
+        options.set('app_reconnect_span', value);
+    }
+
+    public get port() {
+        return this.port_;
+    }
+
+    public set port(value: number) {
+        value = Math.max(Math.min(value, 65535), 1024);
+        this.port_ = value;
+        options.set('app_port', value);
+    }
+
+    public isPortValid(value: number) {
+        return value >= 1024 && value <= 65535;
     }
 
     public send(id: string, obj: object) {
@@ -158,10 +245,6 @@ class HostBridge {
 
     public get open() {
         return this.ws?.readyState === WebSocket.OPEN;
-    }
-
-    public set onOpen(callback: () => void) {
-        this.openEvent = callback;
     }
 
     public playback(list: PlaybackMessage[], callback?: (status: boolean) => void) {

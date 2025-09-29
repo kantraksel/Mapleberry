@@ -5,6 +5,7 @@ import DesktopIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import FlightIcon from '@mui/icons-material/Flight';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GroupsIcon from '@mui/icons-material/Groups';
+import CloudIcon from '@mui/icons-material/Cloud';
 import 'ol/ol.css';
 import SystemInfoBox from './SystemInfoBox';
 import FlightInfoBox from './FlightInfoBox';
@@ -15,6 +16,7 @@ import PilotCard from './Cards/PilotCard';
 import SystemInfoBar from './SystemInfoBar';
 import PrefileCard from './Cards/PrefileCard';
 import AtisCard from './Cards/AtisCard';
+import MetarBox from './MetarBox';
 
 const MainDrawerContext = createContext(true);
 
@@ -89,6 +91,7 @@ function App() {
 	const [flightVisible, setFlightVisible] = useState(false);
 	const [optionsVisible, setOptionsVisible] = useState(false);
 	const [scoreboardVisible, setScoreboardVisible] = useState(false);
+	const [metarVisible, setMetarVisible] = useState(false);
 	
 	useEffect(() => {
 		map.setParent(mapNode.current!);
@@ -157,6 +160,12 @@ function App() {
 								<MainListText primary='Station List' />
 							</ListItemButton>
 						</ListItem>
+						<ListItem key='metar' disablePadding>
+							<ListItemButton selected={metarVisible} onClick={() => { setMetarVisible(!metarVisible); }}>
+								<MainListIcon><CloudIcon /></MainListIcon>
+								<MainListText primary='METAR' />
+							</ListItemButton>
+						</ListItem>
 					</List>
 					<List sx={{ position: 'absolute', bottom: '0px', right: '0px', left: '0px' }}>
 						<ListItem key='options' disablePadding>
@@ -184,6 +193,7 @@ function App() {
 							<PilotCard />
 							<PrefileCard />
 							<AtisCard />
+							<MetarBox open={metarVisible} onClose={() => setMetarVisible(false)} />
 						</Stack>
 					</Stack>
 
@@ -203,20 +213,27 @@ export default App;
 
 /*
 TODO:
-- add VATSIM metar query
 - add local airplane button
 - /and/or/ add local planes in Stations Lists (as a tab)
 - try to autodetect local airplane, show toast with suggestion
 
+- disable status icons when app disabled
+- METAR: add IATA support (use station defs)
+- METAR: add button, when ATIS station is available
+- rewrite system-ui sync, regroup files, make start sequence reliable (systems), split cards shared
+- fix optionsbox not fitting in extremly small screens
 - add search bar in lists
-- draw TRACON area
+
 - cache VATSpy data + update mechanism (self-host and github)
 - try to eliminate large, thin holes in UIRs
 - option: airport label icao or iata
 - option: airplane label simple or extended
 - option: hide areas, planes, airports
 - option: hide fields with ATIS only
-- better contrast for net planes and area labels
+- option: disable interpolation
+- option: interactable area (region+tracon)
+- option: hide atis in airport (list)
+- better contrast for net planes and area labels (plane color based on altitude)
 
 - implement OSM Vector Tiles
 - expose stationless controllers on map
@@ -226,17 +243,15 @@ TODO:
 - integrate VATSIM AIP, accurate station names
 
 - device control panel (possibly move to different project, native ImGui app)
+- branding, policy, external services and libraries
 
 OSM Vector Tiles:
 https://americanamap.org/
 https://tile.ourmap.us/
 
 https://stats.vatsim.net/search_id.php?id={cid}
-vatsim.networkData = JSON.parse(localStorage.getItem('vatsim_list'));
-vatsim.propsCache = vatsim.networkData;
-vatsim.Update.invoke(vatsim.networkData);
+network.updateState(JSON.parse(localStorage.getItem('vatsim_list')!));
 https://vatspy-data.kantraksel.workers.dev/release.json
-https://github.com/vatsimnetwork/simaware-tracon-project
 
 Dataset errors:
 [NOT EXPLORED] Boundaries.geojson: some entries (above 700) have numeric properties instead of strings
