@@ -64,10 +64,16 @@ class TrafficRadar {
         });
 
         network.Update.add(data => {
-            if (!data) {
+            try {
+                if (!data) {
+                    this.clear();
+                } else {
+                    this.onRefresh(data);
+                }
+            } catch (e: unknown) {
+                console.error('Error while updating TrafficRadar:');
+                console.error(e);
                 this.clear();
-            } else {
-                this.onRefresh(data);
             }
         });
     }
@@ -117,37 +123,42 @@ class TrafficRadar {
         });
 
         data.pilots.forEach(pilot => {
-            const callsign = pilot.callsign;
+            try {
+                const callsign = pilot.callsign;
 
-            let plane = this.planes.get(callsign);
-            if (!plane) {
-                plane = new NetworkPilot(pilot);
-                this.planes.set(callsign, plane);
-                this.cache.set(pilot.cid, plane);
+                let plane = this.planes.get(callsign);
+                if (!plane) {
+                    plane = new NetworkPilot(pilot);
+                    this.planes.set(callsign, plane);
+                    this.cache.set(pilot.cid, plane);
 
-                const radarPlane = radar.getByCallsign(callsign);
-                if (!radarPlane) {
-                    this.establishContact(plane);
+                    const radarPlane = radar.getByCallsign(callsign);
+                    if (!radarPlane) {
+                        this.establishContact(plane);
+                    } else {
+                        radarPlane.plane.netState = plane;
+                        plane.external = radarPlane;
+                    }
                 } else {
-                    radarPlane.plane.netState = plane;
-                    plane.external = radarPlane;
+                    plane.pilot = pilot;
+                    plane.addRef();
                 }
-            } else {
-                plane.pilot = pilot;
-                plane.addRef();
-            }
 
-            const params = {
-                longitude: pilot.longitude,
-                latitude: pilot.latitude,
-                heading: pilot.heading,
-                altitude: pilot.altitude,
-                groundAltitude: 0,
-                indicatedSpeed: 0,
-                groundSpeed: pilot.groundspeed,
-                verticalSpeed: 0,
-            };
-            plane.plane.physicParams = params;
+                const params = {
+                    longitude: pilot.longitude,
+                    latitude: pilot.latitude,
+                    heading: pilot.heading,
+                    altitude: pilot.altitude,
+                    groundAltitude: 0,
+                    indicatedSpeed: 0,
+                    groundSpeed: pilot.groundspeed,
+                    verticalSpeed: 0,
+                };
+                plane.plane.physicParams = params;
+            } catch (e: unknown) {
+                console.error(e);
+                console.error(`^ was thrown while processing pilot ${pilot.callsign ?? 'INVALID'}/${pilot.cid ?? 'INVALID'}`);
+            }
         });
 
         this.planes.forEach((pilot, callsign) => {

@@ -157,12 +157,23 @@ class ControlRadar {
         this.Update = new Event();
 
         controlStations.Ready.add(() => {
-            this.onRefresh(network.getState());
+            this.onNetUpdate(network.getState());
         });
         network.Update.add(state => {
-            if (controlStations.isReady())
-                this.onRefresh(state);
+            this.onNetUpdate(state);
         });
+    }
+
+    private onNetUpdate(state?: NetworkState) {
+        if (controlStations.isReady()) {
+            try {
+                this.onRefresh(state);
+            } catch (e: unknown) {
+                console.error('Error while updating ControlRadar:');
+                console.error(e);
+                this.clear();
+            }
+        }
     }
 
     public onSelectStation(e: FeatureLike) {
@@ -277,48 +288,63 @@ class ControlRadar {
 
         const local_facilities = network.getLocalFacilities();
         networkData.controllers.forEach(controller => {
-            let obj = this.controllerCache.get(createUID(controller));
-            if (obj) {
-                obj.addRef();
-                obj.data = controller;
+            try {
+                let obj = this.controllerCache.get(createUID(controller));
+                if (obj) {
+                    obj.addRef();
+                    obj.data = controller;
 
-                if (obj.station instanceof NetworkField) {
-                    const airport = obj.station;
-                    if (airport.isOutlined) {
-                        airport.setFill();
+                    if (obj.station instanceof NetworkField) {
+                        const airport = obj.station;
+                        if (airport.isOutlined) {
+                            airport.setFill();
+                        }
                     }
+                    return true;
                 }
-                return true;
-            }
 
-            let facility_type;
-            if (local_facilities.has(controller.facility)) {
-                if (this.setFieldController(controller)) {
-                    return;
+                let facility_type;
+                if (local_facilities.has(controller.facility)) {
+                    if (this.setFieldController(controller)) {
+                        return;
+                    }
+                    if (this.setAreaController(controller)) {
+                        return;
+                    }
+                    facility_type = 'airport';
+                } else {
+                    if (this.setAreaController(controller)) {
+                        return;
+                    }
+                    if (this.setFieldController(controller)) {
+                        return;
+                    }
+                    facility_type = 'FIR/UIR';
                 }
-                if (this.setAreaController(controller)) {
-                    return;
-                }
-                facility_type = 'airport';
-            } else {
-                if (this.setAreaController(controller)) {
-                    return;
-                }
-                if (this.setFieldController(controller)) {
-                    return;
-                }
-                facility_type = 'FIR/UIR';
-            }
 
-            if (this.setStandaloneTraconController(controller)) {
-                return;
-            }
+                if (this.setStandaloneTraconController(controller)) {
+                    return;
+                }
 
-            console.warn(`Cannot find ${facility_type} for ${controller.callsign}`);
-            obj = new NetworkController(controller, undefined);
-            const uid = createUID(controller);
-            this.orphans.set(uid, obj);
-            this.controllerCache.set(uid, obj);
+                console.warn(`Cannot find ${facility_type} for ${controller.callsign}`);
+                obj = new NetworkController(controller, undefined);
+                const uid = createUID(controller);
+                this.orphans.set(uid, obj);
+                this.controllerCache.set(uid, obj);
+            } catch (e: unknown) {
+                console.error(e);
+                console.error(`^ was thrown while processing controller ${controller.callsign ?? 'INVALID'}/${controller.cid ?? 'INVALID'}`);
+
+                try {
+                    const obj = new NetworkController(controller, undefined);
+                    const uid = createUID(controller);
+                    this.orphans.set(uid, obj);
+                    this.controllerCache.set(uid, obj);
+                } catch (e: unknown) {
+                    console.error('Cannot create orphan entry:');
+                    console.error(e);
+                }
+            }
         });
         this.updateAtis(networkData.atis);
 
@@ -425,41 +451,46 @@ class ControlRadar {
 
     private updateAtis(atis: Atis[]) {
         atis.forEach(atis => {
-            let controller = this.atisCache.get(createUID(atis));
-            if (controller) {
-                controller.addRef();
-                controller.data = atis;
+            try {
+                let controller = this.atisCache.get(createUID(atis));
+                if (controller) {
+                    controller.addRef();
+                    controller.data = atis;
 
-                const airport = controller.station;
-                if (!airport.isOutlined && airport.controllers.length == 0) {
-                    airport.setOutline();
+                    const airport = controller.station;
+                    if (!airport.isOutlined && airport.controllers.length == 0) {
+                        airport.setOutline();
+                    }
+                    return;
                 }
-                return;
-            }
 
-            const airport = controlStations.getAirport(atis.callsign);
-            if (!airport) {
-                console.warn(`Cannot find airport for ${atis.callsign}`);
-                return;
-            }
+                const airport = controlStations.getAirport(atis.callsign);
+                if (!airport) {
+                    console.warn(`Cannot find airport for ${atis.callsign}`);
+                    return;
+                }
 
-            let field = this.fields.get(airport.icao);
-            if (field) {
-                field.addRef();
+                let field = this.fields.get(airport.icao);
+                if (field) {
+                    field.addRef();
 
-                if (!field.isOutlined && field.controllers.length == 0) {
+                    if (!field.isOutlined && field.controllers.length == 0) {
+                        field.setOutline();
+                    }
+                } else {
+                    field = new NetworkField(airport);
+                    this.fields.set(airport.icao, field);
+                    controlLayers.addField(field.field);
+
                     field.setOutline();
                 }
-            } else {
-                field = new NetworkField(airport);
-                this.fields.set(airport.icao, field);
-                controlLayers.addField(field.field);
-
-                field.setOutline();
+                const obj = new NetworkAtis(atis, field);
+                field.atis.push(obj);
+                this.atisCache.set(createUID(atis), obj);
+            } catch (e: unknown) {
+                console.error(e);
+                console.error(`^ was thrown while processing ATIS ${atis.callsign ?? 'INVALID'}/${atis.cid ?? 'INVALID'}`);
             }
-            const obj = new NetworkAtis(atis, field);
-            field.atis.push(obj);
-            this.atisCache.set(createUID(atis), obj);
         });
     }
 
@@ -548,29 +579,6 @@ class ControlRadar {
             this.standaloneTracons.set(uid, controller);
             this.controllerCache.set(uid, controller);
             return true;
-        } else {
-            const approach_id = network.getApproachId();
-            if (data.facility == approach_id) {
-                const id_parts = splitCallsign(data.callsign);
-                const suffix = id_parts.pop() ?? 'APP';
-                const substation = {
-                    prefix: [ id_parts.join('_') ],
-                    suffix: suffix,
-                    name: 'Approach',
-                    geometry: [],
-
-                    airport: undefined,
-                };
-                const controller = new NetworkController(data, undefined);
-                const tracon = controller.addTracon(substation, sid);
-                tracon.controllers.push(controller);
-                controlLayers.addTracon(tracon.substation);
-
-                const uid = createUID(data);
-                this.standaloneTracons.set(uid, controller);
-                this.controllerCache.set(uid, controller);
-                return true;
-            }
         }
         return false;
     }
