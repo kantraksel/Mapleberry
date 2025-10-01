@@ -95,14 +95,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="App\AirplaneRadar.cpp" />
-    <ClCompile Include="App\DeviceManager.cpp" />
     <ClCompile Include="App\GlobalScope.cpp" />
     <ClCompile Include="App\LocalAircraft.cpp" />
-    <ClCompile Include="App\Radio.cpp" />
     <ClCompile Include="App\RealTimeThread.cpp" />
-    <ClCompile Include="DeviceServer\Connection.cpp" />
-    <ClCompile Include="DeviceServer\DeviceServer.cpp" />
-    <ClCompile Include="DeviceServer\Transport.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="SimCom\SimCom.cpp" />
     <ClCompile Include="SimCom\SimConnect.cpp" />
@@ -118,15 +113,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App\AirplaneRadar.h" />
-    <ClInclude Include="App\DeviceManager.h" />
     <ClInclude Include="App\GlobalScope.h" />
     <ClInclude Include="App\LocalAircraft.h" />
-    <ClInclude Include="App\Radio.h" />
     <ClInclude Include="App\RealTimeThread.h" />
-    <ClInclude Include="DeviceServer\Connection.h" />
-    <ClInclude Include="DeviceServer\DeviceServer.h" />
-    <ClInclude Include="DeviceServer\NetProto.h" />
-    <ClInclude Include="DeviceServer\Transport.h" />
     <ClInclude Include="SimCom\SimCom.h" />
     <ClInclude Include="SimCom\SimConnect.h" />
     <ClInclude Include="Utils\Boost.h" />

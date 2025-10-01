@@ -1,14 +1,10 @@
 #include <array>
 #include "RealTimeThread.h"
 #include "SimCom/SimCom.h"
-#include "DeviceServer/DeviceServer.h"
-#include "DeviceManager.h"
 #include "AirplaneRadar.h"
 #include "Utils/Logger.h"
 
 extern SimCom simcom;
-extern DeviceServer deviceServer;
-extern DeviceManager deviceManager;
 extern AirplaneRadar radar;
 
 RealTimeThread::RealTimeThread()
@@ -26,11 +22,9 @@ void RealTimeThread::Start()
 	thread = std::jthread([this](std::stop_token token)
 		{
 			std::unique_lock lock(cmdMutex);
-			auto& socket = deviceServer.GetTransport().GetSocket();
 
 			while (!token.stop_requested())
 			{
-				deviceServer.Run();
 				simcom.RunCallbacks();
 
 				radar.OnUpdate();
@@ -38,18 +32,16 @@ void RealTimeThread::Start()
 					Tick();
 
 				lock.unlock();
-				socket.Poll(20);
+				std::this_thread::sleep_for(std::chrono::milliseconds(20));
 				lock.lock();
 			}
 
 			simcom.Shutdown();
-			deviceServer.Stop();
 		});
 }
 
 void RealTimeThread::OnSimConnect()
 {
-	deviceManager.Initialize();
 	radar.Initialize();
 	/*
 	auto& simconnect = simcom.GetSimConnect();
@@ -77,7 +69,6 @@ void RealTimeThread::OnSimDisconnect()
 		SimDisconnectEvent();
 
 	radar.Shutdown();
-	deviceManager.Shutdown();
 }
 
 void RealTimeThread::Stop()

@@ -2,16 +2,12 @@
 #include "WebCast.hpp"
 #include "App/RealTimeThread.h"
 #include "SimCom/SimCom.h"
-#include "DeviceServer/DeviceServer.h"
-#include "App/DeviceManager.h"
 #include "Utils/Logger.h"
 #include "App/AirplaneRadar.h"
 #include "App/LocalAircraft.h"
 #include "MsgPacker.hpp"
 
 extern SimCom simcom;
-extern DeviceServer deviceServer;
-extern DeviceManager deviceManager;
 extern LocalAircraft aircraft;
 extern AirplaneRadar radar;
 extern RealTimeThread thread;
@@ -23,7 +19,6 @@ enum class RxCmd
 	Undefined,
 	Resync,
 	ChangeSimComStatus,
-	ChangeServerStatus,
 	ReconnectToSim,
 };
 
@@ -36,8 +31,6 @@ enum class SimState : uint8_t
 enum class SrvState : uint8_t
 {
 	Stoppped = 1,
-	Running = 2,
-	Connected = 3,
 };
 
 WebDriver::WebDriver()
@@ -66,24 +59,10 @@ static void SetSimState(MsgPacker& packer, bool connected)
 	}
 }
 
-static void SetSrvState(MsgPacker& packer, bool isServerRunning, bool isDeviceConnected)
-{
-	if (!isServerRunning)
-		packer.pack(static_cast<uint8_t>(SrvState::Stoppped));
-	else if (isDeviceConnected)
-		packer.pack(static_cast<uint8_t>(SrvState::Connected));
-	else
-		packer.pack(static_cast<uint8_t>(SrvState::Running));
-}
-
-static void SendSystemState(int simConnected = -1, int serverRunning = -1, int deviceConnected = -1)
+static void SendSystemState(int simConnected = -1)
 {
 	if (simConnected == -1)
 		simConnected = simcom.IsConnected();
-	if (serverRunning == -1)
-		serverRunning = deviceServer.IsRunning();
-	if (deviceConnected == -1)
-		deviceConnected = deviceManager.IsConnected();
 
 	MsgPacker packer;
 
@@ -91,7 +70,7 @@ static void SendSystemState(int simConnected = -1, int serverRunning = -1, int d
 	packer.pack(0);
 	SetSimState(packer, simConnected);
 	packer.pack(1);
-	SetSrvState(packer, serverRunning, deviceConnected);
+	packer.pack(static_cast<uint8_t>(SrvState::Stoppped));
 
 	webcast.Send(MsgId::ModifySystemState, packer.view());
 }
@@ -114,24 +93,6 @@ void WebDriver::Initialize()
 	thread.Tick = []()
 		{
 			webdriver.CommitRxMessages();
-		};
-
-	deviceServer.OnStart = []()
-		{
-			SendSystemState(-1, 1);
-		};
-	deviceServer.OnStop = []()
-		{
-			SendSystemState(-1, 0);
-		};
-
-	deviceManager.DeviceConnectEvent = []()
-		{
-			SendSystemState(-1, -1, 1);
-		};
-	deviceManager.DeviceDisconnectEvent = []()
-		{
-			SendSystemState(-1, -1, 0);
 		};
 
 	webcast.RegisterHandler(MsgId::SendAllData, [this](const auto&)
@@ -164,14 +125,6 @@ void WebDriver::Initialize()
 										{
 											bool v = value.as<bool>();
 											PushRxMessage(RxCmd::ChangeSimComStatus, v);
-										}
-									}
-									else if (str == "1")
-									{
-										if (value.type == msgpack::type::BOOLEAN)
-										{
-											bool v = value.as<bool>();
-											PushRxMessage(RxCmd::ChangeServerStatus, v);
 										}
 									}
 								}
@@ -355,25 +308,6 @@ void WebDriver::HandleRxMessages(RxCmd id, uint64_t value)
 			{
 				if (simcom.IsConnected())
 					simcom.Shutdown();
-				else
-					SendSystemState();
-			}
-			break;
-		}
-
-		case RxCmd::ChangeServerStatus:
-		{
-			if (value)
-			{
-				if (deviceServer.IsRunning())
-					SendSystemState();
-				else
-					deviceServer.Start();
-			}
-			else
-			{
-				if (deviceServer.IsRunning())
-					deviceServer.Stop();
 				else
 					SendSystemState();
 			}

@@ -1,15 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="DeviceServer\Connection.cpp">
-      <Filter>App\DeviceServer</Filter>
-    </ClCompile>
-    <ClCompile Include="DeviceServer\DeviceServer.cpp">
-      <Filter>App\DeviceServer</Filter>
-    </ClCompile>
-    <ClCompile Include="DeviceServer\Transport.cpp">
-      <Filter>App\DeviceServer</Filter>
-    </ClCompile>
     <ClCompile Include="SimCom\SimCom.cpp">
       <Filter>App\SimCom</Filter>
     </ClCompile>
@@ -33,12 +24,6 @@
     </ClCompile>
     <ClCompile Include="App\LocalAircraft.cpp">
       <Filter>TrafficRadar</Filter>
-    </ClCompile>
-    <ClCompile Include="App\Radio.cpp">
-      <Filter>InputDevs</Filter>
-    </ClCompile>
-    <ClCompile Include="App\DeviceManager.cpp">
-      <Filter>InputDevs</Filter>
     </ClCompile>
     <ClCompile Include="App\GlobalScope.cpp" />
     <ClCompile Include="WebCast\HttpConnection.cpp">
@@ -74,12 +59,6 @@
     <Filter Include="TrafficRadar">
       <UniqueIdentifier>{1c0ed3ce-880e-4cab-be54-11786da14488}</UniqueIdentifier>
     </Filter>
-    <Filter Include="InputDevs">
-      <UniqueIdentifier>{adc54d03-f1ef-4ca2-884a-ac4e25963c2c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="App\DeviceServer">
-      <UniqueIdentifier>{dc8107e4-12b7-4fd4-ad75-1407e55cca2a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="App\SimCom">
       <UniqueIdentifier>{664e362d-ce30-4cea-a48d-64ca64a14a08}</UniqueIdentifier>
     </Filter>
@@ -88,18 +67,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeviceServer\Connection.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceServer\DeviceServer.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceServer\NetProto.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceServer\Transport.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
     <ClInclude Include="SimCom\SimCom.h">
       <Filter>App\SimCom</Filter>
     </ClInclude>
@@ -132,12 +99,6 @@
     </ClInclude>
     <ClInclude Include="App\LocalAircraft.h">
       <Filter>TrafficRadar</Filter>
-    </ClInclude>
-    <ClInclude Include="App\Radio.h">
-      <Filter>InputDevs</Filter>
-    </ClInclude>
-    <ClInclude Include="App\DeviceManager.h">
-      <Filter>InputDevs</Filter>
     </ClInclude>
     <ClInclude Include="App\GlobalScope.h" />
     <ClInclude Include="WebCast\WebSocketServer.hpp">
