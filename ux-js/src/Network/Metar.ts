@@ -1,18 +1,22 @@
 class Metar {
     public async get(icao: string) {
         icao = icao.trim().toUpperCase();
-        if (icao.length != 4) {
-            return 'Invalid airport code';
+        const station = controlStations.getAirport(icao);
+        if (station) {
+            icao = station.icao;
+        } else if (icao.length != 4) {
+            return { text: 'Invalid airport code' };
         }
 
         try {
             const text = await vatsim.getMetar(icao);
             if (text.length == 0) {
-                return 'Airport not found';
+                return { text: 'Airport not found' };
             }
-            return text;
+            const station = controlRadar.getStation(icao);
+            return { text, station };
         } catch (e: unknown) {
-            return 'Failed to fetch METAR';
+            return { text: 'Failed to fetch METAR' };
         }        
     }
 }

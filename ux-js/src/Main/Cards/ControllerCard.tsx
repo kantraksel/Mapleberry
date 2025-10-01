@@ -2,14 +2,10 @@ import { IconButton, Menu, MenuItem } from '@mui/material';
 import { createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCard, TextBox } from './CardsShared';
 import { useEffect, useRef, useState } from 'react';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
-import { NetworkArea, NetworkController, NetworkField } from '../../Network/ControlRadar';
+import { NetworkArea, NetworkControl, NetworkController, NetworkField } from '../../Network/ControlRadar';
 
-function MetarButton(props: { data: NetworkController | undefined }) {
-    if (!props.data) {
-        return <></>;
-    }
-
-    const field = props.data.station;
+export function MetarButton(props: { data: NetworkControl | undefined }) {
+    const field = props.data;
     if (!(field instanceof NetworkField) || field.atis.length == 0) {
         return <></>;
     }
@@ -134,13 +130,15 @@ function ControllerCard() {
         }
     }
 
-    const toolsRight = (
+    let toolsRight = (
         <>
-            <MetarButton data={object} />
+        {
+            object ? <MetarButton data={object.station} /> : <></>
+        }
         </>
     );
     return (
-        <StationCard width='auto' maxWidth='100vw' minWidth={500} title={data.callsign} absent={absent} onTitleClick={onFocus} toolsRight={toolsRight}>
+        <StationCard width='auto' maxWidth='100vw' minWidth={526} title={data.callsign} absent={absent} onTitleClick={onFocus} toolsRight={toolsRight}>
             <DataTable data={table} />
             <TextBox label='Information' value={info} />
         </StationCard>

@@ -1,4 +1,4 @@
-import { NetworkAtis, NetworkControl, NetworkController } from './Network/ControlRadar';
+import { NetworkAtis, NetworkControl, NetworkController, NetworkField } from './Network/ControlRadar';
 import { NetworkPilot } from './Network/TrafficRadar';
 import { Prefile } from './Network/VATSIM';
 
@@ -119,7 +119,19 @@ class Cards {
     }
 
     showAtisCard(data: NetworkAtis) {
-        this.backList.push(() => {});
+        this.backList.push(() => {
+            const station = controlRadar.getStation(data.station.icao);
+            if (!(station instanceof NetworkField)) {
+                this.close();
+                return;
+            }
+            const atis = station.atis.find(atis => atis.data.callsign === data.data.callsign);
+            if (!atis) {
+                this.close();
+                return;
+            }
+            this.showAtisCard(atis);
+        });
 
         this.controllerRef?.call(null, undefined);
         this.pilotRef?.call(null, undefined);
