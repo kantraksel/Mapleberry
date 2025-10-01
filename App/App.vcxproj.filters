@@ -59,6 +59,7 @@
     <ClCompile Include="WebCast\WebDriver.cpp">
       <Filter>WebCast</Filter>
     </ClCompile>
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Utils">
