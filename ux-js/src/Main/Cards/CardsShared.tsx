@@ -4,26 +4,18 @@ import { Box, Button, IconButton, Stack, Tooltip, Typography } from '@mui/materi
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { NetworkState } from '../../Network/NetworkWorld';
+import StyledBox from '../StyledBox';
 
 export function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string, minWidth: number | string }) {
     const style = {
-        position: 'relative',
-        border: `3px solid #2c2c2c`,
-        borderRadius: '5px',
-        background: '#2c2c2c',
         width: props.width,
         maxWidth: props.maxWidth,
         minWidth: props.minWidth,
         margin: '15px',
         paddingBottom: '7px',
         zIndex: 5,
-        boxShadow: '0 26px 58px 0 rgba(0, 0, 0, .22), 0 5px 14px 0 rgba(0, 0, 0, .18)',
     };
-    return (
-        <Stack sx={style}>
-            {props.children}
-        </Stack>
-    );
+    return <StyledBox sx={style}>{props.children}</StyledBox>;
 }
 
 function StationTitle(props: { title: string, absent: boolean, onClick?: () => void }) {

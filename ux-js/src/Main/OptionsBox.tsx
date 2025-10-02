@@ -1,8 +1,9 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Box, Button, ButtonGroup, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Button, ButtonGroup, createTheme, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import VATSIM from '../Network/VATSIM';
 import { ServerStatus, SimulatorStatus, StatusCmd } from '../Host/HostState';
+import StyledBox from './StyledBox';
 
 type View = 'map' | 'app' | 'about' | 'dev_preview';
 
@@ -337,24 +338,30 @@ function DevToolsView() {
 }
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
+    const theme = createTheme();
+    const container = {
+        position: 'absolute',
+        minWidth: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+        zIndex: theme.zIndex.drawer + 200,
+    };
+    const box = {
+        width: props.width,
+        height: props.height,
+        alignItems: 'stretch',
+        padding: '5px',
+        pointerEvents: 'auto',
+    };
     return (
-        <Box sx={{ position: 'fixed', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 }}>
-            <Box
-                position='relative'
-                border='3px solid #333333'
-                borderRadius='5px'
-                bgcolor='#333333'
-                width={props.width}
-                height={props.height}
-                display='flex'
-                flexDirection='column'
-                alignItems='stretch'
-                padding='5px'
-                sx={{pointerEvents: 'auto'}}
-                boxShadow='0 26px 58px 0 rgba(0, 0, 0, .22), 0 5px 14px 0 rgba(0, 0, 0, .18)'
-                >
+        <Box sx={container}>
+            <StyledBox sx={box}>
                 {props.children}
-            </Box>
+            </StyledBox>
         </Box>
     );
 }

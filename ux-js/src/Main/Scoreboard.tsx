@@ -8,26 +8,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from '../Network/ControlRadar';
 import { CardHeader, CardRightToolbar, createNetUpdate } from './Cards/CardsShared';
 import { NetworkPilot } from '../Network/TrafficRadar';
-
-function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string, visible?: boolean }) {
-    return (
-        <Box sx={{
-            position: 'relative',
-            border: `3px solid #2c2c2c`,
-            borderRadius: '5px',
-            background: '#2c2c2c',
-            width: props.width,
-            height: props.height,
-            margin: '15px',
-            display: props.visible ? 'flex' : 'none',
-            flexDirection: 'column',
-            alignItems: 'center',
-            boxShadow: '0 26px 58px 0 rgba(0, 0, 0, .22), 0 5px 14px 0 rgba(0, 0, 0, .18)',
-        }}>
-            {props.children}
-        </Box>
-    );
-}
+import StyledBox from './StyledBox';
 
 const VirtuosoTableComponents: TableComponents = {
     Scroller: forwardRef<HTMLDivElement>((props, ref) => (
@@ -520,6 +501,17 @@ function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     );
 }
 
+function DataBox(props: { children?: ReactNode, visible?: boolean }) {
+    const style = {
+        display: props.visible ? 'flex' : 'none',
+        width: 530,
+        height: '100%',
+        alignItems: 'center',
+        margin: '15px',
+    };
+    return <StyledBox sx={style}>{props.children}</StyledBox>;
+}
+
 function Scoreboard(props: { open: boolean }) {
     const [row, setRow] = useState(0);
 
@@ -531,10 +523,10 @@ function Scoreboard(props: { open: boolean }) {
     }
 
     return (
-        <InfoBox width={530} height='100%' visible={props.open}>
+        <DataBox visible={props.open}>
             <ActiveStationList open={props.open && row == 0} toolsRight={rowButton} />
             <PassiveStationList open={props.open && row == 1} toolsRight={rowButton} />
-        </InfoBox>
+        </DataBox>
     );
 }
 
@@ -580,7 +572,7 @@ function FacilityStationsList() {
     }
 
     return (
-        <InfoBox width={530} height='100%' visible={hasFacility}>
+        <DataBox visible={hasFacility}>
             <CardHeader>
                 <CardRightToolbar />
                 <Box sx={{ padding: '8px', paddingTop: '6.5px' }}>
@@ -588,7 +580,7 @@ function FacilityStationsList() {
                 </Box>
             </CardHeader>
             <DynamicList enabled={hasFacility} columns={controllerColumns} values={list} />
-        </InfoBox>
+        </DataBox>
     );
 }
 export { FacilityStationsList };

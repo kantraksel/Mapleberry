@@ -127,7 +127,7 @@ function App() {
 	
 	return (
 		<>
-			<AppBar sx={{ zIndex: theme.zIndex.drawer + 1 }}>
+			<AppBar sx={{ zIndex: theme.zIndex.drawer + 100 }}>
 				<Toolbar>
 					<Box sx={{ flexGrow: 1 }}>
 						<IconButton size='large' edge='start' onClick={switchDrawer}>
@@ -217,11 +217,7 @@ TODO:
 - /and/or/ add local planes in Stations Lists (as a tab)
 - try to autodetect local airplane, show toast with suggestion
 
-- disable status icons when app disabled
-- METAR: add IATA support (use station defs)
-- METAR: add button, when ATIS station is available
 - rewrite system-ui sync, regroup files, make start sequence reliable (systems), split cards shared
-- fix optionsbox not fitting in extremly small screens
 - add search bar in lists
 
 - cache VATSpy data + update mechanism (self-host and github)
