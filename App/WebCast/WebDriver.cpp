@@ -1,6 +1,5 @@
 #include "WebDriver.hpp"
 #include "WebCast.hpp"
-#include "App/RealTimeThread.h"
 #include "SimCom/SimCom.h"
 #include "Utils/Logger.h"
 #include "TrafficRadar/AirplaneRadar.h"
@@ -10,9 +9,7 @@
 extern SimCom simcom;
 extern LocalAircraft aircraft;
 extern AirplaneRadar radar;
-extern RealTimeThread thread;
 extern WebCast webcast;
-extern WebDriver webdriver;
 
 enum class RxCmd
 {
@@ -47,15 +44,9 @@ static void SetSimState(MsgPacker& packer, bool connected)
 		packer.pack(static_cast<uint8_t>(SimState::Disconnected));
 	else
 	{
-		std::string str;
-		{
-			auto lock = thread.EnterCmdMode();
-			str = simcom.GetSimName();
-		}
-
 		packer.pack_array(2);
 		packer.pack(static_cast<uint8_t>(SimState::Connected));
-		packer.pack(str);
+		packer.pack(simcom.GetSimName());
 	}
 }
 
@@ -82,23 +73,10 @@ static void PackLocalUpdate(MsgPacker& packer, const LocalAircraft::PlaneUpdateA
 
 void WebDriver::Initialize()
 {
-	thread.SimConnectEvent = []()
-		{
-			SendSystemState(1);
-		};
-	thread.SimDisconnectEvent = []()
-		{
-			SendSystemState(0);
-		};
-	thread.Tick = []()
-		{
-			webdriver.CommitRxMessages();
-		};
-
 	webcast.RegisterHandler(MsgId::SendAllData, [this](const auto&)
 							 {
 								 SendSystemState();
-								 PushRxMessage(RxCmd::Resync, 0);
+								 HandleRxMessages(RxCmd::Resync, 0);
 							 });
 
 	webcast.RegisterHandler(MsgId::ModifySystemState, [this](const FixedArrayCharS& buffer)
@@ -124,7 +102,7 @@ void WebDriver::Initialize()
 										if (value.type == msgpack::type::BOOLEAN)
 										{
 											bool v = value.as<bool>();
-											PushRxMessage(RxCmd::ChangeSimComStatus, v);
+											HandleRxMessages(RxCmd::ChangeSimComStatus, v);
 										}
 									}
 								}
@@ -153,7 +131,7 @@ void WebDriver::Initialize()
 										if (value.type == msgpack::type::BOOLEAN)
 										{
 											bool v = value.as<bool>();
-											PushRxMessage(RxCmd::ReconnectToSim, v);
+											HandleRxMessages(RxCmd::ReconnectToSim, v);
 										}
 									}
 								}
@@ -263,26 +241,6 @@ void WebDriver::FinishResync()
 	webcast.Send(MsgId::SendAllData, packer.view());
 }
 
-void WebDriver::PushRxMessage(RxCmd id, uint64_t value)
-{
-	std::lock_guard lock(rxQueueMutex);
-	rxQueue.emplace(id, value);
-}
-
-void WebDriver::CommitRxMessages()
-{
-	std::unique_lock lock(rxQueueMutex);
-	while (!rxQueue.empty())
-	{
-		std::pair<RxCmd, uint64_t> pair = std::move(rxQueue.front());
-		rxQueue.pop();
-
-		lock.unlock();
-		HandleRxMessages(pair.first, pair.second);
-		lock.lock();
-	}
-}
-
 void WebDriver::HandleRxMessages(RxCmd id, uint64_t value)
 {
 	switch (id)
@@ -375,4 +333,14 @@ static void PackLocalUpdate(MsgPacker& packer, const LocalAircraft::PlaneUpdateA
 {
 	packer.pack_map(10);
 	PackPartialLocalUpdate(packer, e);
+}
+
+void WebDriver::OnSimConnect()
+{
+	SendSystemState(1);
+}
+
+void WebDriver::OnSimDisconnect()
+{
+	SendSystemState(0);
 }

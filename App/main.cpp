@@ -16,6 +16,40 @@ RealTimeThread thread;
 WebCast webcast;
 WebDriver webdriver;
 
+static void OnTick()
+{
+	simcom.RunCallbacks();
+	radar.OnUpdate();
+}
+
+static void OnSimConnect()
+{
+	radar.Initialize();
+	/*
+	auto& simconnect = simcom.GetSimConnect();
+
+	simconnect.SubscribeToSimStart([]()
+		{
+			Logger::Log("SimStart");
+		});
+	simconnect.SubscribeToSimStop([]()
+		{
+			Logger::Log("SimStop");
+		});
+	simconnect.SubscribeToPause([](bool paused)
+		{
+			Logger::Log("Paused: {}", paused);
+		});
+	*/
+	webdriver.OnSimConnect();
+}
+
+static void OnSimDisconnect()
+{
+	webdriver.OnSimDisconnect();
+	radar.Shutdown();
+}
+
 static void GetArguments(const std::string& line, std::string_view& cmd, std::string_view& args)
 {
 	auto i = line.find(' ');
@@ -51,6 +85,9 @@ static void CommandLoop()
 
 int main()
 {
+	simcom.OnConnect = &OnSimConnect;
+	simcom.OnDisconnect = &OnSimDisconnect;
+
 	Logger::DisableTimestamp();
 	Logger::Log(Version::Title);
 
@@ -61,7 +98,6 @@ int main()
 	CommandLoop();
 	
 	thread.Stop();
-	webcast.Stop();
-	webcast.Wait();
 	thread.Wait();
+	simcom.Shutdown();
 }

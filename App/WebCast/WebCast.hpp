@@ -1,5 +1,4 @@
 #pragma once
-#include <thread>
 #include <map>
 #include "Utils/Boost.h"
 #include <boost/asio.hpp>
@@ -27,8 +26,6 @@ public:
 	~WebCast();
 
 	void Start();
-	void Stop();
-	void Wait();
 
 	typedef std::function<void(const FixedArrayCharS& buffer)> Callback;
 
@@ -40,8 +37,6 @@ private:
 	boost::asio::awaitable<bool> ProcessGetFile(HttpConnection& connection);
 	void OnWebsocketOpen(WebSocket& ws);
 	
-	boost::asio::io_context ctx;
-	std::jthread worker;
 	HttpServer server;
 	WebSocketServer wss;
 	std::map<MsgId, Callback> callbacks;
