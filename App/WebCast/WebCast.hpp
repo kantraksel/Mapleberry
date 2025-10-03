@@ -3,8 +3,8 @@
 #include <map>
 #include "Utils/Boost.h"
 #include <boost/asio.hpp>
-#include "HttpServer.hpp"
-#include "WebSocketServer.hpp"
+#include "HttpServer/HttpServer.hpp"
+#include "HttpServer/WebSocketServer.hpp"
 #include "Utils/FixedArray.h"
 
 enum class MsgId : uint8_t

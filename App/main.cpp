@@ -2,13 +2,19 @@
 #include <string>
 #include "SimCom/SimCom.h"
 #include "App/RealTimeThread.h"
-#include "App/LocalAircraft.h"
-#include "App/AirplaneRadar.h"
-#include "App/GlobalScope.h"
+#include "TrafficRadar/LocalAircraft.h"
+#include "TrafficRadar/AirplaneRadar.h"
 #include "WebCast/WebCast.hpp"
 #include "WebCast/WebDriver.hpp"
 #include "Utils/Logger.h"
 #include "Utils/version.h"
+
+SimCom simcom;
+LocalAircraft aircraft;
+AirplaneRadar radar;
+RealTimeThread thread;
+WebCast webcast;
+WebDriver webdriver;
 
 static void GetArguments(const std::string& line, std::string_view& cmd, std::string_view& args)
 {
@@ -45,10 +51,6 @@ static void CommandLoop()
 
 int main()
 {
-	auto& thread = GlobalScope::GetRealTimeThread();
-	auto& webcast = GlobalScope::GetWebCast();
-	auto& webdriver = GlobalScope::GetWebDriver();
-
 	Logger::DisableTimestamp();
 	Logger::Log(Version::Title);
 

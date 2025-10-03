@@ -1,6 +1,6 @@
 #include <filesystem>
 #include "WebCast.hpp"
-#include "HttpMessage.hpp"
+#include "HttpServer/HttpMessage.hpp"
 #include "MsgPacker.hpp"
 #include "Utils/Logger.h"
 

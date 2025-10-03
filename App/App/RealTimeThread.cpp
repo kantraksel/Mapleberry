@@ -1,7 +1,7 @@
 #include <array>
 #include "RealTimeThread.h"
 #include "SimCom/SimCom.h"
-#include "AirplaneRadar.h"
+#include "TrafficRadar/AirplaneRadar.h"
 #include "Utils/Logger.h"
 
 extern SimCom simcom;

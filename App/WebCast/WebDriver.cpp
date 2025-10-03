@@ -3,8 +3,8 @@
 #include "App/RealTimeThread.h"
 #include "SimCom/SimCom.h"
 #include "Utils/Logger.h"
-#include "App/AirplaneRadar.h"
-#include "App/LocalAircraft.h"
+#include "TrafficRadar/AirplaneRadar.h"
+#include "TrafficRadar/LocalAircraft.h"
 #include "MsgPacker.hpp"
 
 extern SimCom simcom;

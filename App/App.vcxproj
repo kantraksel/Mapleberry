@@ -94,30 +94,34 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="App\AirplaneRadar.cpp" />
-    <ClCompile Include="App\GlobalScope.cpp" />
-    <ClCompile Include="App\LocalAircraft.cpp" />
     <ClCompile Include="App\RealTimeThread.cpp" />
+    <ClCompile Include="HttpServer\HttpConnection.cpp" />
+    <ClCompile Include="HttpServer\HttpServer.cpp" />
+    <ClCompile Include="HttpServer\WebSocket.cpp" />
+    <ClCompile Include="HttpServer\WebSocketServer.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="SimCom\SimCom.cpp" />
     <ClCompile Include="SimCom\SimConnect.cpp" />
+    <ClCompile Include="TrafficRadar\AirplaneRadar.cpp" />
+    <ClCompile Include="TrafficRadar\LocalAircraft.cpp" />
     <ClCompile Include="Utils\Logger.cpp" />
     <ClCompile Include="Utils\StringUtils.cpp" />
     <ClCompile Include="Utils\Time.cpp" />
-    <ClCompile Include="WebCast\HttpConnection.cpp" />
-    <ClCompile Include="WebCast\HttpServer.cpp" />
     <ClCompile Include="WebCast\WebCast.cpp" />
     <ClCompile Include="WebCast\WebDriver.cpp" />
-    <ClCompile Include="WebCast\WebSocket.cpp" />
-    <ClCompile Include="WebCast\WebSocketServer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App\AirplaneRadar.h" />
-    <ClInclude Include="App\GlobalScope.h" />
-    <ClInclude Include="App\LocalAircraft.h" />
     <ClInclude Include="App\RealTimeThread.h" />
+    <ClInclude Include="HttpServer\HttpConnection.hpp" />
+    <ClInclude Include="HttpServer\HttpMessage.hpp" />
+    <ClInclude Include="HttpServer\HttpServer.hpp" />
+    <ClInclude Include="HttpServer\version.hpp" />
+    <ClInclude Include="HttpServer\WebSocket.hpp" />
+    <ClInclude Include="HttpServer\WebSocketServer.hpp" />
     <ClInclude Include="SimCom\SimCom.h" />
     <ClInclude Include="SimCom\SimConnect.h" />
+    <ClInclude Include="TrafficRadar\AirplaneRadar.h" />
+    <ClInclude Include="TrafficRadar\LocalAircraft.h" />
     <ClInclude Include="Utils\Boost.h" />
     <ClInclude Include="Utils\FixedArray.h" />
     <ClInclude Include="Utils\Function.hpp" />
@@ -126,15 +130,9 @@
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\Time.h" />
     <ClInclude Include="Utils\version.h" />
-    <ClInclude Include="WebCast\HttpConnection.hpp" />
-    <ClInclude Include="WebCast\HttpMessage.hpp" />
-    <ClInclude Include="WebCast\HttpServer.hpp" />
     <ClInclude Include="WebCast\MsgPacker.hpp" />
-    <ClInclude Include="WebCast\version.hpp" />
     <ClInclude Include="WebCast\WebCast.hpp" />
     <ClInclude Include="WebCast\WebDriver.hpp" />
-    <ClInclude Include="WebCast\WebSocket.hpp" />
-    <ClInclude Include="WebCast\WebSocketServer.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\WNET\vs\WNET.vcxproj">
