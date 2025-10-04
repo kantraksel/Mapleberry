@@ -220,10 +220,10 @@ void LocalAircraft::Remove()
 	model.clear();
 }
 
-void LocalAircraft::Resync()
+std::optional<LocalAircraft::PlaneAddArgs> LocalAircraft::CreateSnapshot()
 {
-	if (!spawned || !OnResync)
-		return;
+	if (!spawned)
+		return {};
 
 	PlaneAddArgs e;
 	e.callsign = callsign;
@@ -242,5 +242,5 @@ void LocalAircraft::Resync()
 
 	e.realAltitude = trackInfo.realAltitude;
 	e.realHeading = trackInfo.realHeading;
-	OnResync(e);
+	return e;
 }

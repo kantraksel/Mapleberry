@@ -335,11 +335,8 @@ void AirplaneRadar::OnUpdate()
 	}
 }
 
-void AirplaneRadar::Resync()
+std::vector<AirplaneRadar::PlaneAddArgs> AirplaneRadar::CreateSnapshot()
 {
-	if (!OnResync)
-		return;
-
 	std::vector<PlaneAddArgs> list;
 	list.reserve(airplanes.size());
 	for (auto& airplane : airplanes)
@@ -364,5 +361,5 @@ void AirplaneRadar::Resync()
 		e.groundSpeed = info.groundSpeed;
 		e.verticalSpeed = info.verticalSpeed;
 	}
-	OnResync(list);
+	return list;
 }

@@ -1,16 +1,20 @@
 #pragma once
-#include <optional>
+#include "TrafficRadar/AirplaneRadar.h"
+#include "TrafficRadar/LocalAircraft.h"
 #include "Utils/FixedArray.h"
-
-enum class RxCmd;
 
 class WebDriver
 {
 private:
-	std::optional<std::pair<FixedArrayCharS, FixedArrayCharS>> resyncMsg;
-
-	void FinishResync();
-	void HandleRxMessages(RxCmd id, uint64_t value);
+	void OnRadarAdd(const AirplaneRadar::PlaneAddArgs&);
+	void OnRadarRemove(const AirplaneRadar::PlaneRemoveArgs&);
+	void OnRadarUpdate(const AirplaneRadar::PlaneUpdateArgs&);
+	void OnUserAdd(const LocalAircraft::PlaneAddArgs&);
+	void OnUserRemove();
+	void OnUserUpdate(const LocalAircraft::PlaneUpdateArgs&);
+	void OnRequestSendAllData(const FixedArrayCharS&);
+	void OnRequestModifySystemState(const FixedArrayCharS&);
+	void OnRequestModifySystemProperties(const FixedArrayCharS&);
 
 public:
 	WebDriver();

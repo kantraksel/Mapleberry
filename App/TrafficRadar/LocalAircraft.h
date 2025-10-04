@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <optional>
 #include "Utils/Function.hpp"
 
 class LocalAircraft
@@ -39,7 +40,6 @@ public:
 	~LocalAircraft();
 
 	void Initialize();
-	void Resync();
 	void Set(unsigned int objId);
 	void Remove();
 
@@ -69,5 +69,6 @@ public:
 	Function<void(const PlaneAddArgs& e)> OnAdd;
 	Function<void()> OnRemove;
 	Function<void(const PlaneUpdateArgs& e)> OnUpdate;
-	Function<void(const PlaneAddArgs& e)> OnResync;
+
+	std::optional<PlaneAddArgs> CreateSnapshot();
 };
