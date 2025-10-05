@@ -1,16 +1,13 @@
 #pragma once
-#include <thread>
-#include <mutex>
+#include "Utils/Boost.h"
+#include <boost/asio.hpp>
 #include "Utils/Function.hpp"
 
 class RealTimeThread
 {
 private:
 	std::jthread thread;
-	std::recursive_mutex cmdMutex;
-
-	void OnSimConnect();
-	void OnSimDisconnect();
+	boost::asio::io_context ctx;
 
 public:
 	RealTimeThread();
@@ -21,12 +18,7 @@ public:
 	void Wait();
 	bool IsStopping();
 
-	std::unique_lock<std::recursive_mutex> EnterCmdMode()
-	{
-		return std::unique_lock(cmdMutex);
-	}
+	void Dispatch(boost::asio::awaitable<void>&& coroutine);
 
-	FunctionS<void()> SimConnectEvent;
-	FunctionS<void()> SimDisconnectEvent;
 	FunctionS<void()> Tick;
 };

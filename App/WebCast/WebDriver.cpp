@@ -1,43 +1,18 @@
 #include "WebDriver.hpp"
 #include "WebCast.hpp"
-#include "App/RealTimeThread.h"
 #include "SimCom/SimCom.h"
-#include "DeviceServer/DeviceServer.h"
-#include "App/DeviceManager.h"
 #include "Utils/Logger.h"
-#include "App/AirplaneRadar.h"
-#include "App/LocalAircraft.h"
 #include "MsgPacker.hpp"
 
 extern SimCom simcom;
-extern DeviceServer deviceServer;
-extern DeviceManager deviceManager;
 extern LocalAircraft aircraft;
 extern AirplaneRadar radar;
-extern RealTimeThread thread;
 extern WebCast webcast;
-extern WebDriver webdriver;
-
-enum class RxCmd
-{
-	Undefined,
-	Resync,
-	ChangeSimComStatus,
-	ChangeServerStatus,
-	ReconnectToSim,
-};
 
 enum class SimState : uint8_t
 {
 	Disconnected = 1,
 	Connected = 2,
-};
-
-enum class SrvState : uint8_t
-{
-	Stoppped = 1,
-	Running = 2,
-	Connected = 3,
 };
 
 WebDriver::WebDriver()
@@ -54,338 +29,51 @@ static void SetSimState(MsgPacker& packer, bool connected)
 		packer.pack(static_cast<uint8_t>(SimState::Disconnected));
 	else
 	{
-		std::string str;
-		{
-			auto lock = thread.EnterCmdMode();
-			str = simcom.GetSimName();
-		}
-
 		packer.pack_array(2);
 		packer.pack(static_cast<uint8_t>(SimState::Connected));
-		packer.pack(str);
+		packer.pack(simcom.GetSimName());
 	}
 }
 
-static void SetSrvState(MsgPacker& packer, bool isServerRunning, bool isDeviceConnected)
+static void SetSystemState(MsgPacker& packer, int simConnected)
 {
-	if (!isServerRunning)
-		packer.pack(static_cast<uint8_t>(SrvState::Stoppped));
-	else if (isDeviceConnected)
-		packer.pack(static_cast<uint8_t>(SrvState::Connected));
-	else
-		packer.pack(static_cast<uint8_t>(SrvState::Running));
-}
-
-static void SendSystemState(int simConnected = -1, int serverRunning = -1, int deviceConnected = -1)
-{
-	if (simConnected == -1)
-		simConnected = simcom.IsConnected();
-	if (serverRunning == -1)
-		serverRunning = deviceServer.IsRunning();
-	if (deviceConnected == -1)
-		deviceConnected = deviceManager.IsConnected();
-
-	MsgPacker packer;
-
-	packer.pack_map(2);
+	packer.pack_map(1);
 	packer.pack(0);
 	SetSimState(packer, simConnected);
-	packer.pack(1);
-	SetSrvState(packer, serverRunning, deviceConnected);
+}
 
+static void SetSystemState(MsgPacker& packer)
+{
+	SetSystemState(packer, simcom.IsConnected());
+}
+
+static void SendSystemState(int simConnected)
+{
+	MsgPacker packer;
+	SetSystemState(packer, simConnected);
 	webcast.Send(MsgId::ModifySystemState, packer.view());
 }
 
-static void PackRadarAdd(MsgPacker& packer, const AirplaneRadar::PlaneAddArgs& e);
-static void PackRadarUpdate(MsgPacker& packer, const AirplaneRadar::PlaneUpdateArgs& e);
-static void PackLocalAdd(MsgPacker& packer, const LocalAircraft::PlaneAddArgs& e);
-static void PackLocalUpdate(MsgPacker& packer, const LocalAircraft::PlaneUpdateArgs& e);
+static void SendSystemState()
+{
+	SendSystemState(simcom.IsConnected());
+}
 
 void WebDriver::Initialize()
 {
-	thread.SimConnectEvent = []()
-		{
-			SendSystemState(1);
-		};
-	thread.SimDisconnectEvent = []()
-		{
-			SendSystemState(0);
-		};
-	thread.Tick = []()
-		{
-			webdriver.CommitRxMessages();
-		};
+	using namespace std::placeholders;
 
-	deviceServer.OnStart = []()
-		{
-			SendSystemState(-1, 1);
-		};
-	deviceServer.OnStop = []()
-		{
-			SendSystemState(-1, 0);
-		};
+	webcast.RegisterHandler(MsgId::SendAllData, std::bind(&WebDriver::OnRequestSendAllData, this, _1));
+	webcast.RegisterHandler(MsgId::ModifySystemState, std::bind(&WebDriver::OnRequestModifySystemState, this, _1));
+	webcast.RegisterHandler(MsgId::ModifySystemProperties, std::bind(&WebDriver::OnRequestModifySystemProperties, this, _1));
 
-	deviceManager.DeviceConnectEvent = []()
-		{
-			SendSystemState(-1, -1, 1);
-		};
-	deviceManager.DeviceDisconnectEvent = []()
-		{
-			SendSystemState(-1, -1, 0);
-		};
+	radar.OnPlaneAdd = { MemberFunc<&WebDriver::OnRadarAdd>, this };
+	radar.OnPlaneRemove = { MemberFunc<&WebDriver::OnRadarRemove>, this };
+	radar.OnPlaneUpdate = { MemberFunc<&WebDriver::OnRadarUpdate>, this };
 
-	webcast.RegisterHandler(MsgId::SendAllData, [this](const auto&)
-							 {
-								 SendSystemState();
-								 PushRxMessage(RxCmd::Resync, 0);
-							 });
-
-	webcast.RegisterHandler(MsgId::ModifySystemState, [this](const FixedArrayCharS& buffer)
-							{
-								auto handle = msgpack::unpack(buffer, buffer.size());
-								auto& obj = handle.get();
-								if (obj.type != msgpack::type::MAP)
-									return;
-
-								std::string str;
-								auto& map = obj.via.map;
-								for (auto i = msgpack::begin(map); i != msgpack::end(map); ++i)
-								{
-									auto& key = i->key;
-									if (key.type != msgpack::type::STR)
-										continue;
-									str.clear();
-									key.convert(str);
-
-									auto& value = i->val;
-									if (str == "0")
-									{
-										if (value.type == msgpack::type::BOOLEAN)
-										{
-											bool v = value.as<bool>();
-											PushRxMessage(RxCmd::ChangeSimComStatus, v);
-										}
-									}
-									else if (str == "1")
-									{
-										if (value.type == msgpack::type::BOOLEAN)
-										{
-											bool v = value.as<bool>();
-											PushRxMessage(RxCmd::ChangeServerStatus, v);
-										}
-									}
-								}
-							});
-
-	webcast.RegisterHandler(MsgId::ModifySystemProperties, [this](const auto& buffer)
-							{
-								auto handle = msgpack::unpack(buffer, buffer.size());
-								auto& obj = handle.get();
-								if (obj.type != msgpack::type::MAP)
-									return;
-
-								std::string str;
-								auto& map = obj.via.map;
-								for (auto i = msgpack::begin(map); i != msgpack::end(map); ++i)
-								{
-									auto& key = i->key;
-									if (key.type != msgpack::type::STR)
-										continue;
-									str.clear();
-									key.convert(str);
-
-									auto& value = i->val;
-									if (str == "0")
-									{
-										if (value.type == msgpack::type::BOOLEAN)
-										{
-											bool v = value.as<bool>();
-											PushRxMessage(RxCmd::ReconnectToSim, v);
-										}
-									}
-								}
-							});
-
-	radar.OnPlaneAdd = [this](const AirplaneRadar::PlaneAddArgs& e)
-		{
-			MsgPacker packer;
-			PackRadarAdd(packer, e);
-			webcast.Send(MsgId::RadarAddAircraft, packer.view());
-		};
-	radar.OnPlaneRemove = [this](const AirplaneRadar::PlaneRemoveArgs& e)
-		{
-			MsgPacker packer;
-
-			packer.pack_map(1);
-			packer.pack(0, e.id);
-
-			webcast.Send(MsgId::RadarRemoveAircraft, packer.view());
-		};
-	radar.OnPlaneUpdate = [this](const AirplaneRadar::PlaneUpdateArgs& e)
-		{
-			MsgPacker packer;
-			PackRadarUpdate(packer, e);
-			webcast.Send(MsgId::RadarUpdateAircraft, packer.view());
-		};
-	radar.OnResync = [this](const std::vector<AirplaneRadar::PlaneAddArgs>& e)
-		{
-			MsgPacker packer;
-			packer.pack_array((uint32_t)e.size());
-			for (auto& a : e)
-			{
-				PackRadarAdd(packer, a);
-			}
-
-			if (!resyncMsg)
-				resyncMsg = std::make_pair(packer.copy_buffer(), FixedArrayCharS{});
-			else
-			{
-				resyncMsg.value().second = packer.copy_buffer();
-				FinishResync();
-			}
-		};
-
-	aircraft.OnAdd = [this](const LocalAircraft::PlaneAddArgs& e)
-		{
-			MsgPacker packer;
-			PackLocalAdd(packer, e);
-			webcast.Send(MsgId::LocalAddAircraft, packer.view());
-		};
-	aircraft.OnRemove = [this]()
-		{
-			MsgPacker packer;
-			webcast.Send(MsgId::LocalRemoveAircraft, packer.view());
-		};
-	aircraft.OnUpdate = [this](const LocalAircraft::PlaneUpdateArgs& e)
-		{
-			MsgPacker packer;
-			PackLocalUpdate(packer, e);
-			webcast.Send(MsgId::LocalUpdateAircraft, packer.view());
-		};
-	aircraft.OnResync = [this](const LocalAircraft::PlaneAddArgs& e)
-		{
-			MsgPacker packer;
-			PackLocalAdd(packer, e);
-
-			if (!resyncMsg)
-				resyncMsg = std::make_pair(FixedArrayCharS{}, packer.copy_buffer());
-			else
-			{
-				resyncMsg.value().second = packer.copy_buffer();
-				FinishResync();
-			}
-		};
-}
-
-void WebDriver::FinishResync()
-{
-	if (!resyncMsg)
-		return;
-	MsgPacker packer;
-
-	auto& first = resyncMsg->first;
-	auto& second = resyncMsg->second;
-
-	if (!first.empty())
-	{
-		if (!second.empty())
-		{
-			packer.pack_array(2);
-			packer.write_raw(resyncMsg->first);
-			packer.write_raw(resyncMsg->second);
-		}
-		else
-		{
-			packer.pack_array(1);
-			packer.write_raw(resyncMsg->first);
-		}
-	}
-	else if (!second.empty())
-	{
-		packer.pack_array(1);
-		packer.write_raw(resyncMsg->second);
-	}
-	resyncMsg.reset();
-
-	webcast.Send(MsgId::SendAllData, packer.view());
-}
-
-void WebDriver::PushRxMessage(RxCmd id, uint64_t value)
-{
-	std::lock_guard lock(rxQueueMutex);
-	rxQueue.emplace(id, value);
-}
-
-void WebDriver::CommitRxMessages()
-{
-	std::unique_lock lock(rxQueueMutex);
-	while (!rxQueue.empty())
-	{
-		std::pair<RxCmd, uint64_t> pair = std::move(rxQueue.front());
-		rxQueue.pop();
-
-		lock.unlock();
-		HandleRxMessages(pair.first, pair.second);
-		lock.lock();
-	}
-}
-
-void WebDriver::HandleRxMessages(RxCmd id, uint64_t value)
-{
-	switch (id)
-	{
-		case RxCmd::Resync:
-		{
-			radar.Resync();
-			aircraft.Resync();
-			FinishResync();
-			break;
-		}
-
-		case RxCmd::ChangeSimComStatus:
-		{
-			if (value)
-			{
-				if (simcom.IsConnected())
-					SendSystemState();
-				else
-					simcom.Initialize();
-			}
-			else
-			{
-				if (simcom.IsConnected())
-					simcom.Shutdown();
-				else
-					SendSystemState();
-			}
-			break;
-		}
-
-		case RxCmd::ChangeServerStatus:
-		{
-			if (value)
-			{
-				if (deviceServer.IsRunning())
-					SendSystemState();
-				else
-					deviceServer.Start();
-			}
-			else
-			{
-				if (deviceServer.IsRunning())
-					deviceServer.Stop();
-				else
-					SendSystemState();
-			}
-			break;
-		}
-
-		case RxCmd::ReconnectToSim:
-		{
-			simcom.AllowReconnect(value);
-			break;
-		}
-	}
+	aircraft.OnAdd = { MemberFunc<&WebDriver::OnUserAdd>, this };
+	aircraft.OnRemove = { MemberFunc<&WebDriver::OnUserRemove>, this };
+	aircraft.OnUpdate = { MemberFunc<&WebDriver::OnUserUpdate>, this };
 }
 
 static void PackPartialRadarUpdate(MsgPacker& packer, const AirplaneRadar::PlaneUpdateArgs& e)
@@ -441,4 +129,156 @@ static void PackLocalUpdate(MsgPacker& packer, const LocalAircraft::PlaneUpdateA
 {
 	packer.pack_map(10);
 	PackPartialLocalUpdate(packer, e);
+}
+
+void WebDriver::OnSimConnect()
+{
+	SendSystemState(1);
+}
+
+void WebDriver::OnSimDisconnect()
+{
+	SendSystemState(0);
+}
+
+void WebDriver::OnRadarAdd(const AirplaneRadar::PlaneAddArgs& e)
+{
+	MsgPacker packer;
+	PackRadarAdd(packer, e);
+	webcast.Send(MsgId::RadarAddAircraft, packer.view());
+}
+
+void WebDriver::OnRadarRemove(const AirplaneRadar::PlaneRemoveArgs& e)
+{
+	MsgPacker packer;
+
+	packer.pack_map(1);
+	packer.pack(0, e.id);
+
+	webcast.Send(MsgId::RadarRemoveAircraft, packer.view());
+}
+
+void WebDriver::OnRadarUpdate(const AirplaneRadar::PlaneUpdateArgs& e)
+{
+	MsgPacker packer;
+	PackRadarUpdate(packer, e);
+	webcast.Send(MsgId::RadarUpdateAircraft, packer.view());
+}
+
+void WebDriver::OnUserAdd(const LocalAircraft::PlaneAddArgs& e)
+{
+	MsgPacker packer;
+	PackLocalAdd(packer, e);
+	webcast.Send(MsgId::LocalAddAircraft, packer.view());
+}
+
+void WebDriver::OnUserRemove()
+{
+	MsgPacker packer;
+	webcast.Send(MsgId::LocalRemoveAircraft, packer.view());
+}
+
+void WebDriver::OnUserUpdate(const LocalAircraft::PlaneUpdateArgs& e)
+{
+	MsgPacker packer;
+	PackLocalUpdate(packer, e);
+	webcast.Send(MsgId::LocalUpdateAircraft, packer.view());
+}
+
+void WebDriver::OnRequestSendAllData(const FixedArrayCharS&)
+{
+	auto airplanes = radar.CreateSnapshot();
+	auto user = aircraft.CreateSnapshot();
+
+	MsgPacker packer;
+	packer.pack_map(3);
+
+	packer.pack(0);
+	packer.pack_array((uint32_t)airplanes.size());
+	for (auto& a : airplanes)
+	{
+		PackRadarAdd(packer, a);
+	}
+
+	packer.pack(1);
+	if (user)
+		PackLocalAdd(packer, *user);
+	else
+		packer.packer.pack_nil();
+	
+	packer.pack(2);
+	SetSystemState(packer, simcom.IsConnected());
+
+	webcast.Send(MsgId::SendAllData, packer.view());
+}
+
+void WebDriver::OnRequestModifySystemState(const FixedArrayCharS& buffer)
+{
+	auto handle = msgpack::unpack(buffer, buffer.size());
+	auto& obj = handle.get();
+	if (obj.type != msgpack::type::MAP)
+		return;
+
+	std::string str;
+	auto& map = obj.via.map;
+	for (auto i = msgpack::begin(map); i != msgpack::end(map); ++i)
+	{
+		auto& key = i->key;
+		if (key.type != msgpack::type::STR)
+			continue;
+		str.clear();
+		key.convert(str);
+
+		auto& value = i->val;
+		if (str == "0")
+		{
+			if (value.type == msgpack::type::BOOLEAN)
+			{
+				bool v = value.as<bool>();
+				if (v)
+				{
+					if (simcom.IsConnected())
+						SendSystemState();
+					else
+						simcom.Initialize();
+				}
+				else
+				{
+					if (simcom.IsConnected())
+						simcom.Shutdown();
+					else
+						SendSystemState();
+				}
+			}
+		}
+	}
+}
+
+void WebDriver::OnRequestModifySystemProperties(const FixedArrayCharS& buffer)
+{
+	auto handle = msgpack::unpack(buffer, buffer.size());
+	auto& obj = handle.get();
+	if (obj.type != msgpack::type::MAP)
+		return;
+
+	std::string str;
+	auto& map = obj.via.map;
+	for (auto i = msgpack::begin(map); i != msgpack::end(map); ++i)
+	{
+		auto& key = i->key;
+		if (key.type != msgpack::type::STR)
+			continue;
+		str.clear();
+		key.convert(str);
+
+		auto& value = i->val;
+		if (str == "0")
+		{
+			if (value.type == msgpack::type::BOOLEAN)
+			{
+				bool v = value.as<bool>();
+				simcom.AllowReconnect(v);
+			}
+		}
+	}
 }

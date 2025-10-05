@@ -1,20 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="DeviceServer\Connection.cpp">
-      <Filter>App\DeviceServer</Filter>
-    </ClCompile>
-    <ClCompile Include="DeviceServer\DeviceServer.cpp">
-      <Filter>App\DeviceServer</Filter>
-    </ClCompile>
-    <ClCompile Include="DeviceServer\Transport.cpp">
-      <Filter>App\DeviceServer</Filter>
-    </ClCompile>
     <ClCompile Include="SimCom\SimCom.cpp">
-      <Filter>App\SimCom</Filter>
+      <Filter>SimCom</Filter>
     </ClCompile>
     <ClCompile Include="SimCom\SimConnect.cpp">
-      <Filter>App\SimCom</Filter>
+      <Filter>SimCom</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Logger.cpp">
       <Filter>Utils</Filter>
@@ -28,36 +19,30 @@
     <ClCompile Include="App\RealTimeThread.cpp">
       <Filter>App</Filter>
     </ClCompile>
-    <ClCompile Include="App\AirplaneRadar.cpp">
-      <Filter>TrafficRadar</Filter>
-    </ClCompile>
-    <ClCompile Include="App\LocalAircraft.cpp">
-      <Filter>TrafficRadar</Filter>
-    </ClCompile>
-    <ClCompile Include="App\Radio.cpp">
-      <Filter>InputDevs</Filter>
-    </ClCompile>
-    <ClCompile Include="App\DeviceManager.cpp">
-      <Filter>InputDevs</Filter>
-    </ClCompile>
-    <ClCompile Include="App\GlobalScope.cpp" />
-    <ClCompile Include="WebCast\HttpConnection.cpp">
-      <Filter>WebCast</Filter>
-    </ClCompile>
-    <ClCompile Include="WebCast\HttpServer.cpp">
-      <Filter>WebCast</Filter>
-    </ClCompile>
-    <ClCompile Include="WebCast\WebSocket.cpp">
-      <Filter>WebCast</Filter>
-    </ClCompile>
-    <ClCompile Include="WebCast\WebSocketServer.cpp">
-      <Filter>WebCast</Filter>
-    </ClCompile>
     <ClCompile Include="WebCast\WebCast.cpp">
       <Filter>WebCast</Filter>
     </ClCompile>
     <ClCompile Include="WebCast\WebDriver.cpp">
       <Filter>WebCast</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="HttpServer\HttpConnection.cpp">
+      <Filter>HttpServer</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpServer\HttpServer.cpp">
+      <Filter>HttpServer</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpServer\WebSocket.cpp">
+      <Filter>HttpServer</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpServer\WebSocketServer.cpp">
+      <Filter>HttpServer</Filter>
+    </ClCompile>
+    <ClCompile Include="TrafficRadar\AirplaneRadar.cpp">
+      <Filter>TrafficRadar</Filter>
+    </ClCompile>
+    <ClCompile Include="TrafficRadar\LocalAircraft.cpp">
+      <Filter>TrafficRadar</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -73,37 +58,22 @@
     <Filter Include="TrafficRadar">
       <UniqueIdentifier>{1c0ed3ce-880e-4cab-be54-11786da14488}</UniqueIdentifier>
     </Filter>
-    <Filter Include="InputDevs">
-      <UniqueIdentifier>{adc54d03-f1ef-4ca2-884a-ac4e25963c2c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="App\DeviceServer">
-      <UniqueIdentifier>{dc8107e4-12b7-4fd4-ad75-1407e55cca2a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="App\SimCom">
-      <UniqueIdentifier>{664e362d-ce30-4cea-a48d-64ca64a14a08}</UniqueIdentifier>
-    </Filter>
     <Filter Include="WebCast">
       <UniqueIdentifier>{e1ef35b1-fa55-4ae2-bf55-a075c1ec6714}</UniqueIdentifier>
     </Filter>
+    <Filter Include="SimCom">
+      <UniqueIdentifier>{664e362d-ce30-4cea-a48d-64ca64a14a08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HttpServer">
+      <UniqueIdentifier>{3de80a11-fd15-4fe9-9ed7-058618455331}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeviceServer\Connection.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceServer\DeviceServer.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceServer\NetProto.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
-    <ClInclude Include="DeviceServer\Transport.h">
-      <Filter>App\DeviceServer</Filter>
-    </ClInclude>
     <ClInclude Include="SimCom\SimCom.h">
-      <Filter>App\SimCom</Filter>
+      <Filter>SimCom</Filter>
     </ClInclude>
     <ClInclude Include="SimCom\SimConnect.h">
-      <Filter>App\SimCom</Filter>
+      <Filter>SimCom</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Function.hpp">
       <Filter>Utils</Filter>
@@ -126,37 +96,6 @@
     <ClInclude Include="App\RealTimeThread.h">
       <Filter>App</Filter>
     </ClInclude>
-    <ClInclude Include="App\AirplaneRadar.h">
-      <Filter>TrafficRadar</Filter>
-    </ClInclude>
-    <ClInclude Include="App\LocalAircraft.h">
-      <Filter>TrafficRadar</Filter>
-    </ClInclude>
-    <ClInclude Include="App\Radio.h">
-      <Filter>InputDevs</Filter>
-    </ClInclude>
-    <ClInclude Include="App\DeviceManager.h">
-      <Filter>InputDevs</Filter>
-    </ClInclude>
-    <ClInclude Include="App\GlobalScope.h" />
-    <ClInclude Include="WebCast\WebSocketServer.hpp">
-      <Filter>WebCast</Filter>
-    </ClInclude>
-    <ClInclude Include="WebCast\HttpConnection.hpp">
-      <Filter>WebCast</Filter>
-    </ClInclude>
-    <ClInclude Include="WebCast\HttpMessage.hpp">
-      <Filter>WebCast</Filter>
-    </ClInclude>
-    <ClInclude Include="WebCast\HttpServer.hpp">
-      <Filter>WebCast</Filter>
-    </ClInclude>
-    <ClInclude Include="WebCast\version.hpp">
-      <Filter>WebCast</Filter>
-    </ClInclude>
-    <ClInclude Include="WebCast\WebSocket.hpp">
-      <Filter>WebCast</Filter>
-    </ClInclude>
     <ClInclude Include="WebCast\WebCast.hpp">
       <Filter>WebCast</Filter>
     </ClInclude>
@@ -171,6 +110,30 @@
     </ClInclude>
     <ClInclude Include="Utils\Boost.h">
       <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpServer\HttpConnection.hpp">
+      <Filter>HttpServer</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpServer\HttpMessage.hpp">
+      <Filter>HttpServer</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpServer\HttpServer.hpp">
+      <Filter>HttpServer</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpServer\version.hpp">
+      <Filter>HttpServer</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpServer\WebSocket.hpp">
+      <Filter>HttpServer</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpServer\WebSocketServer.hpp">
+      <Filter>HttpServer</Filter>
+    </ClInclude>
+    <ClInclude Include="TrafficRadar\AirplaneRadar.h">
+      <Filter>TrafficRadar</Filter>
+    </ClInclude>
+    <ClInclude Include="TrafficRadar\LocalAircraft.h">
+      <Filter>TrafficRadar</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

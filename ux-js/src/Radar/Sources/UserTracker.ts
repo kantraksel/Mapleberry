@@ -51,18 +51,6 @@ class UserTracker {
         this.user = new LocalPlaneInfo();
         this.identEvent = new Event();
 
-        hostBridge.registerHandler('UAC_ADD', (data: object) => {
-            this.handleAdd(data);
-        });
-
-        hostBridge.registerHandler('UAC_REMOVE', () => {
-            this.removeUser();
-        });
-
-        hostBridge.registerHandler('UAC_UPDATE', (data: object) => {
-            this.handleUpdate(data);
-        });
-
         hostBridge.registerHandler2(MsgId.LocalAddAircraft, data => {
             this.handleAdd2(data);
         });
@@ -75,15 +63,7 @@ class UserTracker {
             this.handleUpdate2(data);
         });
 
-        hostState.resyncEvent.add((obj) => {
-            const data = obj.user;
-            if (typeof data !== 'object' || !data) {
-                return;
-            }
-            this.handleAdd(data);
-        });
-
-        hostState.resyncEvent2.add(obj => {
+        hostState.resyncEvent.add(obj => {
             const data = obj[1];
             if (typeof data !== 'object' || !data) {
                 return;
@@ -96,33 +76,6 @@ class UserTracker {
                 this.removeUser();
             }
         });
-    }
-
-    private handleAdd(data: object) {
-        const args = data as Partial<UserAddEventArgs>;
-        if (typeof args.callsign !== 'string' || typeof args.planeModel !== 'string')
-            return;
-
-        if (args.callsign.length > 16)
-            args.callsign = args.callsign.substring(0, 16);
-        if (args.planeModel.length > 16)
-            args.planeModel = args.planeModel.substring(0, 16);
-            
-        this.addUser(args as UserAddEventArgs);
-        this.handleUpdate(data);
-    }
-
-    private handleUpdate(data: object) {
-        const args = data as Partial<UserUpdateEventArgs>;
-        if (!validatePhysicParams(args) ||
-            typeof args.realAltitude !== 'number' || !Number.isFinite(args.realAltitude) ||
-            typeof args.realHeading !== 'number' || !Number.isFinite(args.realHeading))
-            return;
-
-        args.realAltitude = MathClamp(args.realAltitude, -10000, 100000);
-        args.realHeading = MathClamp(args.realHeading, 0, 360);
-
-        this.updateUser(args as UserUpdateEventArgs);
     }
 
     private handleAdd2(data: unknown[]) {
@@ -156,8 +109,8 @@ class UserTracker {
         if (obj.planeModel.length > 16)
             obj.planeModel = obj.planeModel.substring(0, 16);
             
-        this.addUser(obj as UserAddEventArgs);
-        this.handleUpdate(data);
+        this.addUser(obj);
+        this.applyUpdate(obj);
     }
 
     private handleUpdate2(data: unknown[]) {
@@ -181,6 +134,10 @@ class UserTracker {
             realAltitude: args[8],
             realHeading: args[9],
         };
+        this.applyUpdate(obj);
+    }
+
+    private applyUpdate(obj: UserUpdateEventArgs) {
         if (!validatePhysicParams(obj) ||
             typeof obj.realAltitude !== 'number' || !Number.isFinite(obj.realAltitude) ||
             typeof obj.realHeading !== 'number' || !Number.isFinite(obj.realHeading))
@@ -189,7 +146,7 @@ class UserTracker {
         obj.realAltitude = MathClamp(obj.realAltitude, -10000, 100000);
         obj.realHeading = MathClamp(obj.realHeading, 0, 360);
 
-        this.updateUser(obj as UserUpdateEventArgs);
+        this.updateUser(obj);
     }
 
     private addUser(data: UserAddEventArgs) {

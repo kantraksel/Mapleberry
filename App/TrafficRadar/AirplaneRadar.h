@@ -2,6 +2,7 @@
 #include <vector>
 #include <string_view>
 #include "Utils/Function.hpp"
+#include "Utils/FixedArray.h"
 
 struct Airplane;
 
@@ -23,7 +24,6 @@ public:
 
 	void Initialize();
 	void Shutdown();
-	void Resync();
 	
 	void OnUpdate();
 	Airplane& Add(unsigned int id);
@@ -56,5 +56,6 @@ public:
 	Function<void(const PlaneAddArgs& e)> OnPlaneAdd;
 	Function<void(const PlaneRemoveArgs& e)> OnPlaneRemove;
 	Function<void(const PlaneUpdateArgs& e)> OnPlaneUpdate;
-	Function<void(const std::vector<PlaneAddArgs>& e)> OnResync;
+
+	std::vector<PlaneAddArgs> CreateSnapshot();
 };

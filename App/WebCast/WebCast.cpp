@@ -1,8 +1,11 @@
 #include <filesystem>
 #include "WebCast.hpp"
-#include "HttpMessage.hpp"
+#include "HttpServer/HttpMessage.hpp"
 #include "MsgPacker.hpp"
+#include "App/RealTimeThread.h"
 #include "Utils/Logger.h"
+
+extern RealTimeThread thread;
 
 WebCast::WebCast()
 {
@@ -32,23 +35,8 @@ void WebCast::Start()
 
 	wss.onOpen = std::bind(&WebCast::OnWebsocketOpen, this, _1);
 
-	boost::asio::co_spawn(ctx, wss.Run(), boost::asio::detached);
-	boost::asio::co_spawn(ctx, server.Run(std::move(endpoint)), boost::asio::detached);
-
-	worker = std::jthread([&]()
-						{
-							ctx.run();
-						});
-}
-
-void WebCast::Stop()
-{
-	ctx.stop();
-}
-
-void WebCast::Wait()
-{
-	worker = {};
+	thread.Dispatch(wss.Run());
+	thread.Dispatch(server.Run(std::move(endpoint)));
 }
 
 boost::asio::awaitable<void> WebCast::ProcessRequest(HttpConnection& connection)
