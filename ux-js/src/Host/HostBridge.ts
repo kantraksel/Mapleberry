@@ -1,26 +1,9 @@
 import { pack, unpackMultiple } from "msgpackr";
 import { isMsgId, MsgId } from "./MsgId";
 
-type WebViewCallback = (e: { data: unknown }) => void;
-
-interface WebView {
-    addEventListener: (type: 'message', listener: WebViewCallback) => void,
-    postMessage: (message: unknown) => void,
-    removeEventListener: (type: 'message', listener: WebViewCallback) => void,
-}
-
-declare global {
-    var chrome: { webview: WebView };
-}
-
-interface Message {
-    _msg_id?: string;
-}
-
 class HostBridge {
     private ws?: WebSocket;
-    private callbacks: Map<string, (data: object) => void>;
-    private callbacks2: Map<MsgId, (data: unknown[]) => void>;
+    private callbacks: Map<MsgId, (data: unknown[]) => void>;
     public onEnable?: () => void;
     public onDisable?: () => void;
     public onOpen?: () => void;
@@ -34,7 +17,6 @@ class HostBridge {
 
     public constructor() {
         this.callbacks = new Map();
-        this.callbacks2 = new Map();
 
         this.enabled_ = options.get('app_enabled', false);
         this.reconnectSpan_ = options.get('app_reconnect_span', 60);
@@ -44,15 +26,6 @@ class HostBridge {
         if (this.enabled_) {
             this.startConnection();
         }
-
-        if (!window.chrome || !window.chrome.webview) {
-            console.warn('Running in usual browser - cannot register webview handler');
-            return;
-        }
-
-        window.chrome.webview.addEventListener('message', e => {
-            this.onMessage(e);
-        });
     }
 
     private startConnection() {
@@ -105,7 +78,7 @@ class HostBridge {
         };
         ws.onmessage = e => {
             try {
-                this.onMessage2(e);
+                this.onMessage(e);
             } catch (err: unknown) {
                 console.error('WebCast handler threw an exception:');
                 console.error(err);
@@ -165,15 +138,6 @@ class HostBridge {
         return value >= 1024 && value <= 65535;
     }
 
-    public send(id: string, obj: object) {
-        if (!window.chrome || !window.chrome.webview) {
-            console.warn(`Tried to send message ${id} in usual browser`);
-            return;
-        }
-
-        window.chrome.webview.postMessage({ ...obj, _msg_id: id });
-    }
-
     public send2(id: MsgId, obj?: unknown) {
         if (this.ws?.readyState !== WebSocket.OPEN) {
             return;
@@ -195,25 +159,6 @@ class HostBridge {
     }
 
     private onMessage(e: { data: unknown }) {
-        if (typeof e !== 'object' || typeof e.data !== 'object')
-            return;
-
-        const msg = e.data as Message;
-        if (typeof msg._msg_id !== 'string')
-            return;
-
-        const callback = this.callbacks.get(msg._msg_id);
-        if (callback)
-            callback(msg);
-        else
-            console.warn(`Message ${msg._msg_id} has been discarded`);
-
-        if (this.playList) {
-            this.playList.push({ timestamp: Date.now(), object: e.data });
-        }
-    }
-
-    private onMessage2(e: { data: unknown }) {
         if (!(e.data instanceof ArrayBuffer)) {
             throw new Error('Received non-binary data');
         }
@@ -227,7 +172,7 @@ class HostBridge {
             return;
         }
 
-        const callback = this.callbacks2.get(id);
+        const callback = this.callbacks.get(id);
         if (callback) {
             callback(objects.slice(1));
         } else {
@@ -235,12 +180,8 @@ class HostBridge {
         }
     }
 
-    public registerHandler(id: string, callback: (data: object) => void) {
-        this.callbacks.set(id, callback);
-    }
-
     public registerHandler2(id: MsgId, callback: (data: unknown[]) => void) {
-        this.callbacks2.set(id, callback);
+        this.callbacks.set(id, callback);
     }
 
     public get open() {
@@ -248,6 +189,11 @@ class HostBridge {
     }
 
     public playback(list: PlaybackMessage[], callback?: (status: boolean) => void) {
+        list;
+        callback;
+        console.error('Playback not available');
+        alert('Playback not available');
+        /*
         if (list.length == 0) {
             console.log('Playback not possible - list is empty');
             return;
@@ -309,6 +255,7 @@ class HostBridge {
         console.log('Playback started');
         callback?.call(null, true);
         func();
+        */
     }
 
     public playbackDefault(callback?: (status: boolean) => void) {
