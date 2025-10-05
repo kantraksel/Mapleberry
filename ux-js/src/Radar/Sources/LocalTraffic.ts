@@ -128,7 +128,7 @@ class LocalTraffic {
             obj.planeModel = obj.planeModel.substring(0, 16);
 
         radar.add(obj.id, obj.planeModel, obj.callsign);
-        this.handleUpdate(data);
+        this.handleUpdate(obj);
     }
 
     private handleRemove2(data: unknown[]) {

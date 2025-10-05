@@ -87,6 +87,7 @@ int main()
 {
 	simcom.OnConnect = &OnSimConnect;
 	simcom.OnDisconnect = &OnSimDisconnect;
+	thread.Tick = &OnTick;
 
 	Logger::DisableTimestamp();
 	Logger::Log(Version::Title);

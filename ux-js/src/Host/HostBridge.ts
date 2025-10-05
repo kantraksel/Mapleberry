@@ -66,7 +66,7 @@ class HostBridge {
 
         this.reconnectHandle = setTimeout(() => {
             this.openConnection();
-            this.reconnectHandle = setTimeout(() => {
+            this.reconnectHandle = setInterval(() => {
                 this.openConnection();
             }, this.reconnectSpan_ * 1000);
         }, 1000);

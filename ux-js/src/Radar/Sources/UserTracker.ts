@@ -156,8 +156,8 @@ class UserTracker {
         if (obj.planeModel.length > 16)
             obj.planeModel = obj.planeModel.substring(0, 16);
             
-        this.addUser(obj as UserAddEventArgs);
-        this.handleUpdate(data);
+        this.addUser(obj);
+        this.handleUpdate(obj);
     }
 
     private handleUpdate2(data: unknown[]) {

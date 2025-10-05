@@ -25,6 +25,11 @@ export enum StatusCmd {
     StopServer,
 }
 
+interface ModifyStateMsg {
+    '0': number | [ number, string ],
+    '1': number,
+};
+
 type StatusEvent = (status: HostStatus) => void;
 type ResyncEvent = (obj: Record<string, unknown>) => void;
 type ResyncEvent2 = (obj: Record<number, unknown>) => void;
@@ -90,31 +95,8 @@ class HostState {
             if (data.length === 0) {
                 return;
             }
-            const args = data[0] as { '0': number | [ number, string ], '1': number };
-            if (typeof args !== 'object' || !args) {
-                return;
-            }
-
-            const sim = args[0];
-
-            let simStatus, simName;
-            if (sim instanceof Array) {
-                simStatus = sim[0];
-                if (typeof sim[1] === 'string') {
-                    simName = sim[1];
-                }
-            } else if (typeof sim === 'number') {
-                simStatus = sim;
-            } else {
-                return;
-            }
-
-            if (typeof args[1] !== 'number') {
-                return;
-            }
-            
-            this.status = { simStatus, srvStatus: args[1], simName };
-            this.statusEvent.invoke(this.status);
+            const args = data[0] as ModifyStateMsg;
+            this.modifySystemState(args);
         });
 
         hostBridge.registerHandler2(MsgId.SendAllData, data => {
@@ -128,8 +110,36 @@ class HostState {
             this.resyncEvent2.invoke(args);
         });
 
+        this.resyncEvent2.add(obj => {
+            const data = obj[2] as ModifyStateMsg;
+            this.modifySystemState(data);
+        });
+
         // ux-app compability
         this.initializeHost();
+    }
+
+    private modifySystemState(args: ModifyStateMsg) {
+        if (typeof args !== 'object' || !args) {
+            return;
+        }
+
+        const sim = args[0];
+
+        let simStatus, simName;
+        if (sim instanceof Array) {
+            simStatus = sim[0];
+            if (typeof sim[1] === 'string') {
+                simName = sim[1];
+            }
+        } else if (typeof sim === 'number') {
+            simStatus = sim;
+        } else {
+            return;
+        }
+        
+        this.status = { simStatus, srvStatus: ServerStatus.Stopped, simName };
+        this.statusEvent.invoke(this.status);
     }
 
     private initializeHost() {

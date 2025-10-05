@@ -15,11 +15,6 @@ enum class SimState : uint8_t
 	Connected = 2,
 };
 
-enum class SrvState : uint8_t
-{
-	Stoppped = 1,
-};
-
 WebDriver::WebDriver()
 {
 }
@@ -40,16 +35,22 @@ static void SetSimState(MsgPacker& packer, bool connected)
 	}
 }
 
+static void SetSystemState(MsgPacker& packer, int simConnected)
+{
+	packer.pack_map(1);
+	packer.pack(0);
+	SetSimState(packer, simConnected);
+}
+
+static void SetSystemState(MsgPacker& packer)
+{
+	SetSystemState(packer, simcom.IsConnected());
+}
+
 static void SendSystemState(int simConnected)
 {
 	MsgPacker packer;
-
-	packer.pack_map(2);
-	packer.pack(0);
-	SetSimState(packer, simConnected);
-	packer.pack(1);
-	packer.pack(static_cast<uint8_t>(SrvState::Stoppped));
-
+	SetSystemState(packer, simConnected);
 	webcast.Send(MsgId::ModifySystemState, packer.view());
 }
 
@@ -186,22 +187,27 @@ void WebDriver::OnUserUpdate(const LocalAircraft::PlaneUpdateArgs& e)
 
 void WebDriver::OnRequestSendAllData(const FixedArrayCharS&)
 {
-	SendSystemState();
-
 	auto airplanes = radar.CreateSnapshot();
 	auto user = aircraft.CreateSnapshot();
 
 	MsgPacker packer;
-	packer.pack_array(user ? 2 : 1);
+	packer.pack_map(3);
 
+	packer.pack(0);
 	packer.pack_array((uint32_t)airplanes.size());
 	for (auto& a : airplanes)
 	{
 		PackRadarAdd(packer, a);
 	}
 
+	packer.pack(1);
 	if (user)
 		PackLocalAdd(packer, *user);
+	else
+		packer.packer.pack_nil();
+	
+	packer.pack(2);
+	SetSystemState(packer, simcom.IsConnected());
 
 	webcast.Send(MsgId::SendAllData, packer.view());
 }
