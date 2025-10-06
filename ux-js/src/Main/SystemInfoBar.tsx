@@ -3,9 +3,8 @@ import { Stack, Tooltip } from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
 import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
 import WifiTetheringOffIcon from '@mui/icons-material/WifiTetheringOff';
-import SettingsRemoteIcon from '@mui/icons-material/SettingsRemote';
 import LanguageIcon from '@mui/icons-material/Language';
-import { ServerStatus, SimulatorStatus } from '../Host/HostState';
+import { SimulatorStatus } from '../Host/HostState';
 import { NetworkStatus } from '../Network/VATSIM';
 
 function SystemInfoBar() {
@@ -28,7 +27,6 @@ function SystemInfoBar() {
         <Stack direction='row-reverse' spacing={1.5}>
             <SimulatorStatusElement status={status.simStatus} disabled={disabled} />
             <NetworkStatusElement status={netStatus} disabled={disabled} />
-            <ServerStatusElement status={status.srvStatus} disabled={disabled} />
         </Stack>
     );
 }
@@ -54,37 +52,6 @@ function SimulatorStatusElement(props: { status: SimulatorStatus, disabled: bool
         default: {
             icon = <ErrorIcon color='error' sx={ iconSize } />;
             label = 'Unknown Simulator Status';
-            break;
-        }
-    }
-
-    return <Tooltip title={label}>{icon}</Tooltip>;
-}
-
-function ServerStatusElement(props: { status: ServerStatus, disabled: boolean }) {
-    let icon;
-    let label;
-
-    switch (props.status) {
-        case ServerStatus.Stopped: {
-            const color = props.disabled ? 'disabled' : 'error';
-            icon = <SettingsRemoteIcon color={color} sx={ iconSize } />;
-            label = 'Device Server Inactive';
-            break;
-        }
-        case ServerStatus.Listening: {
-            icon = <SettingsRemoteIcon color='warning' sx={ iconSize } />;
-            label = 'Listening for Devices';
-            break;
-        }
-        case ServerStatus.Connected: {
-            icon = <SettingsRemoteIcon color='success' sx={ iconSize } />;
-            label = 'Device Connected';
-            break;
-        }
-        default: {
-            icon = <ErrorIcon color='error' sx={ iconSize } />;
-            label = 'Unknown Device Server Status';
             break;
         }
     }

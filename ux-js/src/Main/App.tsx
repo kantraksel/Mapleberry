@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from 'react';
 import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack, Toolbar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import DesktopIcon from '@mui/icons-material/DesktopWindowsOutlined';
 import FlightIcon from '@mui/icons-material/Flight';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CloudIcon from '@mui/icons-material/Cloud';
 import 'ol/ol.css';
-import SystemInfoBox from './SystemInfoBox';
-import FlightInfoBox from './FlightInfoBox';
 import OptionsBox from './OptionsBox';
 import Scoreboard, { FacilityStationsList } from './Scoreboard';
 import ControllerCard from './Cards/ControllerCard';
@@ -87,7 +84,6 @@ function App() {
 	const [open, setOpen] = useState(false);
 	const mapNode = useRef<HTMLDivElement>(null);
 	const [mapVisible, setMapVisible] = useState(map.visible);
-	const [systemVisible, setSystemVisible] = useState(false);
 	const [flightVisible, setFlightVisible] = useState(false);
 	const [optionsVisible, setOptionsVisible] = useState(false);
 	const [scoreboardVisible, setScoreboardVisible] = useState(false);
@@ -143,15 +139,9 @@ function App() {
 				<MainDrawer open={open}>
 					<List>
 						<ListItem key='flight_status' disablePadding>
-							<ListItemButton selected={flightVisible} onClick={() => { setFlightVisible(!flightVisible); }}>
+							<ListItemButton selected={flightVisible} onClick={() => { setFlightVisible(!flightVisible); }} disabled>
 								<MainListIcon><FlightIcon /></MainListIcon>
 								<MainListText primary='Flight Status' />
-							</ListItemButton>
-						</ListItem>
-						<ListItem key='system_status' disablePadding>
-							<ListItemButton selected={systemVisible} onClick={() => { setSystemVisible(!systemVisible); }}>
-								<MainListIcon><DesktopIcon /></MainListIcon>
-								<MainListText primary='System Status' />
 							</ListItemButton>
 						</ListItem>
 						<ListItem key='pilot_list' disablePadding>
@@ -196,11 +186,6 @@ function App() {
 							<MetarBox open={metarVisible} onClose={() => setMetarVisible(false)} />
 						</Stack>
 					</Stack>
-
-					<Box sx={{ position: 'fixed', right: '0', display: 'flex', flexDirection: 'column' }} >
-						<FlightInfoBox open={flightVisible} />
-						<SystemInfoBox open={systemVisible} />
-					</Box>
 				</Box>
 			</Box>
 
@@ -216,6 +201,7 @@ TODO:
 - add local airplane button
 - /and/or/ add local planes in Stations Lists (as a tab)
 - try to autodetect local airplane, show toast with suggestion
+- fix spin when crossing 360 boundary (radar animator)
 
 - rewrite system-ui sync, regroup files, make start sequence reliable (systems), split cards shared
 - add search bar in lists

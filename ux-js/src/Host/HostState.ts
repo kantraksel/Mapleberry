@@ -6,23 +6,14 @@ export enum SimulatorStatus {
     Connected,
 }
 
-export enum ServerStatus {
-    Stopped = 1,
-    Listening,
-    Connected,
-}
-
 export interface HostStatus {
     simStatus: SimulatorStatus;
-    srvStatus: ServerStatus;
     simName?: string;
 }
 
 export enum StatusCmd {
     ConnectSim,
     DisconnectSim,
-    StartServer,
-    StopServer,
 }
 
 interface ModifyStateMsg {
@@ -41,7 +32,7 @@ class HostState {
     public readonly resyncEvent: Event<ResyncEvent>;
 
     public constructor() {
-        this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+        this.status = { simStatus: SimulatorStatus.Disconnected, simName: '' };
         this.ready = false;
         this.statusEvent = new Event();
         this.resyncEvent = new Event();
@@ -53,7 +44,7 @@ class HostState {
         };
 
         hostBridge.onClose = () => {
-            this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+            this.status = { simStatus: SimulatorStatus.Disconnected, simName: '' };
             this.statusEvent.invoke(this.status);
         };
 
@@ -63,7 +54,7 @@ class HostState {
         };
 
         hostBridge.onDisable = () => {
-            this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+            this.status = { simStatus: SimulatorStatus.Disconnected, simName: '' };
             this.statusEvent.invoke(this.status);
         };
 
@@ -111,7 +102,7 @@ class HostState {
             return;
         }
         
-        this.status = { simStatus, srvStatus: ServerStatus.Stopped, simName };
+        this.status = { simStatus, simName };
         this.statusEvent.invoke(this.status);
     }
 
@@ -121,9 +112,6 @@ class HostState {
         }
 
         hostBridge.send2(MsgId.SendAllData);
-        if (this.launchServerOnStart) {
-            this.sendStatusCmd(StatusCmd.StartServer);
-        }
         if (this.getAllowSimComReconnect()) {
             this.setAllowSimComReconnect(true);
             this.sendStatusCmd(StatusCmd.ConnectSim);
@@ -139,13 +127,13 @@ class HostState {
     }
 
     public resetApp() {
-        this.status = { simStatus: SimulatorStatus.Disconnected, srvStatus: ServerStatus.Stopped, simName: '' };
+        this.status = { simStatus: SimulatorStatus.Disconnected, simName: '' };
         this.statusEvent.invoke(this.status);
         hostBridge.send2(MsgId.SendAllData);
     }
 
     public sendStatusCmd(cmd: StatusCmd) {
-        const obj2: { '0'?: boolean, '1'?: boolean } = {};
+        const obj2: { '0'?: boolean } = {};
         switch (cmd)
         {
             case StatusCmd.ConnectSim: {
@@ -157,16 +145,6 @@ class HostState {
                 obj2[0] = false;
                 break;
             }
-
-            case StatusCmd.StartServer: {
-                obj2[1] = true;
-                break;
-            }
-
-            case StatusCmd.StopServer: {
-                obj2[1] = false;
-                break;
-            }
         }
 
         hostBridge.send2(MsgId.ModifySystemState, obj2);
@@ -176,7 +154,6 @@ class HostState {
         const status = this.status;
         return {
             simStatus: status.simStatus,
-            srvStatus: status.srvStatus,
         };
     }
 
@@ -191,14 +168,6 @@ class HostState {
 
     public getSimName() {
         return this.status.simName;
-    }
-
-    public get launchServerOnStart() {
-        return options.get<boolean>('server_autostart', false);
-    }
-
-    public set launchServerOnStart(value: boolean) {
-        options.set('server_autostart', value);
     }
 }
 
