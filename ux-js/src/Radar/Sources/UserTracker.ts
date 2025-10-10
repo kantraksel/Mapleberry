@@ -1,7 +1,6 @@
 import { PhysicParams, validatePhysicParams } from "../../Map/MapPlane";
 import { SimulatorStatus } from "../../Host/HostState";
 import RadarPlane from "../RadarPlane";
-import Event from "../../Event";
 import { MsgId } from "../../Host/MsgId";
 
 class LocalPlaneInfo {
@@ -33,23 +32,15 @@ interface UserUpdateEventArgs extends PhysicParams {
     realHeading: number;
 }
 
-export interface Identity {
-    callsign: string;
-    plane: string;
-}
-type IdentEvent = (data: Identity) => void;
-
 function MathClamp(value: number, min: number, max: number) : number {
     return Math.min(max, Math.max(min, value));
 }
 
 class UserTracker {
     private user: LocalPlaneInfo;
-    public readonly identEvent: Event<IdentEvent>;
 
     public constructor() {
         this.user = new LocalPlaneInfo();
-        this.identEvent = new Event();
 
         hostBridge.registerHandler2(MsgId.LocalAddAircraft, data => {
             this.handleAdd2(data);
@@ -163,8 +154,6 @@ class UserTracker {
         if (customCallsign.length != 0) {
             info.plane.callsign = customCallsign;
         }
-
-        this.identEvent.invoke(this.getIdentity());
     }
 
     private removeUser() {
@@ -175,7 +164,6 @@ class UserTracker {
 
         radar.remove(user.info.id);
         user.reset();
-        this.identEvent.invoke(this.getIdentity());
     }
 
     private updateUser(data: UserUpdateEventArgs & { id?: number }) {
@@ -195,19 +183,6 @@ class UserTracker {
         radar.update(info.id, data as Required<typeof data>);
     }
 
-    public getIdentity(): Identity {
-        const info = this.user.info;
-        if (!info) {
-            return { plane: '0000', callsign: 'UFO0000' };
-        }
-
-        let callsign = this.customCallsign;
-        if (callsign.length == 0) {
-            callsign = info.callsign;
-        }
-        return { plane: info.model, callsign };
-    }
-
     public set customCallsign(name: string) {
         options.set('user_custom_callsign', name);
 
@@ -219,11 +194,14 @@ class UserTracker {
             name = info.callsign;
         }
         info.plane.callsign = name;
-        this.identEvent.invoke(this.getIdentity());
     }
 
     public get customCallsign() {
         return options.get<string>('user_custom_callsign', '');
+    }
+
+    public getUser() {
+        return this.user.info;
     }
 }
 

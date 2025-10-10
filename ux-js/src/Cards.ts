@@ -1,6 +1,17 @@
+import Event from './Event';
 import { NetworkAtis, NetworkControl, NetworkController, NetworkField } from './Network/ControlRadar';
 import { NetworkPilot } from './Network/TrafficRadar';
 import { Prefile } from './Network/VATSIM';
+
+export enum CardType {
+    None,
+    Controller,
+    Pilot,
+    Prefile,
+    Atis,
+    Facility,
+    Stations,
+}
 
 class Cards {
     controllerRef?: (data: NetworkController | undefined) => void;
@@ -11,9 +22,13 @@ class Cards {
     stationsRef?: (show: boolean) => void;
 
     private backList: (() => void)[];
+    private activeType: CardType;
+    public Change: Event<(from: CardType, to: CardType) => void>;
 
     constructor() {
         this.backList = [];
+        this.activeType = CardType.None;
+        this.Change = new Event();
 
         map.clickEvent.add(e => {
             for (let i = 0; i < e.length; ++i) {
@@ -66,37 +81,28 @@ class Cards {
             this.goBack();
         });
 
-        this.pilotRef?.call(null, undefined);
         this.controllerRef?.call(null, data);
-        this.facilityRef?.call(null, undefined);
-        this.prefileRef?.call(null, undefined);
-        this.atisRef?.call(null, undefined);
-        this.stationsRef?.call(null, false);
+        this.changeCard(CardType.Controller);
     }
 
-    showPilotCard(data: NetworkPilot, replaceHistory?: boolean) {
-        if (replaceHistory) {
+    showPilotCard(data: NetworkPilot, replaceOne?: boolean, replaceAll?: boolean) {
+        if (replaceOne) {
             this.backList.pop();
+        }
+        if (replaceAll) {
+            this.backList = [];
         }
         this.backList.push(() => {});
 
-        this.controllerRef?.call(null, undefined);
         this.pilotRef?.call(null, data);
-        this.facilityRef?.call(null, undefined);
-        this.prefileRef?.call(null, undefined);
-        this.atisRef?.call(null, undefined);
-        this.stationsRef?.call(null, false);
+        this.changeCard(CardType.Pilot);
     }
     
     showPrefileCard(data: Prefile) {
         this.backList.push(() => {});
 
-        this.controllerRef?.call(null, undefined);
-        this.pilotRef?.call(null, undefined);
-        this.facilityRef?.call(null, undefined);
         this.prefileRef?.call(null, data);
-        this.atisRef?.call(null, undefined);
-        this.stationsRef?.call(null, false);
+        this.changeCard(CardType.Prefile);
     }
 
     showFacilityList(data: NetworkControl) {
@@ -110,12 +116,8 @@ class Cards {
             this.showFacilityList(data);
         });
 
-        this.pilotRef?.call(null, undefined);
-        this.controllerRef?.call(null, undefined);
         this.facilityRef?.call(null, data);
-        this.prefileRef?.call(null, undefined);
-        this.atisRef?.call(null, undefined);
-        this.stationsRef?.call(null, false);
+        this.changeCard(CardType.Facility);
     }
 
     showAtisCard(data: NetworkAtis) {
@@ -133,12 +135,8 @@ class Cards {
             this.showAtisCard(atis);
         });
 
-        this.controllerRef?.call(null, undefined);
-        this.pilotRef?.call(null, undefined);
-        this.facilityRef?.call(null, undefined);
-        this.prefileRef?.call(null, undefined);
         this.atisRef?.call(null, data);
-        this.stationsRef?.call(null, false);
+        this.changeCard(CardType.Atis);
     }
 
     showStationLists(show: boolean) {
@@ -146,22 +144,13 @@ class Cards {
             this.showStationLists(true);
         });
 
-        this.controllerRef?.call(null, undefined);
-        this.pilotRef?.call(null, undefined);
-        this.facilityRef?.call(null, undefined);
-        this.prefileRef?.call(null, undefined);
-        this.atisRef?.call(null, undefined);
         this.stationsRef?.call(null, show);
+        this.changeCard(CardType.Stations);
     }
 
     close() {
         this.backList = [];
-        this.controllerRef?.call(null, undefined);
-        this.pilotRef?.call(null, undefined);
-        this.facilityRef?.call(null, undefined);
-        this.prefileRef?.call(null, undefined);
-        this.atisRef?.call(null, undefined);
-        this.stationsRef?.call(null, false);
+        this.changeCard(CardType.None);
     }
 
     goBack() {
@@ -173,6 +162,49 @@ class Cards {
             return;
         }
         func();
+    }
+
+    private changeCard(to: CardType) {
+        const from = this.activeType;
+        if (from != to) {
+            this.closeCard(from);
+        }
+        
+        this.activeType = to;
+        this.Change.invoke(from, to);
+    }
+
+    private closeCard(card: CardType) {
+        switch (card) {
+            case CardType.None:
+                break;
+            case CardType.Controller: {
+                this.controllerRef?.call(null, undefined);
+                break;
+            }
+            case CardType.Pilot: {
+                this.pilotRef?.call(null, undefined);
+                break;
+            }
+            case CardType.Prefile: {
+                this.prefileRef?.call(null, undefined);
+                break;
+            }
+            case CardType.Atis: {
+                this.atisRef?.call(null, undefined);
+                break;
+            }
+            case CardType.Facility: {
+                this.facilityRef?.call(null, undefined);
+                break;
+            }
+            case CardType.Stations: {
+                this.stationsRef?.call(null, false);
+                break;
+            }
+            default:
+                throw new Error('CardType not implemented');
+        }
     }
 }
 export default Cards;

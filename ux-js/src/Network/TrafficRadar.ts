@@ -2,6 +2,7 @@ import { FeatureLike } from "ol/Feature";
 import MapPlane from "../Map/MapPlane";
 import { NetworkState, Pilot } from "./NetworkWorld";
 import RadarPlane from "../Radar/RadarPlane";
+import Event from "../Event";
 
 export class NetworkPilot {
     plane: MapPlane;
@@ -29,17 +30,37 @@ export class NetworkPilot {
     }
 }
 
+type UpdateLocalEvent = () => void;
+
 class TrafficRadar {
     private planes: Map<string, NetworkPilot>;
     private cache: Map<number, NetworkPilot>;
+    private localCID?: number;
+    private localPilot?: NetworkPilot;
+    public readonly UpdateLocal: Event<UpdateLocalEvent>;
 
     public constructor() {
         this.planes = new Map();
         this.cache = new Map();
+        this.UpdateLocal = new Event();
+        this.localCID = options.get<number | undefined>('vatsim_user_id', undefined);
 
         radar.planeAdded.add(plane => {
+            if (plane.main) {
+                if (this.localPilot) {
+                    const pilot = this.localPilot;
+                    this.loseContact(pilot);
+                    plane.plane.netState = pilot;
+                    pilot.external = plane;
+
+                    this.UpdateLocal.invoke();
+                    return;
+                }
+                //don't match by callsign unless permitted
+                return;
+            }
             const pilot = this.planes.get(plane.callsign);
-            if (!pilot) {
+            if (!pilot || pilot.external) {
                 return;
             }
 
@@ -48,7 +69,7 @@ class TrafficRadar {
             pilot.external = plane;
         });
         radar.planeRemoved.add(plane => {
-            const pilot = this.planes.get(plane.callsign);
+            const pilot = plane.plane.netState;
             if (!pilot) {
                 return;
             }
@@ -61,6 +82,10 @@ class TrafficRadar {
             this.establishContact(pilot);
             plane.plane.netState = null;
             pilot.external = undefined;
+
+            if (pilot.pilot.cid === this.localCID) {
+                this.UpdateLocal.invoke();
+            }
         });
 
         network.Update.add(data => {
@@ -101,6 +126,9 @@ class TrafficRadar {
         });
         this.planes.clear();
         this.cache.clear();
+        this.localPilot = undefined;
+
+        this.UpdateLocal.invoke();
     }
 
     private establishContact(pilot: NetworkPilot) {
@@ -132,12 +160,24 @@ class TrafficRadar {
                     this.planes.set(callsign, plane);
                     this.cache.set(pilot.cid, plane);
 
-                    const radarPlane = radar.getByCallsign(callsign);
-                    if (!radarPlane) {
-                        this.establishContact(plane);
+                    if (pilot.cid === this.localCID) {
+                        this.localPilot = plane;
+                        const user = tracker.getUser();
+                        if (user) {
+                            user.plane.netState = plane;
+                            plane.external = user;
+                        } else {
+                            this.establishContact(plane);
+                        }
+                        this.UpdateLocal.invoke();
                     } else {
-                        radarPlane.plane.netState = plane;
-                        plane.external = radarPlane;
+                        const radarPlane = radar.getByCallsign(callsign);
+                        if (!radarPlane || radarPlane.plane.netState) {
+                            this.establishContact(plane);
+                        } else {
+                            radarPlane.plane.netState = plane;
+                            plane.external = radarPlane;
+                        }
                     }
                 } else {
                     plane.pilot = pilot;
@@ -173,6 +213,11 @@ class TrafficRadar {
             if (plane) {
                 plane.plane.netState = null;
             }
+
+            if (pilot.pilot.cid === this.localCID) {
+                this.localPilot = undefined;
+                this.UpdateLocal.invoke();
+            }
         });
     }
 
@@ -186,6 +231,30 @@ class TrafficRadar {
 
     public findPilotById(cid: number) {
         return this.cache.get(cid);
+    }
+
+    public set userId(value: number | undefined) {
+        const changed = value !== this.localCID;
+
+        this.localCID = value;
+        options.set('vatsim_user_id', value);
+
+        if (changed) {
+            if (value) {
+                this.localPilot = this.cache.get(value);
+            } else {
+                this.localPilot = undefined;
+            }
+            this.UpdateLocal.invoke();
+        }
+    }
+
+    public get userId() {
+        return this.localCID;
+    }
+
+    public getUser() {
+        return this.localPilot;
     }
 }
 

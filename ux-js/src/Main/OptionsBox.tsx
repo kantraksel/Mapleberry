@@ -5,7 +5,7 @@ import VATSIM from '../Network/VATSIM';
 import { SimulatorStatus, StatusCmd } from '../Host/HostState';
 import StyledBox from './StyledBox';
 
-type View = 'map' | 'app' | 'about' | 'dev_preview';
+type View = 'map' | 'network' | 'app' | 'about' | 'dev_preview';
 
 interface ViewInfo {
     name: View;
@@ -14,8 +14,9 @@ interface ViewInfo {
 
 function ViewList(props: { view: View, onSelect: (item: View) => void }) {
     const views: ViewInfo[] = [
-        { name: 'map', display: 'Web Map' },
+        { name: 'network', display: 'Network' },
         { name: 'app', display: 'Host App' },
+        { name: 'map', display: 'Local Radar' },
         { name: 'about', display: 'About App' },
         { name: 'dev_preview', display: 'Dev Preview' },
     ];
@@ -77,8 +78,6 @@ function NumberField(props: { label?: string, disabled?: boolean, defaultValue?:
 }
 
 function MapView() {
-    const [vatsimOnline, setVatsimOnline] = useState(vatsim.enabled);
-    const [refreshRate, setRefreshRate] = useState(vatsim.refreshRate);
     const [userCallsign, setUserCallsign] = useState(tracker.customCallsign);
     const [mapScaling, setMapScaling] = useState(radar.animator.enableMapScaling);
     const [savePosition, setSavePosition] = useState(map.saveLastPosition);
@@ -89,23 +88,6 @@ function MapView() {
 
         tracker.customCallsign = value;
         setUserCallsign(value);
-    };
-
-    const onOnlineChange = (_event: unknown, checked: boolean) => {
-        vatsim.enabled = checked;
-        checked = vatsim.enabled;
-        setVatsimOnline(checked);
-
-        if (checked) {
-            vatsim.start();
-        } else {
-            vatsim.stop();
-        }
-    };
-
-    const onRefreshRateChange = (value: number | undefined) => {
-        vatsim.refreshRate = value ?? -1;
-        setRefreshRate(vatsim.refreshRate);
     };
 
     const onMapScalingChange = (_event: unknown, checked: boolean) => {
@@ -135,8 +117,43 @@ function MapView() {
                     <Switch checked={savePosition} onChange={onSavePosChange} />
                 </Box>
             </Stack>
+        </Stack>
+    );
+}
+
+function NetworkView() {
+    const [vatsimOnline, setVatsimOnline] = useState(vatsim.enabled);
+    const [refreshRate, setRefreshRate] = useState(vatsim.refreshRate);
+    const [rev, setRev] = useState(0);
+
+    const onOnlineChange = (_event: unknown, checked: boolean) => {
+        vatsim.enabled = checked;
+        checked = vatsim.enabled;
+        setVatsimOnline(checked);
+
+        if (checked) {
+            vatsim.start();
+        } else {
+            vatsim.stop();
+        }
+    };
+
+    const onRefreshRateChange = (value: number | undefined) => {
+        vatsim.refreshRate = value ?? -1;
+        setRefreshRate(vatsim.refreshRate);
+    };
+
+    const onIdChange = (value: number | undefined) => {
+        trafficRadar.userId = value;
+        setRev(rev + 1);
+    };
+
+    const uid = trafficRadar.userId;
+
+    return (
+        <Stack flex='1 1' spacing={3}>
             <Stack flex='1 1' spacing={1}>
-                <Header>VATSIM</Header>
+                <Header>VATSIM Network</Header>
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
                     <Typography>Online Mode</Typography>
                     <Switch checked={vatsimOnline} onChange={onOnlineChange} />
@@ -147,7 +164,7 @@ function MapView() {
                 </Box>
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
                     <Typography>Local User ID</Typography>
-                    <NumberField label='CID' disabled />
+                    <NumberField placeholder='Your CID' defaultValue={uid} onBlur={onIdChange} />
                 </Box>
             </Stack>
         </Stack>
@@ -269,6 +286,8 @@ function SelectedView(props: { view: View }) {
         return <AboutView />;
     } else if (props.view === 'dev_preview') {
         return <DevToolsView />;
+    } else if (props.view === 'network') {
+        return <NetworkView />;
     }
 }
 
@@ -290,7 +309,7 @@ function DevToolsView() {
         <Stack flex='1' alignItems='center' spacing={2}>
             <Stack spacing={1}>
                 <Header>Radar Playback</Header>
-                <ButtonGroup variant='outlined'>
+                <ButtonGroup variant='outlined' disabled>
                     <Button color='primary' disabled={playbackActive} onClick={() => { hostBridge.playbackDefault(setPlaybackActive); }}>Play</Button>
                     <Button color='primary' disabled={playbackActive} onClick={() => { hostBridge.recordPlaylist(setPlaybackActive); }}>Record</Button>
                     <Button color='error' disabled={!playbackActive} onClick={() => { hostBridge.abortPlayback(); }}>Stop</Button>

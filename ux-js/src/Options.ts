@@ -10,6 +10,7 @@ type OptionKeys =
     'app_enabled' |
     'app_port' |
     'app_reconnect_span' |
+    'vatsim_user_id' |
     '_unused_';
 
 class Options {

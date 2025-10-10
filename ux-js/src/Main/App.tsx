@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, ReactNode, createContext, useContext } from 'react';
 import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack, Toolbar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import FlightIcon from '@mui/icons-material/Flight';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CloudIcon from '@mui/icons-material/Cloud';
@@ -14,6 +13,7 @@ import SystemInfoBar from './SystemInfoBar';
 import PrefileCard from './Cards/PrefileCard';
 import AtisCard from './Cards/AtisCard';
 import MetarBox from './MetarBox';
+import ActiveFlightButton from './ActiveFlightButton';
 
 const MainDrawerContext = createContext(true);
 
@@ -71,11 +71,11 @@ function MainDrawer(props: { children: ReactNode, open: boolean }) {
 	);
 }
 
-function MainListIcon(props: { children: ReactNode }) {
+export function MainListIcon(props: { children: ReactNode }) {
 	return <ListItemIcon sx={{ minWidth: '40px' }}>{props.children}</ListItemIcon>;
 }
 
-function MainListText(props: { primary: ReactNode }) {
+export function MainListText(props: { primary: ReactNode }) {
 	const drawerOpen = useContext(MainDrawerContext);
 	return <ListItemText primary={props.primary} sx={{ opacity: drawerOpen ? 1 : 0 }} />;
 }
@@ -84,7 +84,6 @@ function App() {
 	const [open, setOpen] = useState(false);
 	const mapNode = useRef<HTMLDivElement>(null);
 	const [mapVisible, setMapVisible] = useState(map.visible);
-	const [flightVisible, setFlightVisible] = useState(false);
 	const [optionsVisible, setOptionsVisible] = useState(false);
 	const [scoreboardVisible, setScoreboardVisible] = useState(false);
 	const [metarVisible, setMetarVisible] = useState(false);
@@ -139,10 +138,7 @@ function App() {
 				<MainDrawer open={open}>
 					<List>
 						<ListItem key='flight_status' disablePadding>
-							<ListItemButton selected={flightVisible} onClick={() => { setFlightVisible(!flightVisible); }} disabled>
-								<MainListIcon><FlightIcon /></MainListIcon>
-								<MainListText primary='Flight Status' />
-							</ListItemButton>
+							<ActiveFlightButton />
 						</ListItem>
 						<ListItem key='pilot_list' disablePadding>
 							<ListItemButton selected={scoreboardVisible} onClick={() => { scoreboardVisible ? cards.close() : cards.showStationLists(true); }}>
