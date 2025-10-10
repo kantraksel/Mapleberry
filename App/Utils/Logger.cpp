@@ -7,9 +7,6 @@
 	#define WIN32_LEAN_AND_MEAN
 	#include <Windows.h>
 #endif
-#if _DEBUG
-	#include <comdef.h>
-#endif
 #define LOGGER_ENABLE_CALLBACK
 #include "Logger.h"
 #include "StringUtils.h"
@@ -24,6 +21,13 @@ enum Color : char
 	Magenta,
 	Cyan,
 	White,
+	RGB,
+};
+
+struct ColorEx
+{
+	Color code;
+	unsigned char r, g, b;
 };
 
 using LogLevel = Logger::LogLevel;
@@ -32,21 +36,67 @@ struct LoggerImpl
 {
 	std::ofstream file;
 	std::mutex mutex;
-	std::function<void(const std::string&, LogLevel level)> logCallback;
+	std::function<void(const std::string_view&, LogLevel level)> logCallback;
 	bool timestampEnabled;
+	bool consoleOut;
 
 	LoggerImpl();
-	void LogRaw(const std::string&, Color, LogLevel);
+	void LogRaw(const std::string_view&, ColorEx, LogLevel);
+	static void LogConsole(const std::string_view&, ColorEx);
 
-	void OpenLogFile(const std::wstring& name);
-	void Log(const std::string_view& str, LogLevel level);
+	void OpenLogFile(const std::wstring&);
+	void LogFormat(const std::string_view&, LogLevel);
+	void Log(const std::string_view&, ColorEx, LogLevel);
 };
 
-static LoggerImpl instance;
+static alignas(LoggerImpl) unsigned char buffer[sizeof(LoggerImpl)]{};
+static LoggerImpl* pInstance = nullptr;
+
+#if _DEBUG
+static bool loggerDestructing = false;
+#endif
+
+struct LoggerInit
+{
+	LoggerInit()
+	{
+		Construct();
+	}
+
+	~LoggerInit()
+	{
+	#if _DEBUG
+		loggerDestructing = true;
+	#endif
+		if (!pInstance)
+			return;
+
+		pInstance->~LoggerImpl();
+		pInstance = nullptr;
+	}
+
+	static void Construct()
+	{
+		if (pInstance)
+			return;
+	#if _DEBUG
+		if (loggerDestructing)
+			LoggerImpl::LogConsole("Logger should not be used in destructors", { Color::RGB, 229, 41, 255 });
+	#endif
+		
+		pInstance = new(buffer) LoggerImpl;
+	}
+};
+static LoggerInit init;
 
 LoggerImpl::LoggerImpl()
 {
 	timestampEnabled = true;
+#if _DEBUG
+	consoleOut = true;
+#else
+	consoleOut = false;
+#endif
 #if _DEBUG && _WIN32
 	auto hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (hOut == NULL && AllocConsole())
@@ -79,26 +129,46 @@ void LoggerImpl::OpenLogFile(const std::wstring& name)
 
 	auto const time = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
 	auto out = std::format("Starting logger - {:%c}", time);
-	LogRaw(out, Color::Green, LogLevel::OpenLogFile);
+	LogRaw(out, { Color::Green }, LogLevel::Custom);
 }
 
-void LoggerImpl::LogRaw(const std::string& out, Color fontColor, LogLevel level)
+void LoggerImpl::LogRaw(const std::string_view& out, ColorEx fontColor, LogLevel level)
 {
+	if (consoleOut)
+		LogConsole(out, fontColor);
+
 	if (file)
 	{
 		file << out << std::endl;
 		file.flush();
 	}
 
-#if _DEBUG
-	static char color[] = "\x1b[37;40m";
-	color[3] = fontColor;
-	color[6] = Color::Black;
-	std::cout << color << out << std::endl;
-#endif
-
 	if (logCallback)
 		logCallback(out, level);
+}
+
+static void PrintColor(char flag, ColorEx color)
+{
+	std::cout << flag << color.code;
+	if (color.code == Color::RGB)
+	{
+		std::cout << ";2;";
+		std::cout << std::to_string(color.r);
+		std::cout << ';';
+		std::cout << std::to_string(color.g);
+		std::cout << ';';
+		std::cout << std::to_string(color.b);
+	}
+}
+
+void LoggerImpl::LogConsole(const std::string_view& out, ColorEx fontColor)
+{
+	std::cout << "\x1b[";
+	PrintColor('3', fontColor);
+	std::cout << ';';
+	PrintColor('4', { Color::Black });
+	std::cout << 'm';
+	std::cout << out << std::endl;
 }
 
 static const char* GetColor(LogLevel level, Color& color)
@@ -133,7 +203,7 @@ static const char* GetColor(LogLevel level, Color& color)
 	}
 }
 
-void LoggerImpl::Log(const std::string_view& str, LogLevel level)
+void LoggerImpl::LogFormat(const std::string_view& str, LogLevel level)
 {
 	Color color;
 	auto* levelPrefix = GetColor(level, color);
@@ -147,105 +217,113 @@ void LoggerImpl::Log(const std::string_view& str, LogLevel level)
 	else
 		out = std::format("{}{}", levelPrefix, str.data());
 
+	Log(out, { color }, level);
+}
+
+void LoggerImpl::Log(const std::string_view& str, ColorEx fontColor, LogLevel level)
+{
 	std::lock_guard lock(mutex);
-	LogRaw(out, color, level);
+	LogRaw(str, fontColor, level);
+}
+
+static void Log(const std::string_view& str, LogLevel level)
+{
+	LoggerInit::Construct();
+	pInstance->LogFormat(str, level);
+}
+
+static void LogEx(const std::string_view& str, Logger::RGB rgb, LogLevel level)
+{
+	LoggerInit::Construct();
+	pInstance->Log(str, { Color::RGB, rgb.r, rgb.g, rgb.b }, level);
 }
 
 // public Logger
 void Logger::OpenLogFile(const std::wstring& name)
 {
-	instance.OpenLogFile(name);
+	LoggerInit::Construct();
+	pInstance->OpenLogFile(name);
 }
 
-bool Logger::IsLogOpened()
+bool Logger::IsLogOpen()
 {
-	return (bool)instance.file;
+	LoggerInit::Construct();
+	return (bool)pInstance->file;
 }
 
 void Logger::SetTitle(const std::string_view& title)
 {
-#if _DEBUG
 	std::cout << "\x1b]0;" << title << "\x1b\x5c";
-#endif
 }
 
-void Logger::DisableTimestamp()
+void Logger::SetTimestamp(bool value)
 {
-	instance.timestampEnabled = false;
+	LoggerInit::Construct();
+	pInstance->timestampEnabled = value;
 }
 
-void Logger::EnableTimestamp()
+void Logger::SetConsoleOut(bool value)
 {
-	instance.timestampEnabled = true;
+	LoggerInit::Construct();
+	pInstance->consoleOut = value;
 }
 
 void Logger::Log(const std::string_view& str)
 {
-	instance.Log(str, LogLevel::Info);
+	::Log(str, LogLevel::Info);
 }
 
 void Logger::Log(const std::wstring_view& str)
 {
-	instance.Log(StringUtils::WideStringToUtf8(str), LogLevel::Info);
+	::Log(StringUtils::WideStringToUtf8(str), LogLevel::Info);
 }
 
 void Logger::LogWarn(const std::string_view& str)
 {
-	instance.Log(str, LogLevel::Warning);
+	::Log(str, LogLevel::Warning);
 }
 
 void Logger::LogWarn(const std::wstring_view& str)
 {
-	instance.Log(StringUtils::WideStringToUtf8(str), LogLevel::Warning);
+	::Log(StringUtils::WideStringToUtf8(str), LogLevel::Warning);
 }
 
 void Logger::LogError(const std::string_view& str)
 {
-	instance.Log(str, LogLevel::Error);
+	::Log(str, LogLevel::Error);
 }
 
 void Logger::LogError(const std::wstring_view& str)
 {
-	instance.Log(StringUtils::WideStringToUtf8(str), LogLevel::Error);
+	::Log(StringUtils::WideStringToUtf8(str), LogLevel::Error);
 }
 
 #if _DEBUG
 void Logger::LogDebug(const std::string_view& str)
 {
-	instance.Log(str, LogLevel::Debug);
+	::Log(str, LogLevel::Debug);
 }
 
 void Logger::LogDebug(const std::wstring_view& str)
 {
-	instance.Log(StringUtils::WideStringToUtf8(str), LogLevel::Debug);
-}
-
-std::string Logger::Format(HRESULT hr)
-{
-	if (hr == E_FAIL)
-		return std::format("{:X} - Unknown error", hr);
-
-	_com_error err(hr);
-	auto str = StringUtils::WideStringToUtf8(err.ErrorMessage());
-	return std::format("{:X} - {}", hr, str);
-}
-
-std::wstring Logger::FormatW(HRESULT hr)
-{
-	if (hr == E_FAIL)
-		return std::format(L"{:X} - Unknown error", hr);
-
-	_com_error err(hr);
-	return std::format(L"{:X} - {}", hr, err.ErrorMessage());
+	::Log(StringUtils::WideStringToUtf8(str), LogLevel::Debug);
 }
 #endif
 
-void Logger::SetLogCallback(const std::function<void(const std::string&, LogLevel level)>& callback)
+void Logger::LogEx(const std::string_view& str, RGB rgb, LogLevel level)
 {
-	instance.logCallback = callback;
+	::LogEx(str, rgb, level);
 }
 
-std::function<void(const std::string&, LogLevel level)> Logger::GetLogCallback()
+void Logger::LogEx(const std::wstring_view& str, RGB rgb, LogLevel level)
 {
-	return instance.logCallback;
+	::LogEx(StringUtils::WideStringToUtf8(str), rgb, level);
+}
+
+Logger::Callback Logger::SetLogCallback(const Callback& callback)
+{
+	LoggerInit::Construct();
+	auto old = pInstance->logCallback;
+	pInstance->logCallback = callback;
+	return old;
 }

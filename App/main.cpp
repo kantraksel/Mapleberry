@@ -89,7 +89,7 @@ int main()
 	simcom.OnDisconnect = &OnSimDisconnect;
 	thread.Tick = &OnTick;
 
-	Logger::DisableTimestamp();
+	Logger::SetTimestamp(false);
 	Logger::Log(Version::Title);
 
 	webdriver.Initialize();

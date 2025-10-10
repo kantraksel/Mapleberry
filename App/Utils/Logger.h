@@ -7,10 +7,10 @@
 namespace Logger
 {
 	void OpenLogFile(const std::wstring& name);
-	bool IsLogOpened();
-	void SetTitle(const std::string_view& title);
-	void DisableTimestamp();
-	void EnableTimestamp();
+	bool IsLogOpen();
+	void SetTimestamp(bool);
+	void SetConsoleOut(bool);
+	void SetTitle(const std::string_view&);
 
 	void Log(const std::string_view& str);
 	void Log(const std::wstring_view& str);
@@ -89,33 +89,25 @@ namespace Logger
 	}
 #endif
 
-#ifdef _HRESULT_DEFINED
-#if _DEBUG
-	std::string Format(HRESULT hr);
-	std::wstring FormatW(HRESULT hr);
-#else
-	inline std::string Format(HRESULT hr)
-	{
-		return std::format("{:X}", hr);
-	}
-	inline std::wstring FormatW(HRESULT hr)
-	{
-		return std::format(L"{:X}", hr);
-	}
-#endif
-#endif
-
-#ifdef LOGGER_ENABLE_CALLBACK
 	enum class LogLevel
 	{
 		Debug,
 		Info,
 		Warning,
 		Error,
-		OpenLogFile,
+		Custom,
 	};
 
-	void SetLogCallback(const std::function<void(const std::string&, LogLevel level)>& callback);
-	std::function<void(const std::string&, LogLevel level)> GetLogCallback();
+	struct RGB
+	{
+		unsigned char r, g, b;
+	};
+
+	void LogEx(const std::string_view& str, RGB rgb, LogLevel level = LogLevel::Custom);
+	void LogEx(const std::wstring_view& str, RGB rgb, LogLevel level = LogLevel::Custom);
+
+#ifdef LOGGER_ENABLE_CALLBACK
+	typedef std::function<void(const std::string_view&, LogLevel level)> Callback;
+	Callback SetLogCallback(const Callback& callback);
 #endif
 };
