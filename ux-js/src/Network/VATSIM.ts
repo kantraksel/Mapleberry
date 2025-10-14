@@ -136,6 +136,7 @@ class VATSIM {
     private refreshInterval: number;
     private currentStatus: NetworkStatus;
     public StatusUpdate: Event<(status: NetworkStatus) => void>;
+    private enabled_: boolean;
 
     static readonly defaultRefreshRate = 35;
     static readonly minimumRefreshRate = 15;
@@ -145,11 +146,12 @@ class VATSIM {
         this.lastUpdate = 0;
         this.currentStatus = NetworkStatus.Disabled;
         this.StatusUpdate = new Event();
+        this.enabled_ = options.get<boolean>('vatsim_enabled', true);
 
         const value = options.get<number>('vatsim_refresh_rate', VATSIM.defaultRefreshRate);
         this.refreshInterval = Math.max(value, VATSIM.minimumRefreshRate);
 
-        if (this.enabled) {
+        if (this.enabled_) {
             this.start();
         }
     }
@@ -176,6 +178,7 @@ class VATSIM {
     // https://vatsim.dev/api/data-api/get-network-data/
     private async processNetworkData() {
         const data = await VATSIM.getObject<LiveNetworkData>('https://data.vatsim.net/v3/vatsim-data.json');
+        replay.onNetworkMessage(data);
         network.updateState(data);
     }
 
@@ -223,10 +226,17 @@ class VATSIM {
 
     public set enabled(value: boolean) {
         options.set('vatsim_enabled', value);
+        this.enabled_ = value;
+
+        if (value) {
+            vatsim.start();
+        } else {
+            vatsim.stop();
+        }
     }
 
     public get enabled() {
-        return options.get<boolean>('vatsim_enabled', true);
+        return this.enabled_;
     }
 
     public get status() {

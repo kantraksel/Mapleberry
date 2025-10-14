@@ -23,6 +23,7 @@ import ControlRadar from './Network/ControlRadar.ts';
 import TrafficRadar from './Network/TrafficRadar.ts';
 import NetworkWorld from './Network/NetworkWorld.ts';
 import Metar from './Network/Metar.ts';
+import Replay from './Host/Replay.ts';
 
 declare global {
 	var hostBridge: HostBridge;
@@ -41,6 +42,7 @@ declare global {
 	var trafficRadar: TrafficRadar;
 	var network: NetworkWorld;
 	var metar: Metar;
+	var replay: Replay;
 }
 window.options = new Options();
 window.hostBridge = new HostBridge();
@@ -58,6 +60,7 @@ window.metar = new Metar();
 window.controlRadar = new ControlRadar();
 window.trafficRadar = new TrafficRadar();
 window.cards = new Cards();
+window.replay = new Replay();
 
 controlLayers.setupLayers();
 planeLayers.setupLayers();

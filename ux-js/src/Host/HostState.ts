@@ -126,12 +126,6 @@ class HostState {
         this.initializeHost();
     }
 
-    public resetApp() {
-        this.status = { simStatus: SimulatorStatus.Disconnected, simName: '' };
-        this.statusEvent.invoke(this.status);
-        hostBridge.send2(MsgId.SendAllData);
-    }
-
     public sendStatusCmd(cmd: StatusCmd) {
         const obj2: { '0'?: boolean } = {};
         switch (cmd)

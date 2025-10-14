@@ -128,14 +128,7 @@ function NetworkView() {
 
     const onOnlineChange = (_event: unknown, checked: boolean) => {
         vatsim.enabled = checked;
-        checked = vatsim.enabled;
         setVatsimOnline(checked);
-
-        if (checked) {
-            vatsim.start();
-        } else {
-            vatsim.stop();
-        }
     };
 
     const onRefreshRateChange = (value: number | undefined) => {
@@ -294,7 +287,7 @@ function SelectedView(props: { view: View }) {
 const devServer = 'http://localhost:5173/';
 
 function DevToolsView() {
-    const [playbackActive, setPlaybackActive] = useState(hostBridge.playbackActive);
+    const [playbackActive, setPlaybackActive] = useState(replay.active);
     const [mapVisible, setMapVisible] = useState(map.visible);
 
     useEffect(() => {
@@ -309,10 +302,10 @@ function DevToolsView() {
         <Stack flex='1' alignItems='center' spacing={2}>
             <Stack spacing={1}>
                 <Header>Radar Playback</Header>
-                <ButtonGroup variant='outlined' disabled>
-                    <Button color='primary' disabled={playbackActive} onClick={() => { hostBridge.playbackDefault(setPlaybackActive); }}>Play</Button>
-                    <Button color='primary' disabled={playbackActive} onClick={() => { hostBridge.recordPlaylist(setPlaybackActive); }}>Record</Button>
-                    <Button color='error' disabled={!playbackActive} onClick={() => { hostBridge.abortPlayback(); }}>Stop</Button>
+                <ButtonGroup variant='outlined'>
+                    <Button color='primary' disabled={playbackActive} onClick={() => { replay.playbackDefault(setPlaybackActive); }}>Play</Button>
+                    <Button color='primary' disabled={playbackActive} onClick={() => { replay.record(setPlaybackActive); }}>Record</Button>
+                    <Button color='error' disabled={!playbackActive} onClick={() => { replay.abort(); }}>Stop</Button>
                 </ButtonGroup>
             </Stack>
             <Divider flexItem />
