@@ -9,6 +9,8 @@ import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkFie
 import { CardHeader, CardRightToolbar, createNetUpdate } from './Cards/CardsShared';
 import { NetworkPilot } from '../Network/TrafficRadar';
 import StyledBox from './StyledBox';
+import RadarPlane from '../Radar/RadarPlane';
+import { SimulatorStatus } from '../Host/HostState';
 
 const VirtuosoTableComponents: TableComponents = {
     Scroller: forwardRef<HTMLDivElement>((props, ref) => (
@@ -241,6 +243,64 @@ const observerColumns: Column<Controller>[] = [
     },
 ];
 
+const planeColumns: Column<RadarPlane>[] = [
+    {
+        width: 80,
+        id: 'callsign',
+        label: 'Callsign',
+        data: data => data.callsign,
+        compare: (a, b) => {
+            return compareIgnoreCase(a.callsign, b.callsign);
+        },
+    },
+    {
+        width: 50,
+        id: 'type',
+        label: 'Type',
+        data: data => {
+            return data.model;
+        },
+        compare: (a, b) => {
+            return compareIgnoreCase(a.model, b.model);
+        },
+        alignData: 'center',
+    },
+    {
+        width: 200,
+        id: 'name',
+        label: 'Name',
+        data: data => data.plane.netState?.pilot.name ?? '- Network feed not available -',
+        compare: (a, b) => {
+            const one = a.plane.netState;
+            const two = b.plane.netState;
+
+            if (!one) {
+                if (two) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            } else if (!two) {
+                return 1;
+            }
+            return compareIgnoreCase(one.pilot.name, two.pilot.name);
+        },
+    },
+    {
+        width: 50,
+        id: 'buttons',
+        label: '',
+        data: data => {
+            const disabled = data.plane.netState == null;
+            const onClick = () => {
+                const pilot = data.plane.netState!;
+                cards.showPilotCard(pilot);
+            };
+            return <IconButton onClick={onClick} size='small' disabled={disabled}><NotesIcon fontSize='small' /></IconButton>;
+        },
+    },
+];
+
 function compareIgnoreCase(a: string, b: string) {
     a = a.toLowerCase();
     b = b.toLowerCase();
@@ -356,7 +416,7 @@ function sortData<Value>(values: Value[] | undefined, sorter: Sorter<Value>) {
     });
 }
 
-function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[], values: Value[] | undefined }) {
+function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[], values: () => Value[] | undefined }) {
     const [sortBy, setSortBy] = useState('');
     const [sorter, setSorter] = useState<Sorter<Value>>({ dir: 'asc', compare: () => 0 });
     const table = useRef<TableVirtuosoHandle>(null);
@@ -367,7 +427,7 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
     }
 
     const columns = props.columns;
-    const data = sortData(props.values, sorter);
+    const data = sortData(props.values(), sorter);
 
     const isScrolling = (scrolling: boolean) => {
         if (scrolling) {
@@ -392,31 +452,36 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
 }
 
 function PilotList(props: { enabled: boolean }) {
-    const data = trafficRadar.getPilotList();
+    const data = () => trafficRadar.getPilotList();
     return <DynamicList enabled={props.enabled} columns={pilotColumns} values={data} />;
 }
 
 function ControllerList(props: { enabled: boolean }) {
-    const data = controlRadar.getControllerList();
+    const data = () => controlRadar.getControllerList();
     return <DynamicList enabled={props.enabled} columns={controllerColumns} values={data} />;
 }
 
 function PrefileList(props: { enabled: boolean }) {
-    const state = network.getState();
-    return <DynamicList enabled={props.enabled} columns={prefileColumns} values={state?.prefiles} />;
+    const data = () => network.getState()?.prefiles;
+    return <DynamicList enabled={props.enabled} columns={prefileColumns} values={data} />;
 }
 
 function ObserverList(props: { enabled: boolean }) {
-    const state = network.getState();
-    return <DynamicList enabled={props.enabled} columns={observerColumns} values={state?.observers} />;
+    const data = () => network.getState()?.observers;
+    return <DynamicList enabled={props.enabled} columns={observerColumns} values={data} />;
 }
 
 function AtisList(props: { enabled: boolean }) {
-    const data = controlRadar.getAtisList();
+    const data = () => controlRadar.getAtisList();
     return <DynamicList enabled={props.enabled} columns={controllerColumns} values={data} />;
 }
 
-function EmptyList({ enabled }: { enabled: boolean }) {
+function LocalPlaneList(props: { enabled: boolean }) {
+    const data = () => radar.getPlaneList();
+    return <DynamicList enabled={props.enabled} columns={planeColumns} values={data} />;
+}
+
+function EmptyList({ enabled, label }: { enabled: boolean, label: string }) {
     if (!enabled) {
         return <></>;
     }
@@ -430,7 +495,7 @@ function EmptyList({ enabled }: { enabled: boolean }) {
             alignItems: 'center',
             justifyContent: 'center',
             }}>
-            <Typography>Network is disabled</Typography>
+            <Typography>{label}</Typography>
         </Box>
     );
 }
@@ -440,13 +505,39 @@ function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     const [rev, setRev] = useState(0);
 
     useEffect(() => {
-        return createNetUpdate(() => {
+        if (!props.open) {
+            return;
+        }
+        const onUpdate = () => {
             setRev(rev + 1);
-        });
-    }, []);
+        };
+
+        radar.planeAdded.add(onUpdate);
+        radar.planeRemoved.add(onUpdate);
+        network.Update.add(onUpdate);
+        return () => {
+            radar.planeAdded.delete(onUpdate);
+            radar.planeRemoved.delete(onUpdate);
+            network.Update.delete(onUpdate);
+        };
+    }, [rev, props.open]);
 
     const display = props.open ? 'flex' : 'none';
-    const tabIdx = props.open && network.getState() ? tab : -1;
+    let tabIdx = -1;
+    let disabledLabel = 'Network is disabled';
+    if (props.open) {
+        tabIdx = tab;
+        if (tab == 2) {
+            disabledLabel = 'Simulator is offline';
+            if (hostState.getHostStatus().simStatus != SimulatorStatus.Connected) {
+                tabIdx = -1;
+            }
+        } else {
+            if (!network.getState()) {
+                tabIdx = -1;
+            }
+        }
+    }
     const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
@@ -458,11 +549,13 @@ function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
                 <Tabs value={tab} onChange={onClickTab} centered>
                     <Tab label='Controllers' />
                     <Tab label='Pilots' />
+                    <Tab label='Planes' />
                 </Tabs>
             </CardHeader>
-            <EmptyList enabled={tabIdx == -1} />
+            <EmptyList enabled={tabIdx == -1} label={disabledLabel} />
             <PilotList enabled={tabIdx == 1} />
             <ControllerList enabled={tabIdx == 0} />
+            <LocalPlaneList enabled={tabIdx == 2} />
         </Box>
     );
 }
@@ -472,10 +565,13 @@ function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     const [rev, setRev] = useState(0);
 
     useEffect(() => {
+        if (!props.open) {
+            return;
+        }
         return createNetUpdate(() => {
             setRev(rev + 1);
         });
-    }, []);
+    }, [rev, props.open]);
 
     const display = props.open ? 'flex' : 'none';
     const tabIdx = props.open && network.getState() ? tab : -1;
@@ -493,7 +589,7 @@ function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
                     <Tab label='Prefiles' />
                 </Tabs>
             </CardHeader>
-            <EmptyList enabled={tabIdx == -1} />
+            <EmptyList enabled={tabIdx == -1} label='Network is disabled' />
             <PrefileList enabled={tabIdx == 2} />
             <ObserverList enabled={tabIdx == 1} />
             <AtisList enabled={tabIdx == 0} />
@@ -557,7 +653,7 @@ function FacilityStationsList() {
         return () => {
             controlRadar.Update.delete(onUpdate);
         };
-    }, [facility]);
+    }, [facility, refresh]);
 
     let list: (NetworkController | NetworkAtis)[] | undefined;
     let stationName = '';
@@ -579,7 +675,7 @@ function FacilityStationsList() {
                     <Typography variant='h5'>{stationName}</Typography>
                 </Box>
             </CardHeader>
-            <DynamicList enabled={hasFacility} columns={controllerColumns} values={list} />
+            <DynamicList enabled={hasFacility} columns={controllerColumns} values={() => list} />
         </DataBox>
     );
 }

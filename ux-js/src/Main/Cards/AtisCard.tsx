@@ -17,7 +17,7 @@ function AtisCard() {
         return () => {
             cards.atisRef = undefined;
         };
-    }, []);
+    }, [rev]);
 
     useEffect(() => {
         if (!object) {
@@ -38,7 +38,7 @@ function AtisCard() {
                 }
             }
         });
-    }, [object]);
+    }, [object, rev]);
 
     if (!object) {
         return <></>;

@@ -55,7 +55,7 @@ function ControllerCard() {
         return () => {
             cards.controllerRef = undefined;
         };
-    }, []);
+    }, [rev]);
 
     useEffect(() => {
         if (!object) {
@@ -76,7 +76,7 @@ function ControllerCard() {
                 }
             }
         });
-    }, [object]);
+    }, [object, rev]);
 
     if (!object) {
         return <></>;

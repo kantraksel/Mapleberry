@@ -18,7 +18,7 @@ function PilotCard() {
         return () => {
             cards.pilotRef = undefined;
         };
-    }, []);
+    }, [rev]);
 
     useEffect(() => {
         if (!object) {
@@ -39,7 +39,7 @@ function PilotCard() {
                 }
             }
         });
-    }, [object]);
+    }, [object, rev]);
     
     if (!object) {
         return <></>;

@@ -91,6 +91,10 @@ class MapPlane {
         this.point.set('pilot_net_state', obj, true);
     }
 
+    public get netState() {
+        return MapPlane.getNetState(this.point);
+    }
+
     public static getNetState(feature: FeatureLike): NetworkPilot | null {
         const value = feature.get('pilot_net_state') as unknown;
         if (value instanceof NetworkPilot) {

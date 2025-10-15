@@ -104,6 +104,10 @@ class Radar {
         const planes = Array.from(this.planes.values());
         return planes.find(value => value.callsign === callsign);
     }
+
+    public getPlaneList() {
+        return Array.from(this.planes.values());
+    }
 }
 
 export default Radar;
