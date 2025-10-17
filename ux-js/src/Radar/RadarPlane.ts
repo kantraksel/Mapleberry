@@ -1,12 +1,17 @@
 import MapPlane, { copyPhysicParams, PhysicParams } from "../Map/MapPlane";
 
 interface AnimatorState {
-    first: PhysicParams | null;
-    second: PhysicParams | null;
-    start: number;
+    first: PhysicParams;
+    second: PhysicParams;
+    start: number | null;
 
     stepLog: PhysicParams[];
-    lastStep: PhysicParams | null;
+    lastStep: PhysicParams;
+}
+
+export interface RadarPlaneData extends PhysicParams {
+    model: string;
+    callsign: string;
 }
 
 class RadarPlane {
@@ -15,34 +20,28 @@ class RadarPlane {
     callsign: string;
 
     inMap: boolean;
-    plane: MapPlane;
+    blip: MapPlane;
     animator: AnimatorState;
     main: boolean;
 
-    constructor(id: number, model: string, callsign: string) {
+    constructor(id: number, data: RadarPlaneData) {
         this.id = id;
-        this.model = model;
-        this.callsign = callsign;
-
+        this.model = data.model;
+        this.callsign = data.callsign;
         this.inMap = false;
-        this.plane = new MapPlane();
-        this.plane.radarState = this;
-        this.plane.callsign = callsign;
-
-        this.animator = {
-            first: null,
-            second: null,
-            start: 0,
-            stepLog: [],
-            lastStep: null,
-        };
         this.main = false;
+
+        const params = copyPhysicParams(data);
+        this.animator = radar.animator.createAnimator(params);
+
+        this.blip = new MapPlane(data.callsign, params);
+        this.blip.radarState = this;
     }
 
-    setIdent(model: string, callsign: string) {
-        this.model = model;
-        this.callsign = callsign;
-        this.plane.callsign = callsign;
+    setIdent(data: RadarPlaneData) {
+        this.model = data.model;
+        this.callsign = data.callsign;
+        this.blip.callsign = data.callsign;
     }
 
     update(data: PhysicParams) {
@@ -55,19 +54,19 @@ class RadarPlane {
     }
 
     updateAnimation(params: PhysicParams) {
-        this.plane.physicParams = params;
+        this.blip.physicParams = params;
     }
 
     tagMain() {
         this.main = true;
-        this.plane.setMainStyle();
+        this.blip.setMainStyle();
     }
 
     restoreStyle() {
         if (this.main) {
-            this.plane.setMainStyle();
+            this.blip.setMainStyle();
         } else {
-            this.plane.setDefaultStyle();
+            this.blip.setDefaultStyle();
         }
     }
 }

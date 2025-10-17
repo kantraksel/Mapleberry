@@ -1,6 +1,10 @@
 import MapPlane, { PhysicParams } from "../Map/MapPlane";
 import RadarPlane from "./RadarPlane";
 
+function roundTime(n: number) {
+    return Math.round(n * 10) / 10;
+}
+
 class RadarAnimator {
     private animatorId: number | null;
     private trackedId: number;
@@ -58,65 +62,51 @@ class RadarAnimator {
         const fn = (timestamp: number) => {
             let activeEntities = 0;
 
-            if (timestamp - this.lastAnimationTimestamp < this.minimumDeltaTime) {
+            if (roundTime(timestamp - this.lastAnimationTimestamp) < this.minimumDeltaTime) {
                 this.animatorId = requestAnimationFrame(fn);
                 return;
             }
             this.lastAnimationTimestamp = timestamp;
 
-            radar.forEach((info) => {
-                const data = info.animator;
-                if (!data.first) {
-                    const stepLog = data.stepLog;
-                    if (stepLog.length < 2) {
-                        return;
-                    }
-
-                    const i = stepLog.length - 2;
-                    data.first = stepLog[i];
-                    data.second = stepLog[i + 1];
+            radar.forEach(blip => {
+                const data = blip.animator;
+                if (data.start === null) {
                     data.start = timestamp;
-
-                    data.stepLog = [ data.second ];
                 }
 
-                let time = timestamp - data.start;
+                let time = roundTime(timestamp - data.start);
                 if (time >= 1000) {
                     const stepLog = data.stepLog;
                     if (stepLog.length >= 2) {
-                        time = time - 1000;
+                        time = roundTime(time % 1000);
 
                         const i = stepLog.length - 2;
                         data.first = stepLog[i];
                         data.second = stepLog[i + 1];
-                        data.start = timestamp - time;
+                        data.start = roundTime(timestamp - time);
 
                         data.stepLog = [ data.second ];
                     }
                 }
 
-                const n = MathClamp(time / 1000, 0, 1);
-                const params = lerpParams(data.first, data.second!, n);
+                const n = MathClamp(roundTime(time / 1000), 0, 2);
+                const params = lerpParams(data.first, data.second, n);
                 if (this.mapEnabled) {
-                    info.updateAnimation(params);
+                    blip.updateAnimation(params);
                 }
                 
-                if (!info.inMap) {
-                    radar.establishRadarContact(info);
+                if (!blip.inMap) {
+                    radar.establishRadarContact(blip);
                 }
 
-                if (this.mapEnabled && info.id == this.trackedId) {
+                if (this.mapEnabled && blip.id == this.trackedId) {
                     // fixes scroll not working when following plane on high resolution map
-                    if (!data.lastStep || params.longitude != data.lastStep.longitude || params.latitude != data.lastStep.latitude) {
+                    if (params.longitude != data.lastStep.longitude || params.latitude != data.lastStep.latitude) {
                         this.moveMapWithPlane(params);
                     }
                 }
                 data.lastStep = params;
 
-                if (time >= 1000) {
-                    data.first = null;
-                    data.second = null;
-                }
                 activeEntities++;
             });
 
@@ -172,18 +162,6 @@ class RadarAnimator {
 
         cancelAnimationFrame(this.animatorId);
         this.animatorId = null;
-
-        radar.forEach((info) => {
-            const data = info.animator;
-            if (!data.first) {
-                return;
-            }
-
-            if (data.stepLog.length >= 2) {
-                data.first = null;
-                data.second = null;
-            }
-        });
     }
 
     public followPlane(plane: RadarPlane) {
@@ -198,7 +176,7 @@ class RadarAnimator {
 
         this.trackedId = plane.id;
         this.lastAutoRes = this.enableMapScaling ? 0 : NaN;
-        plane.plane.setSelectedStyle();
+        plane.blip.setSelectedStyle();
 
         const lastStep = plane.animator.lastStep;
         if (lastStep) {
@@ -240,6 +218,16 @@ class RadarAnimator {
             this.lastAutoRes = 0;
         }
     }
+
+    public createAnimator(params: PhysicParams) {
+        return {
+            first: params,
+            second: params,
+            start: null,
+            stepLog: [ params ],
+            lastStep: params,
+        };
+    }
 }
 
 function MathClamp(value: number, min: number, max: number): number {
@@ -250,11 +238,29 @@ function MathLerp(first: number, second: number, fraction: number): number {
     return (second - first) * fraction + first;
 }
 
+function lerpHeading(first: number, second: number, fraction: number) {
+    let heading;
+    let deltaHeading = second - first;
+    if (deltaHeading > 180) {
+        deltaHeading = deltaHeading - 360;
+    } else if (deltaHeading < -180) {
+        deltaHeading = 360 + deltaHeading;
+    }
+    
+    heading = first + deltaHeading * fraction;
+    if (heading >= 360) {
+        heading = heading - 360;
+    } else if (heading < 0) {
+        heading = heading + 360;
+    }
+    return Math.round(heading * 1000) / 1000;
+}
+
 function lerpParams(first: PhysicParams, second: PhysicParams, fraction: number): PhysicParams {
     return {
         longitude: MathLerp(first.longitude, second.longitude, fraction),
         latitude: MathLerp(first.latitude, second.latitude, fraction),
-        heading: MathLerp(first.heading, second.heading, fraction),
+        heading: lerpHeading(first.heading, second.heading, fraction),
         altitude: MathLerp(first.altitude, second.altitude, fraction),
         groundSpeed: MathLerp(first.groundSpeed, second.groundSpeed, fraction),
         groundAltitude: MathLerp(first.groundAltitude, second.groundAltitude, fraction),

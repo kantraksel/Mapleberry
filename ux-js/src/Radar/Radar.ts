@@ -1,5 +1,5 @@
 import { PhysicParams } from "../Map/MapPlane";
-import RadarPlane from "./RadarPlane";
+import RadarPlane, { RadarPlaneData } from "./RadarPlane";
 import RadarAnimator from "./RadarAnimator";
 import Event from "../Event";
 
@@ -18,15 +18,17 @@ class Radar {
         this.planeRemoved = new Event();
     }
 
-    public add(id: number, model: string, callsign: string) {
-        let info = this.planes.get(id);
-        if (info) {
-            info.setIdent(model, callsign);
+    public add(id: number, data: RadarPlaneData) {
+        let plane = this.planes.get(id);
+        if (plane) {
+            plane.setIdent(data);
         } else {
-            info = new RadarPlane(id, model, callsign);
-            this.planes.set(id, info);
+            plane = new RadarPlane(id, data);
+            this.planes.set(id, plane);
         }
-        return info;
+        plane.update(data);
+        this.animator.start();
+        return plane;
     }
 
     public remove(id: number) {
@@ -51,11 +53,11 @@ class Radar {
     }
 
     public update(id: number, data: PhysicParams) {
-        const info = this.planes.get(id);
-        if (!info) {
+        const plane = this.planes.get(id);
+        if (!plane) {
             return;
         }
-        info.update(data);
+        plane.update(data);
         this.animator.start();
     }
 
@@ -84,14 +86,14 @@ class Radar {
             return;
         }
         plane.inMap = true;
-        planeLayers.addPlane(plane.plane);
+        planeLayers.addPlane(plane.blip);
         this.planeAdded.invoke(plane);
     }
 
     private loseRadarContact(plane: RadarPlane) {
         if (plane.inMap) {
             plane.inMap = false;
-            planeLayers.removePlane(plane.plane);
+            planeLayers.removePlane(plane.blip);
             this.planeRemoved.invoke(plane);
         }
     }

@@ -2,17 +2,6 @@ import { SimulatorStatus } from '../../Host/HostState';
 import { MsgId } from '../../Host/MsgId';
 import { PhysicParams, validatePhysicParams } from '../../Map/MapPlane';
 
-interface EventArgs {
-    id: number;
-}
-
-interface FlightAddEventArgs extends EventArgs, PhysicParams {
-    planeModel: string;
-    callsign: string;
-}
-type FlightRemoveEventArgs = EventArgs;
-type FlightUpdateEventArgs = EventArgs & PhysicParams;
-
 class LocalTraffic {
     public constructor() {
         hostBridge.registerHandler2(MsgId.RadarAddAircraft, data => {
@@ -54,7 +43,7 @@ class LocalTraffic {
             return;
         }
 
-        const obj: FlightAddEventArgs = {
+        const obj = {
             id: args[0],
             longitude: args[1],
             latitude: args[2],
@@ -64,20 +53,20 @@ class LocalTraffic {
             indicatedSpeed: args[6],
             groundSpeed: args[7],
             verticalSpeed: args[8],
-            planeModel: args[9],
+            model: args[9],
             callsign: args[10],
         };
         if (typeof obj.id !== 'number' || !Number.isFinite(obj.id) ||
-            typeof obj.callsign !== 'string' || typeof obj.planeModel !== 'string')
+            typeof obj.callsign !== 'string' || typeof obj.model !== 'string' ||
+            !validatePhysicParams(obj))
             return;
 
         if (obj.callsign.length > 16)
             obj.callsign = obj.callsign.substring(0, 16);
-        if (obj.planeModel.length > 16)
-            obj.planeModel = obj.planeModel.substring(0, 16);
+        if (obj.model.length > 16)
+            obj.model = obj.model.substring(0, 16);
 
-        radar.add(obj.id, obj.planeModel, obj.callsign);
-        this.applyUpdate(obj);
+        radar.add(obj.id, obj);
     }
 
     private handleRemove2(data: unknown[]) {
@@ -89,7 +78,7 @@ class LocalTraffic {
             return;
         }
 
-        const obj: FlightRemoveEventArgs = {
+        const obj = {
             id: args[0],
         };
         if (typeof obj.id !== 'number' || !Number.isFinite(obj.id))
@@ -107,7 +96,7 @@ class LocalTraffic {
             return;
         }
 
-        const obj: FlightUpdateEventArgs = {
+        const obj = {
             id: args[0],
             longitude: args[1],
             latitude: args[2],
@@ -118,10 +107,6 @@ class LocalTraffic {
             groundSpeed: args[7],
             verticalSpeed: args[8],
         };
-        this.applyUpdate(obj);
-    }
-
-    private applyUpdate(obj: FlightUpdateEventArgs) {
         if (typeof obj.id !== 'number' || !Number.isFinite(obj.id) ||
             !validatePhysicParams(obj))
             return;

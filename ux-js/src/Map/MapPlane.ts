@@ -10,11 +10,15 @@ class MapPlane {
     public readonly point: Feature;
     public readonly label: Feature;
 
-    public constructor() {
-        this.pos = new Point([ 0, 0 ]);
+    public constructor(callsign: string, params: PhysicParams) {
+        this.pos = new Point(fromLonLat([ params.longitude, params.latitude ]));
         this.point = new Feature(this.pos);
         this.label = new Feature(this.pos);
         this.setDefaultStyle();
+
+        this.label.set('callsign', callsign);
+        this.point.set('params', params);
+        this.label.set('params', params);
     }
 
     public set callsign(callsign: string) {
@@ -36,12 +40,8 @@ class MapPlane {
         this.label.set('params', params);
     }
 
-    public getPhysicParams(): PhysicParams | null {
-        const value = this.point.get('params');
-        if (typeof value !== 'object') {
-            return null;
-        }
-        return value;
+    public getPhysicParams(): PhysicParams {
+        return this.point.get('params');
     }
 
     public static getPhysicParams(feature: FeatureLike): PhysicParams | null {

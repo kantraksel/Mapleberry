@@ -269,10 +269,10 @@ const planeColumns: Column<RadarPlane>[] = [
         width: 200,
         id: 'name',
         label: 'Name',
-        data: data => data.plane.netState?.pilot.name ?? '- Network feed not available -',
+        data: data => data.blip.netState?.pilot.name ?? '- Network feed not available -',
         compare: (a, b) => {
-            const one = a.plane.netState;
-            const two = b.plane.netState;
+            const one = a.blip.netState;
+            const two = b.blip.netState;
 
             if (!one) {
                 if (two) {
@@ -291,9 +291,9 @@ const planeColumns: Column<RadarPlane>[] = [
         id: 'buttons',
         label: '',
         data: data => {
-            const disabled = data.plane.netState == null;
+            const disabled = data.blip.netState == null;
             const onClick = () => {
-                const pilot = data.plane.netState!;
+                const pilot = data.blip.netState!;
                 cards.showPilotCard(pilot);
             };
             return <IconButton onClick={onClick} size='small' disabled={disabled}><NotesIcon fontSize='small' /></IconButton>;

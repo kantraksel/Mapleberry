@@ -6,7 +6,7 @@ import { Atis, Controller, NetworkState } from './NetworkWorld';
 import Event from '../Event';
 import MapTracon from '../Map/MapTracon';
 
-class RefObject {
+export class RefObject {
     refCount: number;
 
     constructor() {

@@ -6,6 +6,8 @@ import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
+import '@fontsource/cascadia-code/500.css';
+import '@fontsource/cascadia-code/500-italic.css';
 import App from './Main/App.tsx';
 import HostBridge from './Host/HostBridge.ts';
 import HostState from './Host/HostState.ts';

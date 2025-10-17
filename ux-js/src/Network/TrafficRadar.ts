@@ -3,30 +3,31 @@ import MapPlane from "../Map/MapPlane";
 import { NetworkState, Pilot } from "./NetworkWorld";
 import RadarPlane from "../Radar/RadarPlane";
 import Event from "../Event";
+import { RefObject } from "./ControlRadar";
 
-export class NetworkPilot {
-    plane: MapPlane;
+export class NetworkPilot extends RefObject {
+    blip: MapPlane;
     pilot: Pilot;
     inMap: boolean;
     external?: RadarPlane;
-    refCount: number;
 
     constructor(pilot: Pilot) {
-        this.plane = new MapPlane();
+        super();
         this.pilot = pilot;
         this.inMap = false;
-        this.refCount = 1;
 
-        this.plane.netState = this;
-        this.plane.callsign = pilot.callsign;
-    }
-
-    addRef() {
-        this.refCount++;
-    }
-
-    expired() {
-        return this.refCount <= 0;
+        const params = {
+            longitude: pilot.longitude,
+            latitude: pilot.latitude,
+            heading: pilot.heading,
+            altitude: pilot.altitude,
+            groundAltitude: 0,
+            indicatedSpeed: 0,
+            groundSpeed: pilot.groundspeed,
+            verticalSpeed: 0,
+        };
+        this.blip = new MapPlane(pilot.callsign, params);
+        this.blip.netState = this;
     }
 }
 
@@ -50,7 +51,7 @@ class TrafficRadar {
                 if (this.localPilot) {
                     const pilot = this.localPilot;
                     this.loseContact(pilot);
-                    plane.plane.netState = pilot;
+                    plane.blip.netState = pilot;
                     pilot.external = plane;
 
                     this.UpdateLocal.invoke();
@@ -65,22 +66,19 @@ class TrafficRadar {
             }
 
             this.loseContact(pilot);
-            plane.plane.netState = pilot;
+            plane.blip.netState = pilot;
             pilot.external = plane;
         });
         radar.planeRemoved.add(plane => {
-            const pilot = plane.plane.netState;
+            const pilot = plane.blip.netState;
             if (!pilot) {
                 return;
             }
 
-            const params = plane.plane.getPhysicParams();
-            if (params) {
-                pilot.plane.physicParams = params;
-            }
+            pilot.blip.physicParams = plane.blip.getPhysicParams();
 
             this.establishContact(pilot);
-            plane.plane.netState = null;
+            plane.blip.netState = null;
             pilot.external = undefined;
 
             if (pilot.pilot.cid === this.localCID) {
@@ -133,14 +131,14 @@ class TrafficRadar {
 
     private establishContact(pilot: NetworkPilot) {
         if (!pilot.inMap) {
-            planeLayers.addFarPlane(pilot.plane);
+            planeLayers.addFarPlane(pilot.blip);
             pilot.inMap = true;
         }
     }
 
     private loseContact(pilot: NetworkPilot) {
         if (pilot.inMap) {
-            planeLayers.removeFarPlane(pilot.plane);
+            planeLayers.removeFarPlane(pilot.blip);
             pilot.inMap = false;
         }
     }
@@ -164,7 +162,7 @@ class TrafficRadar {
                         this.localPilot = plane;
                         const user = tracker.getUser();
                         if (user) {
-                            user.plane.netState = plane;
+                            user.blip.netState = plane;
                             plane.external = user;
                         } else {
                             this.establishContact(plane);
@@ -172,10 +170,10 @@ class TrafficRadar {
                         this.UpdateLocal.invoke();
                     } else {
                         const radarPlane = radar.getByCallsign(callsign);
-                        if (!radarPlane || radarPlane.plane.netState) {
+                        if (!radarPlane || radarPlane.blip.netState) {
                             this.establishContact(plane);
                         } else {
-                            radarPlane.plane.netState = plane;
+                            radarPlane.blip.netState = plane;
                             plane.external = radarPlane;
                         }
                     }
@@ -194,7 +192,7 @@ class TrafficRadar {
                     groundSpeed: pilot.groundspeed,
                     verticalSpeed: 0,
                 };
-                plane.plane.physicParams = params;
+                plane.blip.physicParams = params;
             } catch (e: unknown) {
                 console.error(e);
                 console.error(`^ was thrown while processing pilot ${pilot.callsign ?? 'INVALID'}/${pilot.cid ?? 'INVALID'}`);
@@ -211,7 +209,7 @@ class TrafficRadar {
 
             const plane = pilot.external;
             if (plane) {
-                plane.plane.netState = null;
+                plane.blip.netState = null;
             }
 
             if (pilot.pilot.cid === this.localCID) {

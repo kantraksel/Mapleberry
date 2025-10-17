@@ -12,6 +12,7 @@ class HostBridge {
     private reconnectSpan_: number;
     private port_: number;
     private reconnectHandle: number;
+    private lastReconnect: number;
 
     public constructor() {
         this.callbacks = new Map();
@@ -20,6 +21,7 @@ class HostBridge {
         this.reconnectSpan_ = options.get('app_reconnect_span', 60);
         this.port_ = options.get('app_port', 5170);
         this.reconnectHandle = 0;
+        this.lastReconnect = 0;
 
         if (this.enabled_) {
             this.startConnection();
@@ -35,11 +37,14 @@ class HostBridge {
             this.onEnable();
         }
 
-        this.reconnectHandle = setTimeout(() => {
+        this.lastReconnect = 0;
+        this.reconnectHandle = setInterval(() => {
+            const now = Date.now();
+            if ((now - this.lastReconnect) < (this.reconnectSpan_ * 1000)) {
+                return;
+            }
+            this.lastReconnect = now;
             this.openConnection();
-            this.reconnectHandle = setInterval(() => {
-                this.openConnection();
-            }, this.reconnectSpan_ * 1000);
         }, 1000);
     }
 

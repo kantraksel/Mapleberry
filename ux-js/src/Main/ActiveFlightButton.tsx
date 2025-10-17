@@ -48,11 +48,9 @@ function ActiveFlightButton() {
                 if (pilot.external) {
                     radar.animator.followPlane(pilot.external);
                 } else {
-                    const params = pilot.plane.getPhysicParams();
-                    if (params) {
-                        radar.animator.unfollowPlane();
-                        map.setCenterZoom(params.longitude, params.latitude);
-                    }
+                    const params = pilot.blip.getPhysicParams();
+                    radar.animator.unfollowPlane();
+                    map.setCenterZoom(params.longitude, params.latitude);
                 }
                 return;
             }

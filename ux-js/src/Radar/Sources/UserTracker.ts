@@ -24,7 +24,7 @@ class LocalPlaneInfo {
 
 interface UserAddEventArgs extends UserUpdateEventArgs {
     callsign: string;
-    planeModel: string;
+    model: string;
 }
 
 interface UserUpdateEventArgs extends PhysicParams {
@@ -89,19 +89,24 @@ class UserTracker {
             verticalSpeed: args[7],
             realAltitude: args[8],
             realHeading: args[9],
-            planeModel: args[10],
+            model: args[10],
             callsign: args[11],
         };
-        if (typeof obj.callsign !== 'string' || typeof obj.planeModel !== 'string')
+        if (typeof obj.callsign !== 'string' || typeof obj.model !== 'string' ||
+            !validatePhysicParams(obj) ||
+            typeof obj.realAltitude !== 'number' || !Number.isFinite(obj.realAltitude) ||
+            typeof obj.realHeading !== 'number' || !Number.isFinite(obj.realHeading)
+        )
             return;
 
         if (obj.callsign.length > 16)
             obj.callsign = obj.callsign.substring(0, 16);
-        if (obj.planeModel.length > 16)
-            obj.planeModel = obj.planeModel.substring(0, 16);
+        if (obj.model.length > 16)
+            obj.model = obj.model.substring(0, 16);
+        obj.realAltitude = MathClamp(obj.realAltitude, -10000, 100000);
+        obj.realHeading = MathClamp(obj.realHeading, 0, 360);
             
         this.addUser(obj);
-        this.applyUpdate(obj);
     }
 
     private handleUpdate2(data: unknown[]) {
@@ -146,13 +151,13 @@ class UserTracker {
             this.removeUser();
         }
 
-        const info = radar.add(0, data.planeModel, data.callsign);
+        const info = radar.add(0, data);
         user.info = info;
         info.tagMain();
 
         const customCallsign = this.customCallsign;
         if (customCallsign.length != 0) {
-            info.plane.callsign = customCallsign;
+            info.blip.callsign = customCallsign;
         }
     }
 
@@ -193,7 +198,7 @@ class UserTracker {
         if (name.length == 0) {
             name = info.callsign;
         }
-        info.plane.callsign = name;
+        info.blip.callsign = name;
     }
 
     public get customCallsign() {
