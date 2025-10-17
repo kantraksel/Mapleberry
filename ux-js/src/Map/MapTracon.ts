@@ -1,11 +1,28 @@
 import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
-import { MultiPolygon, Point } from 'ol/geom';
+import { MultiPolygon, Point, Polygon } from 'ol/geom';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { Airport_ext, Tracon } from '../Network/ControlStations';
 import { NetworkTracon } from '../Network/ControlRadar';
 import polylabel from 'polylabel';
 import Style from 'ol/style/Style';
+
+function round(n: number) {
+    return Math.round(n * 100) / 100;
+}
+
+function createCircle(center: number[]) {
+    const nautic_mile_to_meter = 40000 / (360 * 60) * 1000;
+    const radius = nautic_mile_to_meter * 50;
+    const shape: [number, number][] = [];
+    for (let i = 0; i < 360; ++i) {
+        const angle = i * (Math.PI / 180);
+        const x = round(center[0] + radius * Math.cos(angle));
+        const y = round(center[1] + radius * Math.sin(angle));
+        shape.push([ x, y ]);
+    }
+    return [ shape ];
+}
 
 class MapTracon {
     public readonly area: Feature;
@@ -21,16 +38,15 @@ class MapTracon {
     }
 
     public static create(substation: Tracon, station: Airport_ext) {
+        let shape;
         if (substation.geometry.length > 0) {
-            const shape = new MultiPolygon(substation.geometry);
-            const area = new Feature(shape);
-            return new MapTracon(area, substation);
+            shape = new MultiPolygon(substation.geometry);
         } else {
-            const pos = new Point(fromLonLat([ station.longitude, station.latitude ]));
-            const area = new Feature(pos);
-            area.set('control_tracon_default', true);
-            return new MapTracon(area, substation);
+            const pos = fromLonLat([ station.longitude, station.latitude ]);
+            shape = new Polygon(createCircle(pos));
         }
+        const area = new Feature(shape);
+        return new MapTracon(area, substation);
     }
 
     public static createStandalone(substation: Tracon, sid: string) {
@@ -61,10 +77,6 @@ class MapTracon {
             return null;
         }
         return value as NetworkTracon;
-    }
-
-    public static hasDefaultStyle(feature: FeatureLike): boolean | undefined {
-        return feature.get('control_tracon_default');
     }
 
     public getLabelPos() {

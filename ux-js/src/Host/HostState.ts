@@ -58,7 +58,7 @@ class HostState {
             this.statusEvent.invoke(this.status);
         };
 
-        hostBridge.registerHandler2(MsgId.ModifySystemState, data => {
+        hostBridge.registerHandler(MsgId.ModifySystemState, data => {
             if (data.length === 0) {
                 return;
             }
@@ -66,7 +66,7 @@ class HostState {
             this.modifySystemState(args);
         });
 
-        hostBridge.registerHandler2(MsgId.SendAllData, data => {
+        hostBridge.registerHandler(MsgId.SendAllData, data => {
             if (data.length === 0) {
                 return;
             }
@@ -111,7 +111,7 @@ class HostState {
             return;
         }
 
-        hostBridge.send2(MsgId.SendAllData);
+        hostBridge.send(MsgId.SendAllData);
         if (this.getAllowSimComReconnect()) {
             this.setAllowSimComReconnect(true);
             this.sendStatusCmd(StatusCmd.ConnectSim);
@@ -127,21 +127,21 @@ class HostState {
     }
 
     public sendStatusCmd(cmd: StatusCmd) {
-        const obj2: { '0'?: boolean } = {};
+        const obj: { '0'?: boolean } = {};
         switch (cmd)
         {
             case StatusCmd.ConnectSim: {
-                obj2[0] = true;
+                obj[0] = true;
                 break;
             }
                 
             case StatusCmd.DisconnectSim: {
-                obj2[0] = false;
+                obj[0] = false;
                 break;
             }
         }
 
-        hostBridge.send2(MsgId.ModifySystemState, obj2);
+        hostBridge.send(MsgId.ModifySystemState, obj);
     }
 
     public getHostStatus() {
@@ -153,7 +153,7 @@ class HostState {
 
     public setAllowSimComReconnect(value: boolean) {
         options.set('simcom_reconnect', value);
-        hostBridge.send2(MsgId.ModifySystemProperties, { '0': value });
+        hostBridge.send(MsgId.ModifySystemProperties, { '0': value });
     }
 
     public getAllowSimComReconnect() {

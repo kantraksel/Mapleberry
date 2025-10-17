@@ -72,9 +72,10 @@ class HostBridge {
         const ws = new WebSocket(`ws://localhost:${this.port_}`);
         ws.binaryType = 'arraybuffer';
         this.ws = ws;
+        console.info(`Connecting to host: port ${this.port_}`);
 
         ws.onopen = _ => {
-            console.info('WebCast connection open');
+            console.info('Host connection open');
 
             if (this.onOpen)
                 this.onOpen();
@@ -91,21 +92,21 @@ class HostBridge {
                 }
                 this.onMessage(new Uint8Array(blob));
             } catch (err: unknown) {
-                console.error('WebCast handler threw an exception:');
+                console.error('Host handler threw an exception:');
                 console.error(err);
                 ws.close();
                 this.ws = undefined;
             }
         };
         ws.onclose = _ => {
-            console.info('WebCast connection closed');
+            console.info('Host connection closed');
             this.ws = undefined;
 
             if (this.onClose)
                 this.onClose();
         };
         ws.onerror = _ => {
-            console.info('WebCast connection failed');
+            console.info('Host connection failed');
             this.ws = undefined;
         };
     }
@@ -149,7 +150,7 @@ class HostBridge {
         return value >= 1024 && value <= 65535;
     }
 
-    public send2(id: MsgId, obj?: unknown) {
+    public send(id: MsgId, obj?: unknown) {
         if (this.ws?.readyState !== WebSocket.OPEN) {
             return;
         }
@@ -164,7 +165,7 @@ class HostBridge {
                 this.ws.send(header);
             }
         } catch (err: unknown) {
-            console.error('WebCast send failed:');
+            console.error('Host send failed:');
             console.error(err);
         }
     }
@@ -176,16 +177,17 @@ class HostBridge {
         if (!isMsgId(id)) {
             return;
         }
+        objects.shift();
 
         const callback = this.callbacks.get(id);
         if (callback) {
-            callback(objects.slice(1));
+            callback(objects);
         } else {
-            console.warn(`Message ${id} has been discarded`);
+            console.warn(`Host message ${id} has been discarded`);
         }
     }
 
-    public registerHandler2(id: MsgId, callback: (data: unknown[]) => void) {
+    public registerHandler(id: MsgId, callback: (data: unknown[]) => void) {
         this.callbacks.set(id, callback);
     }
 

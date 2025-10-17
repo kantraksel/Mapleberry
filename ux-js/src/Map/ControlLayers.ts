@@ -150,27 +150,9 @@ class ControlLayer {
             fill: new OlFill({ color: [255, 0, 255, 0.2] }),
             stroke: new OlStroke({ color: [255, 0, 255] }),
         });
-        const pointStyleObj = new OlStyle({
-            image: new OlCircle({
-                radius: 50,
-                fill: new OlFill({ color: [255, 0, 255, 0.2] }),
-                stroke: new OlStroke({ color: [255, 0, 255] }),
-            }),
-        });
-        const style = (feature: FeatureLike, resolution: number) => {
-            if (MapTracon.hasDefaultStyle(feature)) {
-                const nautic_mile_meters = 40000 / (360 * 60) * 1000;
-                const shape = pointStyleObj.getImage() as OlCircle;
-                shape.setRadius(50 * nautic_mile_meters / resolution);
-                return pointStyleObj;
-            }
-            return shapeStyleObj;
-        };
-
         this.traconLayer = new VectorLayer({
-            style: style,
+            style: shapeStyleObj,
             source: this.traconSource,
-            updateWhileAnimating: true,
         });
     }
 

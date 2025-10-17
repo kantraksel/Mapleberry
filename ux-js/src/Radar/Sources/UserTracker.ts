@@ -42,16 +42,16 @@ class UserTracker {
     public constructor() {
         this.user = new LocalPlaneInfo();
 
-        hostBridge.registerHandler2(MsgId.LocalAddAircraft, data => {
-            this.handleAdd2(data);
+        hostBridge.registerHandler(MsgId.LocalAddAircraft, data => {
+            this.handleAdd(data);
         });
 
-        hostBridge.registerHandler2(MsgId.LocalRemoveAircraft, _ => {
+        hostBridge.registerHandler(MsgId.LocalRemoveAircraft, _ => {
             this.removeUser();
         });
 
-        hostBridge.registerHandler2(MsgId.LocalUpdateAircraft, data => {
-            this.handleUpdate2(data);
+        hostBridge.registerHandler(MsgId.LocalUpdateAircraft, data => {
+            this.handleUpdate(data);
         });
 
         hostState.resyncEvent.add(obj => {
@@ -59,7 +59,7 @@ class UserTracker {
             if (typeof data !== 'object' || !data) {
                 return;
             }
-            this.handleAdd2([ data ]);
+            this.handleAdd([ data ]);
         });
 
         hostState.statusEvent.add((status) => {
@@ -69,7 +69,7 @@ class UserTracker {
         });
     }
 
-    private handleAdd2(data: unknown[]) {
+    private handleAdd(data: unknown[]) {
         if (data.length === 0) {
             return;
         }
@@ -109,7 +109,7 @@ class UserTracker {
         this.addUser(obj);
     }
 
-    private handleUpdate2(data: unknown[]) {
+    private handleUpdate(data: unknown[]) {
         if (data.length === 0) {
             return;
         }

@@ -4,16 +4,16 @@ import { PhysicParams, validatePhysicParams } from '../../Map/MapPlane';
 
 class LocalTraffic {
     public constructor() {
-        hostBridge.registerHandler2(MsgId.RadarAddAircraft, data => {
-            this.handleAdd2(data);
+        hostBridge.registerHandler(MsgId.RadarAddAircraft, data => {
+            this.handleAdd(data);
         });
 
-        hostBridge.registerHandler2(MsgId.RadarRemoveAircraft, data => {
-            this.handleRemove2(data);
+        hostBridge.registerHandler(MsgId.RadarRemoveAircraft, data => {
+            this.handleRemove(data);
         });
 
-        hostBridge.registerHandler2(MsgId.RadarUpdateAircraft, data => {
-            this.handleUpdate2(data);
+        hostBridge.registerHandler(MsgId.RadarUpdateAircraft, data => {
+            this.handleUpdate(data);
         });
 
         hostState.resyncEvent.add(obj => {
@@ -23,7 +23,7 @@ class LocalTraffic {
             }
 
             data.forEach(obj => {
-                this.handleAdd2([ obj ]);
+                this.handleAdd([ obj ]);
             });
         });
 
@@ -34,7 +34,7 @@ class LocalTraffic {
         });
     }
 
-    private handleAdd2(data: unknown[]) {
+    private handleAdd(data: unknown[]) {
         if (data.length === 0) {
             return;
         }
@@ -69,7 +69,7 @@ class LocalTraffic {
         radar.add(obj.id, obj);
     }
 
-    private handleRemove2(data: unknown[]) {
+    private handleRemove(data: unknown[]) {
         if (data.length === 0) {
             return;
         }
@@ -87,7 +87,7 @@ class LocalTraffic {
         radar.remove(obj.id);
     }
 
-    private handleUpdate2(data: unknown[]) {
+    private handleUpdate(data: unknown[]) {
         if (data.length === 0) {
             return;
         }

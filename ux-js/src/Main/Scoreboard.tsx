@@ -543,7 +543,7 @@ function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     };
 
     return (
-        <Box sx={{ display, width: 'stretch', height: 'stretch', flexDirection: 'column' }}>
+        <Box sx={{ display, width: 'stretch', height: '100%', flexDirection: 'column' }}>
             <CardHeader>
                 <CardRightToolbar>{props.toolsRight}</CardRightToolbar>
                 <Tabs value={tab} onChange={onClickTab} centered>
@@ -580,7 +580,7 @@ function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     };
 
     return (
-        <Box sx={{ display, width: 'stretch', height: 'stretch', flexDirection: 'column' }}>
+        <Box sx={{ display, width: 'stretch', height: '100%', flexDirection: 'column' }}>
             <CardHeader>
                 <CardRightToolbar>{props.toolsRight}</CardRightToolbar>
                 <Tabs value={tab} onChange={onClickTab} centered sx={{ display }}>
