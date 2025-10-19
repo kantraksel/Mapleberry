@@ -1,6 +1,6 @@
 import { Divider } from '@mui/material';
 import { Prefile } from '../../Network/NetworkWorld';
-import { createNetUpdate, DataTable, getFlightplan, RouteBox, StationCard } from './CardsShared';
+import { createNetUpdate, DataTable, getFlightplan, RouteBox, StationCard, UserName } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 function PrefileCard() {
@@ -46,7 +46,7 @@ function PrefileCard() {
     const flightplan = getFlightplan(data);
 
     const table = [
-        [['Name:'], [data.name]],
+        [['Name:'], [<UserName cid={data.cid} name={data.name} />]],
         [['Aircraft:'], [flightplan.aircraft_faa]],
     ];
 

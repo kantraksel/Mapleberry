@@ -209,6 +209,10 @@ class VATSIM {
         return await response.text();
     }
 
+    public openStats(cid: number) {
+        window.open(`https://stats.vatsim.net/search_id.php?id=${cid}`, '_blank');
+    }
+
     private static async getObject<Type>(url: string) {
         const response = await fetch(url, { cache: 'default' });
         return await response.json() as Type;

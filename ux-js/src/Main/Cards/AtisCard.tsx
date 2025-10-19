@@ -1,5 +1,5 @@
 import { NetworkAtis, NetworkField } from '../../Network/ControlRadar';
-import { createControlRadarUpdate, DataTable, getTimeOnline, StationCard, TextBox } from './CardsShared';
+import { createControlRadarUpdate, DataTable, getTimeOnline, StationCard, TextBox, UserName } from './CardsShared';
 import { useEffect, useState } from 'react';
 
 function AtisCard() {
@@ -55,7 +55,7 @@ function AtisCard() {
     const table = [
         [
             ['Name:', 'Station:'],
-            [data.name, data.frequency],
+            [<UserName cid={data.cid} name={data.name} />, data.frequency],
         ],
         [
             ['Time Online:', 'ATIS Code:'],

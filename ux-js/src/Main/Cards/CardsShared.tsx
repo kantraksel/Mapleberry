@@ -1,10 +1,11 @@
 import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Controller, FlightPlan, Pilot } from '../../Network/VATSIM';
-import { Box, Button, IconButton, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Button, ButtonBase, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { NetworkState } from '../../Network/NetworkWorld';
 import StyledBox from '../StyledBox';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 
 export function CardBase(props: { children?: ReactNode, width: number | string, maxWidth: number | string, minWidth: number | string }) {
     const style = {
@@ -295,12 +296,15 @@ export function createControlRadarUpdate(onUpdate: () => void) {
     };
 }
 
-export function DataTable(props: { data: string[][][] }) {
+export function DataTable(props: { data: ReactNode[][][] }) {
     let i = 0; // ignore react warning - data layout is always fixed
     const parts = props.data.map(part => {
         const columns = part.map(column => {
             const names = column.map(name => {
-                return <Typography key={++i}>{name}</Typography>;
+                if (typeof name === 'string') {
+                    return <Typography key={++i}>{name}</Typography>;
+                }
+                return <Box key={++i}>{name}</Box>;
             });
             return <Stack key={++i}>{names}</Stack>;
         });
@@ -350,5 +354,33 @@ export function RouteBox(props: { flight_plan: FlightPlan }) {
             <TextBox label='Route' value={flightplan.route} />
             <TextBox label='Remarks' value={flightplan.remarks} />
         </>
+    );
+}
+
+export function UserName({ cid, name }: { cid: number, name: string }) {
+    const [copied, setCopied] = useState(false);
+
+    const copyText = copied ? 'Copied' : 'Copy CID';
+    const copy = () => {
+        navigator.clipboard.writeText(`${cid}`);
+        setCopied(true);
+    };
+    const resetCopy = () => {
+        setCopied(false);
+    };
+
+    return (
+        <Stack direction='row' spacing={1} useFlexGap>
+            <Tooltip title={copyText} onOpen={resetCopy}>
+                <ButtonBase onClick={copy}>
+                    <Typography>{name}</Typography>
+                </ButtonBase>
+            </Tooltip>
+            <Tooltip title='VATSIM Stats'>
+                <ButtonBase onClick={() => vatsim.openStats(cid)}>
+                    <PersonSearchIcon sx={{ fontSize: '1.2rem' }} />
+                </ButtonBase>
+            </Tooltip>
+        </Stack>
     );
 }

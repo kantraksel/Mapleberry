@@ -1,5 +1,5 @@
 import { IconButton, Menu, MenuItem } from '@mui/material';
-import { createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCard, TextBox } from './CardsShared';
+import { createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCard, TextBox, UserName } from './CardsShared';
 import { useEffect, useRef, useState } from 'react';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 import { NetworkArea, NetworkControl, NetworkController, NetworkField } from '../../Network/ControlRadar';
@@ -91,7 +91,7 @@ function ControllerCard() {
     const table = [
         [
             ['Name:', 'Station:'],
-            [data.name, station],
+            [<UserName cid={data.cid} name={data.name} />, station],
         ],
         [
             ['Controller Rating:', 'Time Online:'],

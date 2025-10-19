@@ -1,5 +1,5 @@
 import { Divider } from '@mui/material';
-import { createControlRadarUpdate, DataTable, getFlightplan, getPilotRating, getTimeOnline, RouteBox, StationCard } from './CardsShared';
+import { createControlRadarUpdate, DataTable, getFlightplan, getPilotRating, getTimeOnline, RouteBox, StationCard, UserName } from './CardsShared';
 import { useEffect, useState } from 'react';
 import { NetworkPilot } from '../../Network/TrafficRadar';
 
@@ -53,7 +53,7 @@ function PilotCard() {
     const table = [
         [
             ['Name:', 'Aircraft:'],
-            [data.name, flightplan.aircraft_faa],
+            [<UserName cid={data.cid} name={data.name} />, flightplan.aircraft_faa],
         ],
         [
             ['Pilot Rating:', 'Time Online:'],
