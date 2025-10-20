@@ -9,12 +9,14 @@ export class NetworkPilot extends RefObject {
     blip: MapPlane;
     pilot: Pilot;
     inMap: boolean;
+    local: boolean;
     external?: RadarPlane;
 
     constructor(pilot: Pilot) {
         super();
         this.pilot = pilot;
         this.inMap = false;
+        this.local = false;
 
         const params = {
             longitude: pilot.longitude,
@@ -48,26 +50,21 @@ class TrafficRadar {
 
         radar.planeAdded.add(plane => {
             if (plane.main) {
-                if (this.localPilot) {
-                    const pilot = this.localPilot;
-                    this.loseContact(pilot);
-                    plane.blip.netState = pilot;
-                    pilot.external = plane;
-
+                const pilot = this.localPilot;
+                if (pilot) {
+                    this.connectPlane(pilot, plane);
                     this.UpdateLocal.invoke();
                     return;
                 }
                 //don't match by callsign unless permitted
                 return;
             }
+
             const pilot = this.planes.get(plane.callsign);
             if (!pilot || pilot.external) {
                 return;
             }
-
-            this.loseContact(pilot);
-            plane.blip.netState = pilot;
-            pilot.external = plane;
+            this.connectPlane(pilot, plane);
         });
         radar.planeRemoved.add(plane => {
             const pilot = plane.blip.netState;
@@ -76,12 +73,9 @@ class TrafficRadar {
             }
 
             pilot.blip.physicParams = plane.blip.getPhysicParams();
+            this.disconnectPlane(pilot, plane);
 
-            this.establishContact(pilot);
-            plane.blip.netState = null;
-            pilot.external = undefined;
-
-            if (pilot.pilot.cid === this.localCID) {
+            if (pilot.local) {
                 this.UpdateLocal.invoke();
             }
         });
@@ -120,6 +114,10 @@ class TrafficRadar {
 
     public clear() {
         this.planes.forEach(value => {
+            const plane = value.external;
+            if (plane) {
+                plane.blip.netState = null;
+            }
             this.loseContact(value);
         });
         this.planes.clear();
@@ -212,7 +210,7 @@ class TrafficRadar {
                 plane.blip.netState = null;
             }
 
-            if (pilot.pilot.cid === this.localCID) {
+            if (pilot.local) {
                 this.localPilot = undefined;
                 this.UpdateLocal.invoke();
             }
@@ -232,19 +230,13 @@ class TrafficRadar {
     }
 
     public set userId(value: number | undefined) {
-        const changed = value !== this.localCID;
+        if (value === this.localCID) {
+            return;
+        }
 
         this.localCID = value;
         options.set('vatsim_user_id', value);
-
-        if (changed) {
-            if (value) {
-                this.localPilot = this.cache.get(value);
-            } else {
-                this.localPilot = undefined;
-            }
-            this.UpdateLocal.invoke();
-        }
+        this.updateLocalPlane(value);
     }
 
     public get userId() {
@@ -253,6 +245,60 @@ class TrafficRadar {
 
     public getUser() {
         return this.localPilot;
+    }
+
+    private updateLocalPlane(cid: number | undefined) {
+        const oldPilot = this.localPilot;
+        if (oldPilot) {
+            this.disconnectPlane(oldPilot);
+            oldPilot.local = false;
+
+            const plane = radar.getByCallsign(oldPilot.pilot.callsign);
+            if (plane && !plane.blip.netState) {
+                this.connectPlane(oldPilot, plane);
+            }
+        }
+
+        let pilot;
+        if (cid) {
+            pilot = this.cache.get(cid);
+            if (pilot) {
+                this.localPilot = pilot;
+                pilot.local = true;
+                
+                let plane = pilot.external as RadarPlane | undefined | null;
+                if (plane) {
+                    plane.blip.netState = null;
+                }
+                pilot.external = undefined;
+
+                plane = tracker.getUser();
+                if (plane) {
+                    this.connectPlane(pilot, plane);
+                }
+            }
+        }
+        this.localPilot = pilot;
+        this.UpdateLocal.invoke();
+    }
+
+    private connectPlane(pilot: NetworkPilot, plane: RadarPlane) {
+        plane.blip.netState = pilot;
+        pilot.external = plane;
+        this.loseContact(pilot);
+    }
+
+    private disconnectPlane(pilot: NetworkPilot, plane?: RadarPlane) {
+        if (plane) {
+            plane.blip.netState = null;
+        } else {
+            const plane = pilot.external;
+            if (plane) {
+                plane.blip.netState = null;
+            }
+        }
+        pilot.external = undefined;
+        this.establishContact(pilot);
     }
 }
 

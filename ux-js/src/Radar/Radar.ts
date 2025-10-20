@@ -7,12 +7,14 @@ type RadarPlaneEvent = (plane: RadarPlane) => void;
 
 class Radar {
     private planes: Map<number, RadarPlane>;
+    private callsigns: Map<string, RadarPlane>;
     public readonly animator: RadarAnimator;
     public readonly planeAdded: Event<RadarPlaneEvent>;
     public readonly planeRemoved: Event<RadarPlaneEvent>;
 
     public constructor() {
         this.planes = new Map();
+        this.callsigns = new Map();
         this.animator = new RadarAnimator();
         this.planeAdded = new Event();
         this.planeRemoved = new Event();
@@ -25,6 +27,7 @@ class Radar {
         } else {
             plane = new RadarPlane(id, data);
             this.planes.set(id, plane);
+            this.callsigns.set(data.callsign, plane);
         }
         plane.update(data);
         this.animator.start();
@@ -38,9 +41,18 @@ class Radar {
         }
         this.loseRadarContact(info);
         this.planes.delete(info.id);
+        this.callsigns.delete(info.callsign);
 
         if (this.planes.size == 0) {
             this.animator.stop();
+            return;
+        }
+
+        for (const [_, value] of this.planes) {
+            if (value.callsign == info.callsign) {
+                this.callsigns.set(value.callsign, value);
+                break;
+            }
         }
     }
 
@@ -49,6 +61,7 @@ class Radar {
             this.loseRadarContact(info);
         });
         this.planes.clear();
+        this.callsigns.clear();
         this.animator.stop();
     }
 
@@ -69,16 +82,6 @@ class Radar {
         this.planes.forEach((value) => {
             callback(value);
         });
-    }
-
-    public isVisible(callsign: string) {
-        for (const [_, value] of this.planes) {
-            if (value.callsign == callsign) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     public establishRadarContact(plane: RadarPlane) {
@@ -103,8 +106,7 @@ class Radar {
     }
 
     public getByCallsign(callsign: string) {
-        const planes = Array.from(this.planes.values());
-        return planes.find(value => value.callsign === callsign);
+        return this.callsigns.get(callsign);
     }
 
     public getPlaneList() {

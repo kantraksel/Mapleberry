@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ListItemButton } from "@mui/material";
 import { MainListIcon, MainListText } from "./App";
 import FlightIcon from '@mui/icons-material/Flight';
+import RadarPlane from "../Radar/RadarPlane";
 
 function ActiveFlightButton() {
     const [enabled, setEnabled] = useState(false);
@@ -9,18 +10,32 @@ function ActiveFlightButton() {
 
     useEffect(() => {
         const onUpdate = () => {
+            const user = tracker.getUser();
+            if (user) {
+                setEnabled(true);
+                return;
+            }
             const pilot = trafficRadar.getUser();
-            if (!!pilot) {
+            if (pilot) {
                 setEnabled(true);
             } else {
                 setEnabled(false);
                 setVisible(false);
             }
         };
+        const onUserUpdate = (plane: RadarPlane) => {
+            if (plane.main) {
+                onUpdate();
+            }
+        };
 
         trafficRadar.UpdateLocal.add(onUpdate);
+        radar.planeAdded.add(onUserUpdate);
+        radar.planeRemoved.add(onUserUpdate);
         return () => {
             trafficRadar.UpdateLocal.delete(onUpdate);
+            radar.planeAdded.delete(onUserUpdate);
+            radar.planeRemoved.delete(onUserUpdate);
         }
     }, []);
 
@@ -54,8 +69,13 @@ function ActiveFlightButton() {
                 }
                 return;
             }
-		} else {
+            const user = tracker.getUser();
+            if (user) {
+                radar.animator.followPlane(user);
+            }
+        } else {
             cards.close();
+            radar.animator.unfollowPlane();
             setVisible(false);
         }
 	};
