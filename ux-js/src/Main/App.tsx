@@ -14,6 +14,7 @@ import PrefileCard from './Cards/PrefileCard';
 import AtisCard from './Cards/AtisCard';
 import MetarBox from './MetarBox';
 import ActiveFlightButton from './ActiveFlightButton';
+import NotificationBox from './NotificationBox';
 
 const MainDrawerContext = createContext(true);
 
@@ -185,6 +186,7 @@ function App() {
 				</Box>
 			</Box>
 
+			<NotificationBox />
 			<OptionsBox open={optionsVisible} onClose={() => { setOptionsVisible(false); }} />
 		</>
 	);
@@ -194,11 +196,6 @@ export default App;
 
 /*
 TODO:
-- add local airplane button
-- /and/or/ add local planes in Stations Lists (as a tab)
-- try to autodetect local airplane, show toast with suggestion
-- fix spin when crossing 360 boundary (radar animator)
-
 - rewrite system-ui sync, regroup files, make start sequence reliable (systems), split cards shared
 - add search bar in lists
 
@@ -212,6 +209,8 @@ TODO:
 - option: interactable area (region+tracon)
 - option: hide atis in airport (list)
 - better contrast for net planes and area labels (plane color based on altitude)
+- add transition on color changes of sim status
+- notifications: transitions in-out, visible timer
 
 - implement OSM Vector Tiles
 - expose stationless controllers on map
@@ -220,16 +219,15 @@ TODO:
 - investigate KZNY & SUEO - determine oceanic flag
 - integrate VATSIM AIP, accurate station names
 
-- device control panel (possibly move to different project, native ImGui app)
 - branding, policy, external services and libraries
 
 OSM Vector Tiles:
 https://americanamap.org/
 https://tile.ourmap.us/
 
-https://stats.vatsim.net/search_id.php?id={cid}
 network.updateState(JSON.parse(localStorage.getItem('vatsim_list')!));
 https://vatspy-data.kantraksel.workers.dev/release.json
+https://theboostcpplibraries.com/boost.asio-io-services-and-io-objects
 
 Dataset errors:
 [NOT EXPLORED] Boundaries.geojson: some entries (above 700) have numeric properties instead of strings

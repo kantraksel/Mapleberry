@@ -354,6 +354,13 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
 
 function OptionsBox(props: { open: boolean, onClose: () => void }) {
     const [state, setState] = useState<View>('network');
+    const [rev, setRev] = useState(0);
+
+    useEffect(() => {
+        options.refreshHook = () => {
+            setRev(rev + 1);
+        };
+    }, [rev]);
 
     if (!props.open) {
 		return <></>;

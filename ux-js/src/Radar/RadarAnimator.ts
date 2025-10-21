@@ -1,3 +1,4 @@
+import { FeatureLike } from "ol/Feature";
 import MapPlane, { PhysicParams } from "../Map/MapPlane";
 import RadarPlane from "./RadarPlane";
 
@@ -52,6 +53,14 @@ class RadarAnimator {
         map.visibilityEvent.add((visible) => {
             this.mapEnabled = visible;
         });
+    }
+
+    public isInteractable(e: FeatureLike) {
+        const obj = MapPlane.getRadarState(e);
+        if (obj) {
+            return true;
+        }
+        return false;
     }
 
     public start() {

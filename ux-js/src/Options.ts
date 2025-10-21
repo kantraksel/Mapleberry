@@ -15,6 +15,7 @@ type OptionKeys =
 
 class Options {
     items: Map<string, unknown>;
+    refreshHook?: () => void;
 
     constructor() {
         this.items = new Map();
@@ -45,6 +46,10 @@ class Options {
         let blob = JSON.stringify(value);
         this.items.set(key, value);
         localStorage.setItem(key, blob);
+    }
+
+    public refresh() {
+        this.refreshHook?.call(null);
     }
 }
 

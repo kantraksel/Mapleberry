@@ -4,6 +4,7 @@ import { NetworkState, Pilot } from "./NetworkWorld";
 import RadarPlane from "../Radar/RadarPlane";
 import Event from "../Event";
 import { RefObject } from "./ControlRadar";
+import { Severity } from "../Notifications";
 
 export class NetworkPilot extends RefObject {
     blip: MapPlane;
@@ -41,11 +42,17 @@ class TrafficRadar {
     private localCID?: number;
     private localPilot?: NetworkPilot;
     public readonly UpdateLocal: Event<UpdateLocalEvent>;
+    private dialogDetect: number;
+    private lockDetect: boolean;
+    private cidWarning: number;
 
     public constructor() {
         this.planes = new Map();
         this.cache = new Map();
         this.UpdateLocal = new Event();
+        this.dialogDetect = 0;
+        this.lockDetect = false;
+        this.cidWarning = 0;
         this.localCID = options.get<number | undefined>('vatsim_user_id', undefined);
 
         radar.planeAdded.add(plane => {
@@ -86,6 +93,7 @@ class TrafficRadar {
                     this.clear();
                 } else {
                     this.onRefresh(data);
+                    this.detectLocalPlane();
                 }
             } catch (e: unknown) {
                 console.error('Error while updating TrafficRadar:');
@@ -101,6 +109,9 @@ class TrafficRadar {
             cards.showPilotCard(obj);
             return true;
         }
+        if (radar.animator.isInteractable(e)) {
+            notifications.notify('The plane is not available on network');
+        }
         return false;
     }
 
@@ -109,7 +120,7 @@ class TrafficRadar {
         if (obj) {
             return true;
         }
-        return false;
+        return radar.animator.isInteractable(e);
     }
 
     public clear() {
@@ -233,7 +244,8 @@ class TrafficRadar {
         if (value === this.localCID) {
             return;
         }
-
+        this.lockDetect = value !== undefined;
+        
         this.localCID = value;
         options.set('vatsim_user_id', value);
         this.updateLocalPlane(value);
@@ -263,6 +275,11 @@ class TrafficRadar {
         if (cid) {
             pilot = this.cache.get(cid);
             if (pilot) {
+                if (this.cidWarning) {
+                    notifications.pop(this.cidWarning);
+                    this.cidWarning = 0;
+                }
+
                 this.localPilot = pilot;
                 pilot.local = true;
                 
@@ -276,6 +293,10 @@ class TrafficRadar {
                 if (plane) {
                     this.connectPlane(pilot, plane);
                 }
+            } else if (!this.cidWarning) {
+                this.cidWarning = notifications.notify('New CID is not available at the moment', Severity.Warning, () => {
+                    this.cidWarning = 0;
+                });
             }
         }
         this.localPilot = pilot;
@@ -299,6 +320,52 @@ class TrafficRadar {
         }
         pilot.external = undefined;
         this.establishContact(pilot);
+    }
+
+    private detectLocalPlane() {
+        if (this.localCID || this.lockDetect || this.dialogDetect) {
+            return;
+        }
+        const user = tracker.getUser();
+        if (!user || user.blip.getPhysicParams().groundSpeed >= 10) {
+            return;
+        }
+        const nearPlanes: { dist: number, pilot: NetworkPilot }[] = [];
+
+        const userCoords = user.blip.getPlainCoords();
+        const range = 20;
+        this.planes.forEach(pilot => {
+            const coords = pilot.blip.getPlainCoords();
+            const distX = Math.abs(userCoords[0] - coords[0]);
+            if (distX > range) {
+                return;
+            }
+            const distY = Math.abs(userCoords[1] - coords[1]);
+            if (distY > range) {
+                return;
+            }
+            const dist = distX * distX + distY * distY;
+            if (dist > range * range) {
+                return;
+            }
+            nearPlanes.push({ dist, pilot });
+        });
+        if (nearPlanes.length == 0) {
+            return;
+        }
+
+        nearPlanes.sort((a, b) => a.dist - b.dist);
+        const pilot = nearPlanes[0];
+        const pilotCID = pilot.pilot.pilot.cid;
+
+        this.dialogDetect = notifications.ask(`Do you want to set ${pilot.pilot.pilot.callsign} as local plane?`, ['yes', 'no'], idx => {
+            this.dialogDetect = 0;
+            this.lockDetect = true;
+            if (idx == 0) {
+                this.userId = pilotCID;
+                options.refresh();
+            }
+        });
     }
 }
 

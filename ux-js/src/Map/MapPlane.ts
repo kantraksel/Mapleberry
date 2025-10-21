@@ -52,6 +52,10 @@ class MapPlane {
         return value;
     }
 
+    public getPlainCoords() {
+        return this.pos.getCoordinates();
+    }
+
     public setMainStyle() {
         this.point.setStyle(planeLayers.mainPointStyle);
         this.label.setStyle(planeLayers.mainLabelStyle);

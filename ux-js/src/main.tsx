@@ -26,6 +26,7 @@ import TrafficRadar from './Network/TrafficRadar.ts';
 import NetworkWorld from './Network/NetworkWorld.ts';
 import Metar from './Network/Metar.ts';
 import Replay from './Host/Replay.ts';
+import Notifications from './Notifications.ts';
 
 declare global {
 	var hostBridge: HostBridge;
@@ -45,8 +46,10 @@ declare global {
 	var network: NetworkWorld;
 	var metar: Metar;
 	var replay: Replay;
+	var notifications: Notifications;
 }
 window.options = new Options();
+window.notifications = new Notifications();
 window.hostBridge = new HostBridge();
 window.hostState = new HostState();
 window.map = new GlobalMap();
