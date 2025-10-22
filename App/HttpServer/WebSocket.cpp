@@ -6,6 +6,7 @@
 WebSocket::WebSocket(boost::beast::websocket::stream<boost::beast::tcp_stream>&& ws, boost::beast::flat_buffer&& buffer) : ws(std::move(ws)), buffer(std::move(buffer)), ctx(this->ws.get_executor())
 {
 	runningTasks = 0;
+	remoteEndpoint = this->ws.next_layer().socket().remote_endpoint();
 }
 
 WebSocket::~WebSocket()

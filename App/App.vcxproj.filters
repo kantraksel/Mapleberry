@@ -78,9 +78,6 @@
     <ClInclude Include="Utils\Function.hpp">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Future.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Logger.h">
       <Filter>Utils</Filter>
     </ClInclude>

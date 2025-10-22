@@ -97,8 +97,10 @@ LoggerImpl::LoggerImpl()
 #else
 	consoleOut = false;
 #endif
-#if _DEBUG && _WIN32
-	auto hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+#if _WIN32
+	HANDLE hOut;
+#if _DEBUG
+	hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (hOut == NULL && AllocConsole())
 	{
 		FILE* fDummy;
@@ -106,13 +108,14 @@ LoggerImpl::LoggerImpl()
 		freopen_s(&fDummy, "CONOUT$", "w", stderr);
 		freopen_s(&fDummy, "CONOUT$", "w", stdout);
 	}
+#endif
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
 
 	DWORD mode = 0;
 	hOut = GetStdHandle(STD_OUTPUT_HANDLE);
 	GetConsoleMode(hOut, &mode);
-	SetConsoleMode(hOut, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+	SetConsoleMode(hOut, mode | ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
 	std::cin.clear();
 	std::cout.clear();

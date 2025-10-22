@@ -125,7 +125,6 @@
     <ClInclude Include="Utils\Boost.h" />
     <ClInclude Include="Utils\FixedArray.h" />
     <ClInclude Include="Utils\Function.hpp" />
-    <ClInclude Include="Utils\Future.h" />
     <ClInclude Include="Utils\Logger.h" />
     <ClInclude Include="Utils\StringUtils.h" />
     <ClInclude Include="Utils\Time.h" />

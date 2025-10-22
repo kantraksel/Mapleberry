@@ -20,6 +20,7 @@ void WebCast::Start()
 	auto address = boost::asio::ip::make_address("127.0.0.1");
 	unsigned short port = std::atoi("5170");
 	auto endpoint = boost::asio::ip::tcp::endpoint{ address, port };
+	Logger::Log("Running http/wss server on {}:{}", endpoint.address().to_string(), endpoint.port());
 
 	using namespace std::placeholders;
 	server.onRequest = std::bind(&WebCast::ProcessRequest, this, _1);
@@ -39,13 +40,20 @@ void WebCast::Start()
 	thread.Dispatch(server.Run(std::move(endpoint)));
 }
 
+static void LogHttpResponse(const HttpConnection& connection, int status)
+{
+	auto verb = http::to_string(connection.request.method());
+	auto target = connection.request.target();
+	auto ep = connection.socket.remote_endpoint();
+	auto address = ep.address().to_string();
+	Logger::Log("HTTP {} {} {} - {}", verb, target, status, address);
+}
+
 boost::asio::awaitable<void> WebCast::ProcessRequest(HttpConnection& connection)
 {
-	//std::cout << connection.request.method() << ' ' << connection.request.target() << std::endl;
-	//if (co_await ProcessGetApi(connection))
-	//	co_return;
 	if (co_await ProcessGetFile(connection))
 		co_return;
+	LogHttpResponse(connection, 404);
 	co_await server.RespondNotFound(connection);
 }
 
@@ -54,6 +62,7 @@ boost::asio::awaitable<bool> WebCast::ProcessGetFile(HttpConnection& connection)
 	auto method = connection.request.method();
 	if (method != http::verb::get && method != http::verb::head)
 	{
+		LogHttpResponse(connection, 400);
 		co_await server.RespondBadRequest(connection);
 		co_return true;
 	}
@@ -71,10 +80,12 @@ boost::asio::awaitable<bool> WebCast::ProcessGetFile(HttpConnection& connection)
 	{
 		if (ec == boost::system::errc::no_such_file_or_directory)
 			co_return false;
+		LogHttpResponse(connection, 500);
 		co_await server.RespondInternalError(connection);
 		co_return true;
 	}
 
+	LogHttpResponse(connection, 200);
 	if (method == http::verb::head)
 	{
 		auto response = HttpMessage::Create<http::empty_body>(connection.request, http::status::ok);
@@ -103,7 +114,9 @@ boost::asio::awaitable<bool> WebCast::ProcessGetFile(HttpConnection& connection)
 
 void WebCast::OnWebsocketOpen(WebSocket& ws)
 {
-	//std::cout << "Connection opened" << std::endl;
+	auto ep = ws.GetEndpoint();
+	Logger::Log("WSS: {}:{} connected", ep.address().to_string(), ep.port());
+
 	ws.onReceive = [this](auto& ws, const auto& message)
 		{
 			if (message.isText)
@@ -121,7 +134,8 @@ void WebCast::OnWebsocketOpen(WebSocket& ws)
 			auto i = callbacks.find(static_cast<MsgId>(type));
 			if (i == callbacks.end())
 			{
-				Logger::LogWarn("Message {} has been discarded", type);
+				auto ep = ws.GetEndpoint();
+				Logger::LogWarn("WSS: Message {} has been discarded", type);
 				return;
 			}
 
@@ -132,7 +146,8 @@ void WebCast::OnWebsocketOpen(WebSocket& ws)
 		};
 	ws.onClose = [](auto& ws)
 		{
-			//std::cout << "Connection closed" << std::endl;
+			auto& ep = ws.GetEndpoint();
+			Logger::Log("WSS: {}:{} disconnected", ep.address().to_string(), ep.port());
 		};
 }
 

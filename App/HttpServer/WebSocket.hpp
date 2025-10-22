@@ -43,6 +43,10 @@ public:
 
 	void RunAsync();
 	bool IsRunning();
+	boost::asio::ip::tcp::endpoint& GetEndpoint()
+	{
+		return remoteEndpoint;
+	}
 
 	void Send(const std::string& message);
 	void Send(const FixedArrayCharS& message);
@@ -78,4 +82,5 @@ private:
 	boost::asio::any_io_executor ctx;
 	std::queue<Message> sendQueue;
 	std::atomic_int runningTasks;
+	boost::asio::ip::tcp::endpoint remoteEndpoint;
 };
