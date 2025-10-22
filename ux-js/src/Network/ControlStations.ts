@@ -530,12 +530,20 @@ class ControlStations {
             sid = `${id_parts[0]}_${suffix}`;
         }
 
-        const obj = this.tracons.get(sid);
+        let obj = this.tracons.get(sid);
         if (obj) {
             return [sid, obj];
         }
         sid = `${id_parts[0]}_${suffix}`;
-        return [sid, this.tracons.get(sid)];
+        obj = this.tracons.get(sid);
+        if (obj) {
+            return [sid, obj];
+        }
+        if (suffix == 'DEP') {
+            sid = `${id_parts[0]}_APP`;
+            obj = this.tracons.get(sid);
+        }
+        return [sid, obj];
     }
 
     public isReady() {

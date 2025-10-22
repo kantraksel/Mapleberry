@@ -521,7 +521,7 @@ class ControlRadar {
             if (!(airport instanceof NetworkField)) {
                 return;
             }
-            let tracon = airport.tracons.find(value => station === value.substation!.substation);
+            let tracon = airport.tracons.find(value => station === value.substation.substation);
             if (!tracon) {
                 tracon = controller.addTracon(station, sid);
                 airport.tracons.push(tracon);
@@ -531,10 +531,37 @@ class ControlRadar {
                 tracon.addRef();
             }
             tracon.controllers.push(controller);
+
+            for (let i = 0; i < airport.tracons.length; ++i) {
+                const a = airport.tracons[i];
+                if (a.substation.substation.geometry.length === 0) {
+                    for (let j = 0; j < a.controllers.length; ++j) {
+                        const controller = a.controllers[j];
+                        controller.substation = tracon;
+                        tracon.addRef();
+                        tracon.controllers.push(controller);
+                    }
+                    controlLayers.removeTracon(a.substation);
+                    a.controllers = [];
+                    a.refCount = 0;
+                }
+            }
         } else {
             const approach_id = network.getApproachId();
             if (controller.data.facility == approach_id) {
-                let tracon = airport.tracons.find(value => value.substation!.substation.geometry.length === 0);
+                const id_parts = splitCallsign(controller.data.callsign);
+                const suffix = id_parts.pop() ?? 'APP';
+
+                let tracon = airport.tracons.find(value => value.substation.substation.suffix == suffix);
+                if (!tracon) {
+                    tracon = airport.tracons.find(value => value.substation.substation.suffix == 'APP');
+                    if (!tracon) {
+                        tracon = airport.tracons.find(value => value.substation.substation.geometry.length === 0);
+                        if (!tracon) {
+                            tracon = airport.tracons[0] as NetworkTracon | undefined;
+                        }
+                    }
+                }
                 if (tracon) {
                     controller.substation = tracon;
                     tracon.addRef();
@@ -542,8 +569,6 @@ class ControlRadar {
                     return;
                 }
 
-                const id_parts = splitCallsign(controller.data.callsign);
-                const suffix = id_parts.pop() ?? 'APP';
                 const substation = {
                     prefix: [ id_parts.join('_') ],
                     suffix: suffix,
@@ -555,7 +580,7 @@ class ControlRadar {
                 tracon = controller.addTracon(substation, sid);
                 tracon.controllers.push(controller);
                 airport.tracons.push(tracon);
-                controlLayers.addTracon(tracon.substation!);
+                controlLayers.addTracon(tracon.substation);
             }
         }
     }
