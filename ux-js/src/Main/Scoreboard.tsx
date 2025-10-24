@@ -1,12 +1,13 @@
-import { Box, IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, Typography } from '@mui/material';
+import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, TextField, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, useEffect, useRef, useState } from 'react';
-import { Controller, Prefile } from '../Network/NetworkWorld';
+import { Atis, Controller, Pilot, Prefile } from '../Network/NetworkWorld';
 import NotesIcon from '@mui/icons-material/Notes';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import SearchIcon from '@mui/icons-material/Search';
 import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from '../Network/ControlRadar';
-import { CardHeader, CardRightToolbar, createNetUpdate } from './Cards/CardsShared';
+import { CardCloseButton, CardHeader, CardRightToolbar, CardToolbar, createNetUpdate } from './Cards/CardsShared';
 import { NetworkPilot } from '../Network/TrafficRadar';
 import StyledBox from './StyledBox';
 import RadarPlane from '../Radar/RadarPlane';
@@ -301,6 +302,50 @@ const planeColumns: Column<RadarPlane>[] = [
     },
 ];
 
+const searchColumns: Column<SearchResult>[] = [
+    {
+        width: 120,
+        id: 'callsign',
+        label: 'Callsign',
+        data: data => {
+            const color = data.markCallsign ? 'error' : undefined;
+            return <Typography color={color} variant='inherit'>{data.callsign}</Typography>;
+        },
+        compare: (a, b) => {
+            return compareIgnoreCase(a.callsign, b.callsign);
+        },
+    },
+    {
+        width: 100,
+        id: 'type',
+        label: 'Freq/Type',
+        data: data => {
+            return data.freq_type;
+        },
+        compare: (a, b) => {
+            return compareIgnoreCase(a.freq_type, b.freq_type);
+        },
+        alignData: 'center',
+    },
+    {
+        width: 180,
+        id: 'name',
+        label: 'Name',
+        data: data => data.name,
+        compare: (a, b) => {
+            return compareIgnoreCase(a.name, b.name);
+        },
+    },
+    {
+        width: 50,
+        id: 'buttons',
+        label: '',
+        data: data => {
+            return <IconButton disabled={!data.onOpen} onClick={data.onOpen} size='small'><NotesIcon fontSize='small' /></IconButton>;
+        },
+    },
+];
+
 function compareIgnoreCase(a: string, b: string) {
     a = a.toLowerCase();
     b = b.toLowerCase();
@@ -416,7 +461,7 @@ function sortData<Value>(values: Value[] | undefined, sorter: Sorter<Value>) {
     });
 }
 
-function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[], values: () => Value[] | undefined }) {
+function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[], values: () => Value[] | undefined, replaceLabel?: string }) {
     const [sortBy, setSortBy] = useState('');
     const [sorter, setSorter] = useState<Sorter<Value>>({ dir: 'asc', compare: () => 0 });
     const table = useRef<TableVirtuosoHandle>(null);
@@ -426,8 +471,18 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
         return <></>;
     }
 
+    const replaceLabel = props.replaceLabel;
     const columns = props.columns;
-    const data = sortData(props.values(), sorter);
+    const data = replaceLabel ? [] : sortData(props.values(), sorter);
+
+    let replaceContent;
+    if (replaceLabel) {
+        replaceContent = (
+            <Box sx={{ position: 'absolute', height: '100%', width: '100%', pointerEvents: 'none' }}>
+                <EmptyList label={replaceLabel} />
+            </Box>
+        );
+    }
 
     const isScrolling = (scrolling: boolean) => {
         if (scrolling) {
@@ -439,53 +494,58 @@ function DynamicList<Value>(props: { enabled: boolean, columns: Column<Value>[],
     };
      
     return (
-        <TableVirtuoso
-            data={data}
-            components={VirtuosoTableComponents as TableComponents<Value>}
-            fixedHeaderContent={createTableHeader(sortBy, setSortBy, sorter, setSorter, columns)}
-            itemContent={createTableCell(columns)}
-            isScrolling={isScrolling}
-            ref={table}
-            restoreStateFrom={tableState.current}
-        />
+        <>
+            <TableVirtuoso
+                data={data}
+                components={VirtuosoTableComponents as TableComponents<Value>}
+                fixedHeaderContent={createTableHeader(sortBy, setSortBy, sorter, setSorter, columns)}
+                itemContent={createTableCell(columns)}
+                isScrolling={isScrolling}
+                ref={table}
+                restoreStateFrom={tableState.current}
+            />
+            {replaceContent}
+        </>
     );
+}
+
+function NetworkList<Value>(props: { enabled: boolean, columns: Column<Value>[], values: () => Value[] | undefined }) {
+    const label = network.getState() !== undefined ? undefined : 'Network is disabled';
+    return <DynamicList enabled={props.enabled} columns={props.columns} values={props.values} replaceLabel={label} />;
 }
 
 function PilotList(props: { enabled: boolean }) {
     const data = () => trafficRadar.getPilotList();
-    return <DynamicList enabled={props.enabled} columns={pilotColumns} values={data} />;
+    return <NetworkList enabled={props.enabled} columns={pilotColumns} values={data} />;
 }
 
 function ControllerList(props: { enabled: boolean }) {
     const data = () => controlRadar.getControllerList();
-    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={data} />;
+    return <NetworkList enabled={props.enabled} columns={controllerColumns} values={data} />;
 }
 
 function PrefileList(props: { enabled: boolean }) {
     const data = () => network.getState()?.prefiles;
-    return <DynamicList enabled={props.enabled} columns={prefileColumns} values={data} />;
+    return <NetworkList enabled={props.enabled} columns={prefileColumns} values={data} />;
 }
 
 function ObserverList(props: { enabled: boolean }) {
     const data = () => network.getState()?.observers;
-    return <DynamicList enabled={props.enabled} columns={observerColumns} values={data} />;
+    return <NetworkList enabled={props.enabled} columns={observerColumns} values={data} />;
 }
 
 function AtisList(props: { enabled: boolean }) {
     const data = () => controlRadar.getAtisList();
-    return <DynamicList enabled={props.enabled} columns={controllerColumns} values={data} />;
+    return <NetworkList enabled={props.enabled} columns={controllerColumns} values={data} />;
 }
 
 function LocalPlaneList(props: { enabled: boolean }) {
     const data = () => radar.getPlaneList();
-    return <DynamicList enabled={props.enabled} columns={planeColumns} values={data} />;
+    const label = hostState.getHostStatus().simStatus == SimulatorStatus.Connected ? undefined : 'Simulator is offline';
+    return <DynamicList enabled={props.enabled} columns={planeColumns} values={data} replaceLabel={label} />;
 }
 
-function EmptyList({ enabled, label }: { enabled: boolean, label: string }) {
-    if (!enabled) {
-        return <></>;
-    }
-
+function EmptyList({ label }: { label: string }) {
     return (
         <Box sx={{
             width: '100%',
@@ -500,7 +560,7 @@ function EmptyList({ enabled, label }: { enabled: boolean, label: string }) {
     );
 }
 
-function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
+function ActiveStationList(props: { open: boolean, toolsRight: ReactNode, toolsLeft: ReactNode }) {
     const [tab, setTab] = useState(0);
     const [rev, setRev] = useState(0);
 
@@ -523,21 +583,7 @@ function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     }, [rev, props.open]);
 
     const display = props.open ? 'flex' : 'none';
-    let tabIdx = -1;
-    let disabledLabel = 'Network is disabled';
-    if (props.open) {
-        tabIdx = tab;
-        if (tab == 2) {
-            disabledLabel = 'Simulator is offline';
-            if (hostState.getHostStatus().simStatus != SimulatorStatus.Connected) {
-                tabIdx = -1;
-            }
-        } else {
-            if (!network.getState()) {
-                tabIdx = -1;
-            }
-        }
-    }
+    const tabIdx = props.open ? tab : -1;
     const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
@@ -545,6 +591,7 @@ function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     return (
         <Box sx={{ display, width: 'stretch', height: '100%', flexDirection: 'column' }}>
             <CardHeader>
+                <CardToolbar direction='row'>{props.toolsLeft}</CardToolbar>
                 <CardRightToolbar>{props.toolsRight}</CardRightToolbar>
                 <Tabs value={tab} onChange={onClickTab} centered>
                     <Tab label='Controllers' />
@@ -552,7 +599,6 @@ function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
                     <Tab label='Planes' />
                 </Tabs>
             </CardHeader>
-            <EmptyList enabled={tabIdx == -1} label={disabledLabel} />
             <PilotList enabled={tabIdx == 1} />
             <ControllerList enabled={tabIdx == 0} />
             <LocalPlaneList enabled={tabIdx == 2} />
@@ -560,7 +606,7 @@ function ActiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     );
 }
 
-function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
+function PassiveStationList(props: { open: boolean, toolsRight: ReactNode, toolsLeft: ReactNode }) {
     const [tab, setTab] = useState(0);
     const [rev, setRev] = useState(0);
 
@@ -574,7 +620,7 @@ function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     }, [rev, props.open]);
 
     const display = props.open ? 'flex' : 'none';
-    const tabIdx = props.open && network.getState() ? tab : -1;
+    const tabIdx = props.open ? tab : -1;
     const onClickTab = (_e: unknown, newValue: number) => {
         setTab(newValue);
     };
@@ -582,6 +628,7 @@ function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
     return (
         <Box sx={{ display, width: 'stretch', height: '100%', flexDirection: 'column' }}>
             <CardHeader>
+                <CardToolbar direction='row'>{props.toolsLeft}</CardToolbar>
                 <CardRightToolbar>{props.toolsRight}</CardRightToolbar>
                 <Tabs value={tab} onChange={onClickTab} centered sx={{ display }}>
                     <Tab label='ATIS' />
@@ -589,10 +636,148 @@ function PassiveStationList(props: { open: boolean, toolsRight: ReactNode }) {
                     <Tab label='Prefiles' />
                 </Tabs>
             </CardHeader>
-            <EmptyList enabled={tabIdx == -1} label='Network is disabled' />
             <PrefileList enabled={tabIdx == 2} />
             <ObserverList enabled={tabIdx == 1} />
             <AtisList enabled={tabIdx == 0} />
+        </Box>
+    );
+}
+
+interface SearchResult {
+    callsign: string,
+    name: string;
+    freq_type: string,
+    onOpen?: () => void;
+    markCallsign?: boolean;
+}
+
+function SearchList(props: { open: boolean, toolsLeft: ReactNode }) {
+    const [rev, setRev] = useState(0);
+    const [value, setValue] = useState('');
+
+    useEffect(() => {
+        if (!props.open) {
+            return;
+        }
+        return createNetUpdate(() => {
+            setRev(rev + 1);
+        });
+    }, [rev, props.open]);
+
+    const display = props.open ? 'flex' : 'none';
+    const empty = !props.open || value.length < 3;
+    const emptyLabel = empty ? 'You need to type at least 3 characters' : undefined;
+
+    const onChange = (e: { target: { value: string }}) => {
+        setValue(e.target.value);
+    };
+
+    const data = () => {
+        if (value.length < 3) {
+            return [];
+        }
+        let regexp;
+        try {
+            regexp = new RegExp(value);
+        } catch (e) {
+            return [];
+        }
+        const valueUpper = value.toUpperCase();
+        const results: SearchResult[] = [];
+
+        const forEachPilotLike = (data: Pilot | Prefile, onCreate: (obj: SearchResult) => void) => {
+            const callsign = data.callsign;
+            const name = data.name;
+            const aircraft = data.flight_plan?.aircraft_short ?? '';
+            if (!callsign.includes(valueUpper) &&
+                !name.toUpperCase().includes(valueUpper) &&
+                !aircraft.includes(valueUpper) &&
+                !regexp.test(callsign) &&
+                !regexp.test(name) &&
+                !regexp.test(aircraft)
+            ) {
+                return;
+            }
+            const obj = {
+                callsign,
+                name,
+                freq_type: aircraft,
+            };
+            onCreate(obj);
+            results.push(obj);
+        };
+        const forEachControllerLike = (data: Controller | Atis, onCreate: (obj: SearchResult) => void) => {
+            const callsign = data.callsign;
+            const name = data.name;
+            const frequency = data.frequency;
+            if (!callsign.includes(valueUpper) &&
+                !name.toUpperCase().includes(valueUpper) &&
+                !frequency.includes(valueUpper) &&
+                !regexp.test(callsign) &&
+                !regexp.test(name) &&
+                !regexp.test(frequency)
+            ) {
+                return;
+            }
+            const obj = {
+                callsign,
+                name,
+                freq_type: frequency,
+            };
+            onCreate(obj);
+            results.push(obj);
+        };
+
+        const pilots = trafficRadar.getPilotList();
+        const controllers = controlRadar.getControllerList();
+        const prefiles = network.getState()?.prefiles ?? [];
+        const observers = network.getState()?.observers ?? [];
+        const atis = controlRadar.getAtisList();
+
+        controllers.forEach(value => {
+            forEachControllerLike(value.data, obj => {
+                obj.onOpen = () => cards.showControllerCard(value);
+                obj.markCallsign = !value.station && !value.substation;
+            });
+        });
+        atis.forEach(value => {
+            forEachControllerLike(value.data, obj => {
+                obj.onOpen = () => cards.showAtisCard(value);
+            });
+        });
+        pilots.forEach(value => {
+            forEachPilotLike(value.pilot, obj => {
+                obj.onOpen = () => cards.showPilotCard(value);
+            });
+        });
+        observers.forEach(value => {
+            forEachControllerLike(value, obj => {
+                obj.onOpen = () => cards.showControllerCard(new NetworkController(value, undefined));
+            });
+        });
+        prefiles.forEach(value => {
+            forEachPilotLike(value, obj => {
+                obj.onOpen = () => cards.showPrefileCard(value);
+            });
+        });
+
+        return results;
+    };
+
+    return (
+        <Box sx={{ display, width: 'stretch', height: '100%', flexDirection: 'column' }}>
+            <Box sx={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', minHeight: '48px' }}>
+                <Stack direction='row' sx={{ alignItems: 'center', paddingLeft: '2px', paddingRight: '4px', paddingBottom: '3px' }}>
+                    {props.toolsLeft}
+                </Stack>
+                <Box sx={{ flex: '1 1 auto', display: 'flex', alignItems: 'center' }}>
+                    <TextField variant='outlined' size='small' sx={{ flex: '1 1 auto' }} onChange={onChange} />
+                </Box>
+                <Stack direction='row-reverse' sx={{ alignItems: 'center', paddingLeft: '4px', paddingRight: '2px', paddingBottom: '3px' }}>
+                    <CardCloseButton />
+                </Stack>
+            </Box>
+            <DynamicList enabled={props.open} columns={searchColumns} values={data} replaceLabel={emptyLabel} />
         </Box>
     );
 }
@@ -610,6 +795,7 @@ function DataBox(props: { children?: ReactNode, visible?: boolean }) {
 
 function Scoreboard(props: { open: boolean }) {
     const [row, setRow] = useState(0);
+    const [prevRow, setPrevRow] = useState(0);
 
     let rowButton;
     if (row == 0) {
@@ -618,10 +804,21 @@ function Scoreboard(props: { open: boolean }) {
         rowButton = <IconButton onClick={() => setRow(0)}><ExpandLessIcon /></IconButton>;
     }
 
+    const onSwitchSearch = () => {
+        if (row == 2) {
+            setRow(prevRow);
+        } else {
+            setPrevRow(row);
+            setRow(2);
+        }
+    };
+    const searchIcon = <IconButton onClick={onSwitchSearch}><SearchIcon /></IconButton>;
+
     return (
         <DataBox visible={props.open}>
-            <ActiveStationList open={props.open && row == 0} toolsRight={rowButton} />
-            <PassiveStationList open={props.open && row == 1} toolsRight={rowButton} />
+            <ActiveStationList open={props.open && row == 0} toolsRight={rowButton} toolsLeft={searchIcon} />
+            <PassiveStationList open={props.open && row == 1} toolsRight={rowButton} toolsLeft={searchIcon} />
+            <SearchList open={props.open && row == 2} toolsLeft={searchIcon} />
         </DataBox>
     );
 }

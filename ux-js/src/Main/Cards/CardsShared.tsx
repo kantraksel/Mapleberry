@@ -72,10 +72,14 @@ export function CardToolbar(props: { children?: ReactNode, direction: 'row' | 'r
     return <Stack direction={props.direction} sx={style}>{props.children}</Stack>;
 }
 
+export function CardCloseButton() {
+    return <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>;
+}
+
 export function CardRightToolbar(props: { children?: ReactNode }) {
     return (
         <CardToolbar direction='row-reverse'>
-            <IconButton onClick={() => cards.close()}><CloseIcon /></IconButton>
+            <CardCloseButton />
             {props.children}
         </CardToolbar>
     );
