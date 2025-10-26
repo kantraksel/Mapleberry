@@ -11,6 +11,7 @@ import AirplaneLabelControl from './Controls/AirplaneLabelControl';
 import AtisFieldsControl from './Controls/ToggleAtisFieldsControl';
 import AirportLabelControl from './Controls/AirportLabelControl';
 import VisibilityControl from './Controls/ToggleAirplaneControl';
+import { MapLibreLayer } from '@geoblocks/ol-maplibre-layer';
 
 type ClickEvent = (e: FeatureLike[]) => void;
 type ResEvent = (value: number) => void;
@@ -65,13 +66,25 @@ class GlobalMap {
         const view = new View({
             center: fromLonLat([pos.longitude, pos.latitude]),
             resolution: pos.resolution,
+            // maplibre desync bug
+            /*
             minResolution: 0.5,
             maxResolution: 15105,
+            */
         });
         this.map = new Map({
             layers: [
+                /*
                 new TileLayer({
                     source: new OsmSource(),
+                }),
+                */
+                // todo: localize names to en
+                new MapLibreLayer({
+                    opacity: 1.0,
+                    mapLibreOptions: {
+                        style: 'https://americanamap.org/style.json',
+                    },
                 }),
             ],
             view: view,
