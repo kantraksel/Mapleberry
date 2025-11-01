@@ -1,4 +1,4 @@
-import { NetworkAtis, NetworkField } from '../../Network/ControlRadar';
+import { NetworkAtis, NetworkField } from '../Network/ControlRadar';
 import { createControlRadarUpdate, DataTable, getTimeOnline, StationCard, TextBox, UserName } from './CardsShared';
 import { useEffect, useState } from 'react';
 

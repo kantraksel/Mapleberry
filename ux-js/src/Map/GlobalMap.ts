@@ -4,7 +4,7 @@ import OsmSource from 'ol/source/OSM';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import { FeatureLike } from 'ol/Feature';
 import { ObjectEvent } from 'ol/Object';
-import Event from '../Event';
+import Event from '../Utils/Event';
 import VectorLayer from 'ol/layer/Vector';
 
 type ClickEvent = (e: FeatureLike[]) => void;

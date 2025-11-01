@@ -3,7 +3,7 @@ import MapArea, { StationDesc } from '../Map/MapArea';
 import MapField from '../Map/MapField';
 import { Airport_ext, splitCallsign, Tracon } from './ControlStations';
 import { Atis, Controller, NetworkState } from './NetworkWorld';
-import Event from '../Event';
+import Event from '../Utils/Event';
 import MapTracon from '../Map/MapTracon';
 
 export class RefObject {

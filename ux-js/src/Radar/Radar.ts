@@ -1,7 +1,7 @@
 import { PhysicParams } from "../Map/MapPlane";
 import RadarPlane, { RadarPlaneData } from "./RadarPlane";
 import RadarAnimator from "./RadarAnimator";
-import Event from "../Event";
+import Event from "../Utils/Event";
 
 type RadarPlaneEvent = (plane: RadarPlane) => void;
 

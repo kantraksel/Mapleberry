@@ -1,7 +1,7 @@
 import { Divider } from '@mui/material';
 import { createControlRadarUpdate, DataTable, getFlightplan, getPilotRating, getTimeOnline, RouteBox, StationCard, UserName } from './CardsShared';
 import { useEffect, useState } from 'react';
-import { NetworkPilot } from '../../Network/TrafficRadar';
+import { NetworkPilot } from '../Network/TrafficRadar';
 
 function PilotCard() {
     const [object, setObject] = useState<NetworkPilot>();

@@ -1,4 +1,4 @@
-import Event from '../Event';
+import Event from '../Utils/Event';
 import { MsgId } from './MsgId';
 
 export enum SimulatorStatus {

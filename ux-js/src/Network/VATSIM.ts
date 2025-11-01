@@ -1,4 +1,4 @@
-import Event from "../Event";
+import Event from "../Utils/Event";
 
 export interface FlightPlan {
     flight_rules: string,

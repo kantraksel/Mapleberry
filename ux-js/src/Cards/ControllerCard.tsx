@@ -2,7 +2,7 @@ import { IconButton, Menu, MenuItem } from '@mui/material';
 import { createControlRadarUpdate, DataTable, getControllerRating, getStation, getTimeOnline, StationCard, TextBox, UserName } from './CardsShared';
 import { useEffect, useRef, useState } from 'react';
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
-import { NetworkArea, NetworkControl, NetworkController, NetworkField } from '../../Network/ControlRadar';
+import { NetworkArea, NetworkControl, NetworkController, NetworkField } from '../Network/ControlRadar';
 
 export function MetarButton(props: { data: NetworkControl | undefined }) {
     const field = props.data;

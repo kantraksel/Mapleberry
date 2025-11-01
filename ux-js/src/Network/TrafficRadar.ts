@@ -2,7 +2,7 @@ import { FeatureLike } from "ol/Feature";
 import MapPlane from "../Map/MapPlane";
 import { NetworkState, Pilot } from "./NetworkWorld";
 import RadarPlane from "../Radar/RadarPlane";
-import Event from "../Event";
+import Event from "../Utils/Event";
 import { RefObject } from "./ControlRadar";
 import { Severity } from "../Notifications";
 

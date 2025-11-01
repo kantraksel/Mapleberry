@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { ListItemButton } from "@mui/material";
-import { MainListIcon, MainListText } from "./App";
 import FlightIcon from '@mui/icons-material/Flight';
 import RadarPlane from "../Radar/RadarPlane";
+import { MainDrawerEntry } from "../MainFrame/MainDrawer";
 
 function ActiveFlightButton() {
     const [enabled, setEnabled] = useState(false);
@@ -82,8 +82,7 @@ function ActiveFlightButton() {
 
     return (
         <ListItemButton selected={visible} onClick={switchFlight} disabled={!enabled}>
-            <MainListIcon><FlightIcon /></MainListIcon>
-            <MainListText primary='Active Flight' />
+            <MainDrawerEntry icon={<FlightIcon />} label='Active Flight' />
         </ListItemButton>
     )
 }

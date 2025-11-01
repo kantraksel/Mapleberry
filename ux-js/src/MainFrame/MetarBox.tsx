@@ -1,8 +1,8 @@
 import { Box, Button, IconButton, Stack, TextField, Typography } from "@mui/material";
-import { CardBase, CardHeader, CardToolbar } from "./Cards/CardsShared";
+import { CardBase, CardHeader, CardToolbar } from "../Cards/CardsShared";
 import { useRef, useState } from "react";
 import { NetworkControl } from "../Network/ControlRadar";
-import { MetarButton } from "./Cards/ControllerCard";
+import { MetarButton } from "../Cards/ControllerCard";
 import CloseIcon from '@mui/icons-material/Close';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 

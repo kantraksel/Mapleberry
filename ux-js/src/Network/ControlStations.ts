@@ -2,7 +2,7 @@ import { fromLonLat } from 'ol/proj';
 import polygonClipping from 'polygon-clipping';
 import polylabel from 'polylabel';
 import DefinitionLoader, { Boundaries, BoundaryFeature, Country, StationList, Tracon as TraconDef, TraconFeature } from './DefinitionLoader';
-import Event from '../Event';
+import Event from '../Utils/Event';
 
 enum RegionType {
     FIR,

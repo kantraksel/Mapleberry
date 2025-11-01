@@ -1,132 +1,46 @@
-import { useState, useEffect, useRef, ReactNode, createContext, useContext } from 'react';
-import { AppBar, Box, createTheme, CSSObject, Drawer, IconButton, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Stack, Toolbar, Typography } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { AppBar, Box, createTheme, IconButton, List, ListItem, ListItemButton, Stack, Toolbar } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CloudIcon from '@mui/icons-material/Cloud';
 import 'ol/ol.css';
-import OptionsBox from './OptionsBox';
-import Scoreboard, { FacilityStationsList } from './Scoreboard';
-import ControllerCard from './Cards/ControllerCard';
-import PilotCard from './Cards/PilotCard';
+import OptionsBox from '../Options/OptionsBox';
+import Scoreboard, { FacilityStationsList } from '../Cards/Scoreboard';
+import ControllerCard from '../Cards/ControllerCard';
+import PilotCard from '../Cards/PilotCard';
 import SystemInfoBar from './SystemInfoBar';
-import PrefileCard from './Cards/PrefileCard';
-import AtisCard from './Cards/AtisCard';
+import PrefileCard from '../Cards/PrefileCard';
+import AtisCard from '../Cards/AtisCard';
 import MetarBox from './MetarBox';
 import ActiveFlightButton from './ActiveFlightButton';
-import NotificationBox from './NotificationBox';
-
-const MainDrawerContext = createContext(true);
-
-function MainDrawer(props: { children: ReactNode, open: boolean }) {
-	const drawer = useRef<HTMLDivElement>(null);
-	const [width, setWidth] = useState('auto');
-	const firstRender = useRef(true);
-
-	useEffect(() => {
-		firstRender.current = false;
-		setWidth(`${drawer.current!.firstElementChild!.getBoundingClientRect().width}px`);
-	}, []);
-
-	let open = props.open;
-	if (firstRender.current) {
-		open = true;
-	}
-	const theme = createTheme();
-
-	let style: CSSObject;
-	if (open) {
-		style = {
-			transition: theme.transitions.create('width', {
-				easing: theme.transitions.easing.easeOut,
-				duration: theme.transitions.duration.enteringScreen,
-			}),
-			width: width,
-			whiteSpace: 'nowrap',
-			overflowX: 'hidden',
-		};
-	} else {
-		style = {
-			transition: theme.transitions.create('width', {
-				easing: theme.transitions.easing.sharp,
-				duration: theme.transitions.duration.leavingScreen,
-			}),
-			width: theme.spacing(7),
-			whiteSpace: 'nowrap',
-			overflowX: 'hidden',
-		};
-	}
-	style = {
-		height: '100%',
-		...style,
-		'& .MuiDrawer-paper': style,
-	};
-
-	return (
-		<Drawer ref={drawer} variant='permanent' sx={style} open={true}>
-			<Box sx={theme.mixins.toolbar} />
-			<MainDrawerContext value={open} >
-				{props.children}
-			</MainDrawerContext>
-		</Drawer>
-	);
-}
-
-export function MainListIcon(props: { children: ReactNode }) {
-	return <ListItemIcon sx={{ minWidth: '40px' }}>{props.children}</ListItemIcon>;
-}
-
-export function MainListText(props: { primary: ReactNode }) {
-	const drawerOpen = useContext(MainDrawerContext);
-	return <ListItemText primary={props.primary} sx={{ opacity: drawerOpen ? 1 : 0 }} />;
-}
+import NotificationBox from '../Notifications/NotificationBox';
+import MainDrawer, { MainDrawerEntry } from './MainDrawer';
+import MapCanvas from './MapCanvas';
 
 function App() {
-	const [open, setOpen] = useState(false);
-	const mapNode = useRef<HTMLDivElement>(null);
-	const [mapVisible, setMapVisible] = useState(map.visible);
+	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [optionsVisible, setOptionsVisible] = useState(false);
 	const [scoreboardVisible, setScoreboardVisible] = useState(false);
 	const [metarVisible, setMetarVisible] = useState(false);
 	
 	useEffect(() => {
-		map.setParent(mapNode.current!);
-		map.visibilityEvent.add(setMapVisible);
+		cards.stationsRef = setScoreboardVisible;
 		hostState.notifyAppReady();
 
-		cards.stationsRef = setScoreboardVisible;
 		return () => {
-			map.visibilityEvent.delete(setMapVisible);
 			cards.stationsRef = undefined;
 		};
 	}, []);
 
-	const switchDrawer = () => {
-		setOpen(!open);
-	};
 	const theme = createTheme();
 
-	let mapStyle;
-	if (mapVisible) {
-		mapStyle = {
-			visibility: 'visible',
-			opacity: 1,
-			transition: 'opacity 0.25s linear, visibility 0.25s',
-		};
-	} else {
-		mapStyle = {
-			visibility: 'hidden',
-			opacity: 0,
-			transition: 'opacity 0.25s ease, visibility 0.25s',
-		};
-	}
-	
 	return (
 		<>
 			<AppBar sx={{ zIndex: theme.zIndex.drawer + 100 }}>
 				<Toolbar>
 					<Box sx={{ flexGrow: 1 }}>
-						<IconButton size='large' edge='start' onClick={switchDrawer}>
+						<IconButton size='large' edge='start' onClick={() => setDrawerOpen(!drawerOpen)}>
 							<MenuIcon />
 						</IconButton>
 					</Box>
@@ -136,39 +50,33 @@ function App() {
 			<Box sx={theme.mixins.toolbar} />
 
 			<Box sx={{ flex: '1 1 auto', display: 'flex', flexDirection: 'row' }}>
-				<MainDrawer open={open}>
+				<MainDrawer open={drawerOpen}>
 					<List>
 						<ListItem key='flight_status' disablePadding>
 							<ActiveFlightButton />
 						</ListItem>
 						<ListItem key='pilot_list' disablePadding>
 							<ListItemButton selected={scoreboardVisible} onClick={() => { scoreboardVisible ? cards.close() : cards.showStationLists(true); }}>
-								<MainListIcon><GroupsIcon /></MainListIcon>
-								<MainListText primary='Station List' />
+								<MainDrawerEntry icon={<GroupsIcon />} label='Station List' />
 							</ListItemButton>
 						</ListItem>
 						<ListItem key='metar' disablePadding>
 							<ListItemButton selected={metarVisible} onClick={() => { setMetarVisible(!metarVisible); }}>
-								<MainListIcon><CloudIcon /></MainListIcon>
-								<MainListText primary='METAR' />
+								<MainDrawerEntry icon={<CloudIcon />} label='METAR' />
 							</ListItemButton>
 						</ListItem>
 					</List>
 					<List sx={{ position: 'absolute', bottom: '0px', right: '0px', left: '0px' }}>
 						<ListItem key='options' disablePadding>
 							<ListItemButton selected={optionsVisible} onClick={() => { setOptionsVisible(!optionsVisible); }}>
-								<MainListIcon><SettingsIcon /></MainListIcon>
-								<MainListText primary='Options' />
+								<MainDrawerEntry icon={<SettingsIcon />} label='Options' />
 							</ListItemButton>
 						</ListItem>
 					</List>
 				</MainDrawer>
 				
 				<Box sx={{ position: 'relative', flex: '1 1 auto', display: 'flex', flexDirection: 'column' }}>
-					<Box sx={{ position: 'absolute', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', visibility: mapVisible ? 'hidden' : 'visible' }}>
-						<Typography>Map is disabled</Typography>
-					</Box>
-					<Box ref={mapNode} sx={{ flex: '1 1 auto', width: '100%', ...mapStyle }} />
+					<MapCanvas />
 
 					<Stack direction='row' sx={{ flex: '1 1 auto', position: 'absolute', height: '100%', pointerEvents: 'none' }} >
 						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%', pointerEvents: 'auto' }} >
@@ -197,7 +105,6 @@ export default App;
 /*
 TODO:
 - rewrite system-ui sync, regroup files, make start sequence reliable (systems), split cards shared
-- add search bar in lists
 
 - cache VATSpy data + update mechanism (self-host and github)
 - try to eliminate large, thin holes in UIRs
