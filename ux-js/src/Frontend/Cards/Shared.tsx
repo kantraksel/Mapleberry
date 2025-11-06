@@ -1,33 +1,5 @@
-import { Controller, FlightPlan, Pilot } from '../../Backend/Network/VATSIM';
+import { Controller, FlightPlan } from '../../Backend/Network/VATSIM';
 import { NetworkState } from '../../Backend/Network/NetworkWorld';
-
-export function getPilotRating(pilot: Pilot) {
-    if (pilot.military_rating > 0) {
-        const ratings = network.getMilitaryRatings();
-        const value = ratings.find(value => (value.id === pilot.military_rating));
-        if (value) {
-            return `${value.short_name} ${value.long_name}`;
-        }
-    }
-
-    const ratings = network.getPilotRatings();
-    const value = ratings.find(value => (value.id === pilot.pilot_rating));
-    if (value) {
-        return `${value.short_name} ${value.long_name}`;
-    }
-
-    return 'Unknown';
-}
-
-export function getControllerRating(controller: Controller) {
-    const ratings = network.getControllerRatings();
-    const value = ratings.find(value => (value.id === controller.rating));
-    if (value) {
-        return `${value.short_name} ${value.long_name}`;
-    }
-
-    return 'Unknown';
-}
 
 export function getStation(controller: Controller) {
     let name = 'Unknown';
@@ -113,4 +85,16 @@ export function createControlRadarUpdate(onUpdate: () => void) {
     return () => {
         controlRadar.Update.delete(handler);
     };
+}
+
+export function compareIgnoreCase(a: string, b: string) {
+    a = a.toLowerCase();
+    b = b.toLowerCase();
+    if (a < b) {
+        return -1;
+    } else if (a > b) {
+        return 1;
+    } else {
+        return 0;
+    }
 }

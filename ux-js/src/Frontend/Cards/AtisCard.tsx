@@ -1,5 +1,5 @@
 import { NetworkAtis, NetworkField } from '../../Backend/Network/ControlRadar';
-import { createControlRadarUpdate, getTimeOnline } from './CardsShared';
+import { createControlRadarUpdate, getTimeOnline } from './Shared';
 import { useEffect, useState } from 'react';
 import { UserName } from './Elements/UserName';
 import { StationCard } from './Elements/StationCard';

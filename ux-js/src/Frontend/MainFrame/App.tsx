@@ -6,7 +6,6 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import CloudIcon from '@mui/icons-material/Cloud';
 import 'ol/ol.css';
 import OptionsBox from '../OptionsBox';
-import Scoreboard, { FacilityStationsList } from '../Cards/Scoreboard';
 import ControllerCard from '../Cards/ControllerCard';
 import PilotCard from '../Cards/PilotCard';
 import SystemInfoBar from '../SystemInfoBar';
@@ -17,15 +16,17 @@ import ActiveFlightButton from '../ActiveFlightButton';
 import NotificationBox from '../NotificationBox';
 import MainDrawer, { MainDrawerEntry } from './MainDrawer';
 import MapCanvas from './MapCanvas';
+import StationBoard from '../Cards/StationBoard';
+import FacilityView from '../Cards/FacilityView';
 
 function App() {
 	const [drawerOpen, setDrawerOpen] = useState(false);
 	const [optionsVisible, setOptionsVisible] = useState(false);
-	const [scoreboardVisible, setScoreboardVisible] = useState(false);
+	const [stationBoardVisible, setStationBoardVisible] = useState(false);
 	const [metarVisible, setMetarVisible] = useState(false);
 	
 	useEffect(() => {
-		cards.stationsRef = setScoreboardVisible;
+		cards.stationsRef = setStationBoardVisible;
 		hostState.notifyAppReady();
 
 		return () => {
@@ -56,7 +57,7 @@ function App() {
 							<ActiveFlightButton />
 						</ListItem>
 						<ListItem key='pilot_list' disablePadding>
-							<ListItemButton selected={scoreboardVisible} onClick={() => { scoreboardVisible ? cards.close() : cards.showStationLists(true); }}>
+							<ListItemButton selected={stationBoardVisible} onClick={() => { stationBoardVisible ? cards.close() : cards.showStationLists(true); }}>
 								<MainDrawerEntry icon={<GroupsIcon />} label='Station List' />
 							</ListItemButton>
 						</ListItem>
@@ -80,8 +81,8 @@ function App() {
 
 					<Stack direction='row' sx={{ flex: '1 1 auto', position: 'absolute', height: '100%', pointerEvents: 'none' }} >
 						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: '100%', pointerEvents: 'auto' }} >
-							<Scoreboard open={scoreboardVisible} />
-							<FacilityStationsList />
+							<StationBoard open={stationBoardVisible} />
+							<FacilityView />
 						</Stack>
 						<Stack sx={{ flex: '1 1 auto', position: 'relative', height: 'fit-content', pointerEvents: 'auto' }} >
 							<ControllerCard />

@@ -1,11 +1,30 @@
 import { Divider } from '@mui/material';
-import { createControlRadarUpdate, getFlightplan, getPilotRating, getTimeOnline } from './CardsShared';
+import { createControlRadarUpdate, getFlightplan, getTimeOnline } from './Shared';
 import { useEffect, useState } from 'react';
 import { NetworkPilot } from '../../Backend/Network/TrafficRadar';
 import { StationCard } from './Elements/StationCard';
 import { DataTable } from './Elements/DataTable';
 import { RouteBox } from './Elements/RouteBox';
 import { UserName } from './Elements/UserName';
+import { Pilot } from '../../Backend/Network/NetworkWorld';
+
+function getPilotRating(pilot: Pilot) {
+    if (pilot.military_rating > 0) {
+        const ratings = network.getMilitaryRatings();
+        const value = ratings.find(value => (value.id === pilot.military_rating));
+        if (value) {
+            return `${value.short_name} ${value.long_name}`;
+        }
+    }
+
+    const ratings = network.getPilotRatings();
+    const value = ratings.find(value => (value.id === pilot.pilot_rating));
+    if (value) {
+        return `${value.short_name} ${value.long_name}`;
+    }
+
+    return 'Unknown';
+}
 
 function PilotCard() {
     const [object, setObject] = useState<NetworkPilot>();

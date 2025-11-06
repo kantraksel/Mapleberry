@@ -1,47 +1,21 @@
-import { IconButton, Menu, MenuItem } from '@mui/material';
-import { createControlRadarUpdate, getControllerRating, getStation, getTimeOnline } from './CardsShared';
-import { useEffect, useRef, useState } from 'react';
-import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
-import { NetworkArea, NetworkControl, NetworkController, NetworkField } from '../../Backend/Network/ControlRadar';
+import { createControlRadarUpdate, getStation, getTimeOnline } from './Shared';
+import { useEffect, useState } from 'react';
+import { NetworkArea, NetworkController, NetworkField } from '../../Backend/Network/ControlRadar';
 import { UserName } from './Elements/UserName';
 import { StationCard } from './Elements/StationCard';
 import { DataTable } from './Elements/DataTable';
 import { TextBox } from './Elements/TextBox';
+import { Controller } from '../../Backend/Network/NetworkWorld';
+import { MetarButton } from '../Styles/MetarButton';
 
-export function MetarButton(props: { data: NetworkControl | undefined }) {
-    const field = props.data;
-    if (!(field instanceof NetworkField) || field.atis.length == 0) {
-        return <></>;
+function getControllerRating(controller: Controller) {
+    const ratings = network.getControllerRatings();
+    const value = ratings.find(value => (value.id === controller.rating));
+    if (value) {
+        return `${value.short_name} ${value.long_name}`;
     }
 
-    if (field.atis.length == 1) {
-        const onClick = () => {
-            cards.showAtisCard(field.atis[0]);
-        };
-        return <IconButton onClick={onClick}><CloudOutlinedIcon /></IconButton>;
-    }
-
-    const [menuOpen, setMenuOpen] = useState(false);
-    const mainButton = useRef<HTMLButtonElement>(null);
-
-    const list = field.atis.map(atis => {
-        const data = atis.data;
-        const key = `${data.callsign};${data.cid}`;
-        const onClick = () => {
-            cards.showAtisCard(atis);
-        };
-
-        return <MenuItem key={key} onClick={onClick}>{data.callsign} {data.frequency}</MenuItem>
-    });
-
-    return (
-        <>
-            <IconButton onClick={() => setMenuOpen(true)} ref={mainButton}><CloudOutlinedIcon /></IconButton>
-            <Menu open={menuOpen} onClose={() => setMenuOpen(false)} anchorEl={mainButton.current}>
-                {list}
-            </Menu>
-        </>
-    );
+    return 'Unknown';
 }
 
 function ControllerCard() {

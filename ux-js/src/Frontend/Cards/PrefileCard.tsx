@@ -1,6 +1,6 @@
 import { Divider } from '@mui/material';
 import { Prefile } from '../../Backend/Network/NetworkWorld';
-import { createNetUpdate, getFlightplan } from './CardsShared';
+import { createNetUpdate, getFlightplan } from './Shared';
 import { useEffect, useState } from 'react';
 import { UserName } from './Elements/UserName';
 import { DataTable } from './Elements/DataTable';
