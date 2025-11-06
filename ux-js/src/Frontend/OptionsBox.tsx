@@ -1,9 +1,9 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Box, Button, ButtonGroup, createTheme, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import VATSIM from '../Network/VATSIM';
-import { SimulatorStatus, StatusCmd } from '../Host/HostState';
-import StyledBox from './StyledBox';
+import VATSIM from '../Backend/Network/VATSIM';
+import { SimulatorStatus, StatusCmd } from '../Backend/Host/HostState';
+import StyledBox from './Styles/StyledBox';
 
 type View = 'map' | 'network' | 'app' | 'about' | 'dev_preview';
 

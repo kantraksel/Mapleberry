@@ -1,5 +1,5 @@
-import { Controller, FlightPlan, Pilot } from '../Network/VATSIM';
-import { NetworkState } from '../Network/NetworkWorld';
+import { Controller, FlightPlan, Pilot } from '../../Backend/Network/VATSIM';
+import { NetworkState } from '../../Backend/Network/NetworkWorld';
 
 export function getPilotRating(pilot: Pilot) {
     if (pilot.military_rating > 0) {

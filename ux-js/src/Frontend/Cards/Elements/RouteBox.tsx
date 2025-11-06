@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FlightPlan } from "../../Network/VATSIM";
+import { FlightPlan } from "../../../Backend/Network/VATSIM";
 import { Stack, Typography } from "@mui/material";
 import { DataTable } from "./DataTable";
 import { TextBox } from "./TextBox";

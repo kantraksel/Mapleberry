@@ -1,4 +1,4 @@
-import Event from "../Utils/Event";
+import Event from "../Event";
 import { Atis, Controller, Facility, LiveNetworkData, Pilot, Prefile, Rating } from "./VATSIM";
 
 export interface NetworkState {

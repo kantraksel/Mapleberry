@@ -1,7 +1,11 @@
 import { Divider } from '@mui/material';
-import { Prefile } from '../Network/NetworkWorld';
-import { createNetUpdate, DataTable, getFlightplan, RouteBox, StationCard, UserName } from './CardsShared';
+import { Prefile } from '../../Backend/Network/NetworkWorld';
+import { createNetUpdate, getFlightplan } from './CardsShared';
 import { useEffect, useState } from 'react';
+import { UserName } from './Elements/UserName';
+import { DataTable } from './Elements/DataTable';
+import { RouteBox } from './Elements/RouteBox';
+import { StationCard } from './Elements/StationCard';
 
 function PrefileCard() {
     const [data, setData] = useState<Prefile>();

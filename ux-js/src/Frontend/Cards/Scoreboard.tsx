@@ -1,17 +1,20 @@
-import { Box, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, TextField, Typography } from '@mui/material';
+import { Box, CardHeader, IconButton, Paper, Stack, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TableSortLabel, Tabs, TextField, Typography } from '@mui/material';
 import { StateSnapshot, TableComponents, TableVirtuoso, TableVirtuosoHandle } from 'react-virtuoso';
 import { Dispatch, forwardRef, Fragment, memo, ReactNode, SetStateAction, useEffect, useRef, useState } from 'react';
-import { Atis, Controller, Pilot, Prefile } from '../Network/NetworkWorld';
+import { Atis, Controller, Pilot, Prefile } from '../../Backend/Network/NetworkWorld';
 import NotesIcon from '@mui/icons-material/Notes';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import SearchIcon from '@mui/icons-material/Search';
-import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from '../Network/ControlRadar';
-import { CardCloseButton, CardHeader, CardRightToolbar, CardToolbar, createNetUpdate } from './Cards/CardsShared';
-import { NetworkPilot } from '../Network/TrafficRadar';
-import StyledBox from './StyledBox';
-import RadarPlane from '../Radar/RadarPlane';
-import { SimulatorStatus } from '../Host/HostState';
+import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from '../../Backend/Network/ControlRadar';
+import { createNetUpdate } from './CardsShared';
+import { NetworkPilot } from '../../Backend/Network/TrafficRadar';
+import StyledBox from '../Styles/StyledBox';
+import RadarPlane from '../../Backend/Radar/RadarPlane';
+import { SimulatorStatus } from '../../Backend/Host/HostState';
+import { CardCloseButton } from './Elements/CardCloseButton';
+import { CardRightToolbar } from './Elements/CardRightToolbar';
+import { CardToolbar } from './Elements/CardToolbar';
 
 const VirtuosoTableComponents: TableComponents = {
     Scroller: forwardRef<HTMLDivElement>((props, ref) => (

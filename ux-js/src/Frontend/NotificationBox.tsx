@@ -1,5 +1,5 @@
 import { Alert, AlertColor, Box, Button, Stack } from "@mui/material";
-import { Severity } from "../Notifications";
+import { Severity } from "../Backend/Notifications";
 import { useEffect, useState } from "react";
 
 function NotificationBox() {
