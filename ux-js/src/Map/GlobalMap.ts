@@ -7,6 +7,8 @@ import { ObjectEvent } from 'ol/Object';
 import Event from '../Event';
 import VectorLayer from 'ol/layer/Vector';
 import { MapLibreLayer } from '@geoblocks/ol-maplibre-layer';
+import { StyleSpecification } from "@maplibre/maplibre-gl-style-spec";
+import { getLocales, localizeLayers } from './LabelLocalisation';
 
 type ClickEvent = (e: FeatureLike[]) => void;
 type ResEvent = (value: number) => void;
@@ -22,6 +24,7 @@ interface SavedPos {
 
 class GlobalMap {
     public readonly map: Map;
+    private mapLibre: MapLibreLayer;
     
     private isPointerDragging: boolean;
     private isInteracting: boolean;
@@ -65,6 +68,12 @@ class GlobalMap {
             maxResolution: 15105,
             */
         });
+        this.mapLibre = new MapLibreLayer({
+            opacity: 1.0,
+            mapLibreOptions: {
+                style: 'https://americanamap.org/style.json',
+            },
+        });
         this.map = new Map({
             layers: [
                 /*
@@ -73,12 +82,7 @@ class GlobalMap {
                 }),
                 */
                 // todo: localize names to en
-                new MapLibreLayer({
-                    opacity: 1.0,
-                    mapLibreOptions: {
-                        style: 'https://americanamap.org/style.json',
-                    },
-                }),
+                this.mapLibre,
             ],
             view: view,
         });
@@ -153,6 +157,20 @@ class GlobalMap {
 
         node.focus();
         this.map.setTarget(node);
+
+        let styleUpdated = false;
+        this.mapLibre.mapLibreMap?.on('styledata', ev => {
+            if (styleUpdated) {
+                return;
+            }
+            styleUpdated = true;
+
+            //todo: option
+            const locales = false ? getLocales() : ['en'];
+            const e = ev as unknown as { style: { stylesheet: StyleSpecification } };
+            localizeLayers(e.style.stylesheet.layers as any, locales);
+            ev.target.setStyle(e.style.stylesheet);
+        });
     }
 
     public setCenterZoom(longitude: number, latitude: number, resolution?: number) {
