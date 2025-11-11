@@ -1,55 +1,13 @@
 import { fromLonLat } from 'ol/proj';
 import polygonClipping from 'polygon-clipping';
 import polylabel from 'polylabel';
-import DefinitionLoader, { Boundaries, BoundaryFeature, Country, StationList, Tracon as TraconDef, TraconFeature } from './DefinitionLoader';
-import Event from '../Event';
-
-enum RegionType {
-    FIR,
-    UIR,
-}
-
-interface BaseRegion {
-    type: RegionType;
-}
-
-export interface FIR_ext extends BaseRegion {
-    icao: string,
-    name: string,
-    region: string,
-    division: string,
-
-    stations: FIRStation_ext[],
-    label_pos: number[],
-    geometry: number[][][][],
-}
-
-export interface FIRStation_ext {
-    prefix: string,
-    name: string,
-}
-
-export interface UIR_ext extends BaseRegion {
-    icao: string,
-    name: string,
-    firs: FIR_ext[],
-    labels_pos: number[][],
-    geometry: number[][][][],
-}
-
-export interface Airport_ext {
-    icao: string,
-    name: string,
-    longitude: number,
-    latitude: number,
-    fir: FIR_ext | undefined,
-    stations: AirportStation_ext[];
-}
-
-export interface AirportStation_ext {
-    iata_lid: string,
-    name: string,
-}
+import DefinitionLoader from './DefinitionLoader';
+import Event from './../../Event';
+import { Tracon as TraconDef, TraconFeature } from './Parsers/TraconParser';
+import { StationList } from './Parsers/MainParser';
+import { Boundaries, BoundaryFeature } from './Parsers/BoundaryParser';
+import Country from './../Objects/Country';
+import { Airport_ext, FIR_ext, RegionType, UIR_ext } from './Objects/NetDataExt';
 
 export interface Tracon {
     prefix: string[],
@@ -474,7 +432,7 @@ class ControlStations {
         };
     }
 
-    public getRegion(callsign: string): FIR_ext | UIR_ext | undefined {
+    public getRegion(callsign: string): Region | undefined {
         const id_parts = splitCallsign(callsign);
 
         const obj = this.regions.get(id_parts[0]);

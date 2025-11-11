@@ -1,12 +1,14 @@
 import { createControlRadarUpdate, getStation, getTimeOnline } from './Shared';
 import { useEffect, useState } from 'react';
-import { NetworkArea, NetworkController, NetworkField } from '../../Backend/Network/ControlRadar';
 import { UserName } from './Elements/UserName';
 import { StationCard } from './Elements/StationCard';
 import { DataTable } from './Elements/DataTable';
 import { TextBox } from './Elements/TextBox';
-import { Controller } from '../../Backend/Network/NetworkWorld';
+import { Controller } from '../../Backend/NetworkUplink/Source/Objects/LiveNetworkData';
 import { MetarButton } from '../Styles/MetarButton';
+import NetworkController from '../../Backend/NetworkUplink/Source/Objects/NetworkController';
+import NetworkField from '../../Backend/NetworkUplink/Source/Objects/NetworkField';
+import NetworkArea from '../../Backend/NetworkUplink/Source/Objects/NetworkArea';
 
 function getControllerRating(controller: Controller) {
     const ratings = network.getControllerRatings();

@@ -1,7 +1,10 @@
 import Event from './Event';
-import { NetworkAtis, NetworkControl, NetworkController, NetworkField } from './Network/ControlRadar';
-import { NetworkPilot } from './Network/TrafficRadar';
-import { Prefile } from './Network/VATSIM';
+import { Prefile } from './NetworkUplink/Source/Objects/LiveNetworkData';
+import NetworkAtis from './NetworkUplink/Source/Objects/NetworkAtis';
+import NetworkControl from './NetworkUplink/Source/Objects/NetworkControl';
+import NetworkController from './NetworkUplink/Source/Objects/NetworkController';
+import NetworkField from './NetworkUplink/Source/Objects/NetworkField';
+import NetworkPilot from './NetworkUplink/Source/Objects/NetworkPilot';
 
 export enum CardType {
     None,

@@ -2,8 +2,8 @@ import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
-import { Airport_ext } from '../Network/ControlStations';
-import { NetworkField } from '../Network/ControlRadar';
+import { Airport_ext } from '../NetworkUplink/Source/Objects/NetDataExt';
+import NetworkField from '../NetworkUplink/Source/Objects/NetworkField';
 
 class MapField {
     private pos: Point;

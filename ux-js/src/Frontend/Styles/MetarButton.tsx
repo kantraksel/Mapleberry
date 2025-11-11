@@ -1,6 +1,7 @@
 import { IconButton, Menu, MenuItem } from "@mui/material";
-import { NetworkControl, NetworkField } from "../../Backend/Network/ControlRadar";
 import { useRef, useState } from "react";
+import NetworkControl from "../../Backend/NetworkUplink/Source/Objects/NetworkControl";
+import NetworkField from "../../Backend/NetworkUplink/Source/Objects/NetworkField";
 import CloudOutlinedIcon from '@mui/icons-material/CloudOutlined';
 
 export function MetarButton(props: { data: NetworkControl | undefined }) {

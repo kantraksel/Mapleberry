@@ -1,5 +1,5 @@
-import { Controller, FlightPlan } from '../../Backend/Network/VATSIM';
-import { NetworkState } from '../../Backend/Network/NetworkWorld';
+import { NetworkState } from '../../Backend/NetworkUplink/Source/NetworkWorld';
+import { Controller, FlightPlan } from './../../Backend/NetworkUplink/Source/Objects/LiveNetworkData';
 
 export function getStation(controller: Controller) {
     let name = 'Unknown';

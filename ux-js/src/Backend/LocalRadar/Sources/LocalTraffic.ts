@@ -1,5 +1,5 @@
-import { SimulatorStatus } from '../../Host/HostState';
-import { MsgId } from '../../Host/MsgId';
+import { SimulatorStatus } from '../../HostApp/HostState';
+import { MsgId } from '../../HostApp/MsgId';
 import { PhysicParams, validatePhysicParams } from '../../Map/MapPlane';
 
 class LocalTraffic {

@@ -1,11 +1,11 @@
 import { ReactNode, useEffect, useState } from "react";
 import { compareIgnoreCase, createNetUpdate } from "../Shared";
-import { Atis, Controller, Pilot, Prefile } from "../../../Backend/Network/NetworkWorld";
-import { NetworkController } from "../../../Backend/Network/ControlRadar";
+import { Atis, Controller, Pilot, Prefile } from "../../../Backend/NetworkUplink/Source/Objects/LiveNetworkData";
 import { Box, Stack, TextField, Typography } from "@mui/material";
 import { CardCloseButton } from "../Elements/CardCloseButton";
 import DynamicBoard, { Column } from "./Elements/DynamicBoard";
 import OpenButton from "./OpenButton";
+import NetworkController from "../../../Backend/NetworkUplink/Source/Objects/NetworkController";
 
 const searchColumns: Column<SearchResult>[] = [
     {

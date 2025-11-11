@@ -1,5 +1,5 @@
 import { pack, unpack } from "msgpackr";
-import { LiveNetworkData } from "../Network/VATSIM";
+import LiveNetworkData from "./NetworkUplink/Source/Objects/LiveNetworkData";
 
 type PlaybackMessage = [ number, MessageType, Uint8Array ];
 

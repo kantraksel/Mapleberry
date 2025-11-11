@@ -1,12 +1,12 @@
 import { Box, Button, IconButton, Stack, TextField, Typography } from "@mui/material";
 import { useRef, useState } from "react";
-import { NetworkControl } from "../Backend/Network/ControlRadar";
 import { CardBase } from "./Cards/Elements/CardBase";
 import { CardHeader } from "./Cards/Elements/CardHeader";
 import { CardToolbar } from "./Cards/Elements/CardToolbar";
 import CloseIcon from '@mui/icons-material/Close';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import { MetarButton } from "./Styles/MetarButton";
+import NetworkControl from "../Backend/NetworkUplink/Source/Objects/NetworkControl";
 
 function MetarBox(props: { open: boolean, onClose: () => void }) {
     const [message, setMessage] = useState<{ text: string, station?: NetworkControl }>({ text: '' });

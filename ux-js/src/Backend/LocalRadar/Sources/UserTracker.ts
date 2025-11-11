@@ -1,7 +1,7 @@
 import { PhysicParams, validatePhysicParams } from "../../Map/MapPlane";
-import { SimulatorStatus } from "../../Host/HostState";
+import { SimulatorStatus } from "../../HostApp/HostState";
 import RadarPlane from "../RadarPlane";
-import { MsgId } from "../../Host/MsgId";
+import { MsgId } from "../../HostApp/MsgId";
 
 class LocalPlaneInfo {
     info: RadarPlane | null;

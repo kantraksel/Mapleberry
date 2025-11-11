@@ -1,5 +1,5 @@
-import Event from "../Event";
-import { Atis, Controller, Facility, LiveNetworkData, Pilot, Prefile, Rating } from "./VATSIM";
+import Event from "./../../Event";
+import LiveNetworkData, { Atis, Controller, Facility, Pilot, Prefile, Rating } from "./Objects/LiveNetworkData";
 
 export interface NetworkState {
     observers: Controller[],
@@ -133,4 +133,3 @@ class NetworkWorld {
 }
 
 export default NetworkWorld;
-export type { Atis, Controller, Facility, LiveNetworkData, Pilot, Prefile, Rating };

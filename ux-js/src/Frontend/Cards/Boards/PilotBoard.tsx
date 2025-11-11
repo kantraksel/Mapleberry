@@ -1,4 +1,4 @@
-import { NetworkPilot } from "../../../Backend/Network/TrafficRadar";
+import NetworkPilot from "../../../Backend/NetworkUplink/Source/Objects/NetworkPilot";
 import { compareIgnoreCase } from "../Shared";
 import { Column } from "./Elements/DynamicBoard";
 import NetworkList from "./Elements/NetworkBoard";

@@ -1,142 +1,21 @@
 import { FeatureLike } from 'ol/Feature';
-import MapArea, { StationDesc } from '../Map/MapArea';
+import MapArea from '../Map/MapArea';
 import MapField from '../Map/MapField';
-import { Airport_ext, splitCallsign, Tracon } from './ControlStations';
-import { Atis, Controller, NetworkState } from './NetworkWorld';
-import Event from '../Event';
-import MapTracon from '../Map/MapTracon';
-
-export class RefObject {
-    refCount: number;
-
-    constructor() {
-        this.refCount = 1;
-    }
-
-    addRef() {
-        this.refCount++;
-    }
-
-    expired() {
-        return this.refCount <= 0;
-    }
-}
-
-export class NetworkArea extends RefObject {
-    readonly icao: string;
-    readonly area: MapArea;
-    controllers: NetworkController[];
-    readonly station: StationDesc;
-
-    constructor(desc: StationDesc) {
-        super();
-        this.area = new MapArea(desc);
-        this.controllers = [];
-        this.station = desc;
-        this.icao = desc.icao;
-
-        this.area.netState = this;
-    }
-}
-
-export class NetworkField extends RefObject {
-    readonly icao: string;
-    readonly field: MapField;
-    tracons: NetworkTracon[];
-    controllers: NetworkController[];
-    atis: NetworkAtis[];
-    readonly station: Airport_ext;
-    isOutlined: boolean;
-
-    constructor(station: Airport_ext) {
-        super();
-        this.field = new MapField(station);
-        this.controllers = [];
-        this.atis = [];
-        this.station = station;
-        this.icao = station.icao;
-        this.isOutlined = false;
-        this.tracons = [];
-
-        this.field.netState = this;
-    }
-
-    setFill() {
-        this.field.setFilled();
-        this.isOutlined = false;
-    }
-
-    setOutline() {
-        this.field.setOutlined();
-        this.isOutlined = true;
-    }
-}
-
-export class NetworkController extends RefObject {
-    readonly station?: NetworkControl;
-    substation?: NetworkTracon;
-    data: Controller;
-
-    constructor(data: Controller, station: NetworkControl | undefined) {
-        super();
-        this.data = data;
-        this.station = station;
-    }
-
-    addTracon(tracon: Tracon, sid: string) {
-        if (this.station instanceof NetworkField) {
-            this.substation = new NetworkTracon(MapTracon.create(tracon, this.station.station));
-        } else {
-            this.substation = new NetworkTracon(MapTracon.createStandalone(tracon, sid));
-        }
-        return this.substation;
-    }
-
-    isEqual(other: Controller) {
-        const data = this.data;
-        return data.cid === other.cid && data.callsign === other.callsign;
-    }
-
-    addRef() {
-        this.refCount++;
-        this.station?.addRef();
-        this.substation?.addRef();
-    }
-}
-
-export class NetworkAtis extends RefObject {
-    readonly station: NetworkField;
-    data: Atis;
-
-    constructor(data: Atis, station: NetworkField) {
-        super();
-        this.data = data;
-        this.station = station;
-    }
-
-    addRef() {
-        this.refCount++;
-        this.station.addRef();
-    }
-}
-
-export class NetworkTracon extends RefObject {
-    readonly substation: MapTracon;
-    controllers: NetworkController[];
-
-    constructor(substation: MapTracon) {
-        super();
-        this.substation = substation;
-        this.controllers = [];
-        substation.netState = this;
-    }
-}
+import { splitCallsign } from './Source/ControlStations';
+import { NetworkState } from './Source/NetworkWorld';
+import Event from './../Event';
+import MapTracon from './../Map/MapTracon';
+import { Atis, Controller } from './Source/Objects/LiveNetworkData';
+import NetworkField from './Source/Objects/NetworkField';
+import NetworkArea from './Source/Objects/NetworkArea';
+import NetworkController from './Source/Objects/NetworkController';
+import NetworkAtis from './Source/Objects/NetworkAtis';
+import NetworkTracon from './Source/Objects/NetworkTracon';
+import NetworkControl from './Source/Objects/NetworkControl';
 
 function createUID(data: { cid: number, callsign: string }) {
     return `${data.callsign};${data.cid}`;
 }
-
-export type NetworkControl = NetworkArea | NetworkField;
 
 class ControlRadar {
     private fields: Map<string, NetworkField>;

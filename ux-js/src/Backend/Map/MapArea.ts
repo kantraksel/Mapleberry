@@ -1,7 +1,7 @@
 import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point } from 'ol/geom';
-import { NetworkArea } from '../Network/ControlRadar';
+import NetworkArea from '../NetworkUplink/Source/Objects/NetworkArea';
 import { fromLonLat } from 'ol/proj';
 
 export interface StationDesc {

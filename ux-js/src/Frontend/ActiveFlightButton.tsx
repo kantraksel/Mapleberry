@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ListItemButton } from "@mui/material";
 import FlightIcon from '@mui/icons-material/Flight';
-import RadarPlane from "../Backend/Radar/RadarPlane";
+import RadarPlane from "../Backend/LocalRadar/RadarPlane";
 import { MainDrawerEntry } from "./MainFrame/MainDrawer";
 
 function ActiveFlightButton() {

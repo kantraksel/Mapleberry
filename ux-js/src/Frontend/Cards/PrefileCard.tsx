@@ -1,5 +1,5 @@
 import { Divider } from '@mui/material';
-import { Prefile } from '../../Backend/Network/NetworkWorld';
+import { Prefile } from './../../Backend/NetworkUplink/Source/Objects/LiveNetworkData';
 import { createNetUpdate, getFlightplan } from './Shared';
 import { useEffect, useState } from 'react';
 import { UserName } from './Elements/UserName';

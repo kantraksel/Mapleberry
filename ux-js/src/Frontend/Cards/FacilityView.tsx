@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { NetworkArea, NetworkAtis, NetworkControl, NetworkController, NetworkField } from "../../Backend/Network/ControlRadar";
 import { CardHeader } from "./Elements/CardHeader";
 import { CardRightToolbar } from "./Elements/CardRightToolbar";
 import { Box, Typography } from "@mui/material";
 import DynamicBoard from "./Boards/Elements/DynamicBoard";
 import DataBox from "./Boards/DataBox";
 import { controllerColumns } from "./Boards/ControllerBoard";
+import NetworkControl from "../../Backend/NetworkUplink/Source/Objects/NetworkControl";
+import NetworkController from "../../Backend/NetworkUplink/Source/Objects/NetworkController";
+import NetworkAtis from "../../Backend/NetworkUplink/Source/Objects/NetworkAtis";
+import NetworkArea from "../../Backend/NetworkUplink/Source/Objects/NetworkArea";
+import NetworkField from "../../Backend/NetworkUplink/Source/Objects/NetworkField";
 
 function FacilityView() {
     const [refresh, setRefresh] = useState(0);

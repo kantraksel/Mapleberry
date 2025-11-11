@@ -2,8 +2,8 @@ import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
-import { NetworkPilot } from '../Network/TrafficRadar';
-import RadarPlane from '../Radar/RadarPlane';
+import RadarPlane from '../LocalRadar/RadarPlane';
+import NetworkPilot from '../NetworkUplink/Source/Objects/NetworkPilot';
 
 class MapPlane {
     private pos: Point;

@@ -1,5 +1,5 @@
-import { SimulatorStatus } from "../../../Backend/Host/HostState";
-import RadarPlane from "../../../Backend/Radar/RadarPlane";
+import { SimulatorStatus } from "../../../Backend/HostApp/HostState";
+import RadarPlane from "../../../Backend/LocalRadar/RadarPlane";
 import { compareIgnoreCase } from "../Shared";
 import DynamicBoard, { Column } from "./Elements/DynamicBoard";
 import OpenButton from "./OpenButton";

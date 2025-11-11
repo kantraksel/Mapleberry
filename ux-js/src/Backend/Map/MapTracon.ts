@@ -2,10 +2,11 @@ import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { MultiPolygon, Point, Polygon } from 'ol/geom';
 import { fromLonLat, toLonLat } from 'ol/proj';
-import { Airport_ext, Tracon } from '../Network/ControlStations';
-import { NetworkTracon } from '../Network/ControlRadar';
 import polylabel from 'polylabel';
 import Style from 'ol/style/Style';
+import { Tracon } from '../NetworkUplink/Source/ControlStations';
+import { Airport_ext } from '../NetworkUplink/Source/Objects/NetDataExt';
+import NetworkTracon from '../NetworkUplink/Source/Objects/NetworkTracon';
 
 function round(n: number) {
     return Math.round(n * 100) / 100;

@@ -1,4 +1,4 @@
-import { Prefile } from "../../../Backend/Network/NetworkWorld";
+import { Prefile } from "../../../Backend/NetworkUplink/Source/Objects/LiveNetworkData";
 import { compareIgnoreCase } from "../Shared";
 import { Column } from "./Elements/DynamicBoard";
 import NetworkBoard from "./Elements/NetworkBoard";

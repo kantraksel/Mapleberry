@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SimulatorStatus, StatusCmd } from "../../Backend/Host/HostState";
+import { SimulatorStatus, StatusCmd } from "../../Backend/HostApp/HostState";
 import { Box, Button, ButtonGroup, Stack, Switch, Typography } from "@mui/material";
 import Header from "./Elements/Header";
 import NumberField from "./Elements/NumberField";

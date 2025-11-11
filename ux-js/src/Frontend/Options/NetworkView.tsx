@@ -2,7 +2,7 @@ import { Box, Stack, Switch, Typography } from "@mui/material";
 import { useState } from "react";
 import Header from "./Elements/Header";
 import NumberField from "./Elements/NumberField";
-import VATSIM from "../../Backend/Network/VATSIM";
+import VATSIM from "../../Backend/NetworkUplink/Source/VATSIM";
 
 export default function NetworkView() {
     const [vatsimOnline, setVatsimOnline] = useState(vatsim.enabled);

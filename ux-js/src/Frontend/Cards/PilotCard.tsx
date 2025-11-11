@@ -1,12 +1,12 @@
 import { Divider } from '@mui/material';
 import { createControlRadarUpdate, getFlightplan, getTimeOnline } from './Shared';
 import { useEffect, useState } from 'react';
-import { NetworkPilot } from '../../Backend/Network/TrafficRadar';
 import { StationCard } from './Elements/StationCard';
 import { DataTable } from './Elements/DataTable';
 import { RouteBox } from './Elements/RouteBox';
 import { UserName } from './Elements/UserName';
-import { Pilot } from '../../Backend/Network/NetworkWorld';
+import { Pilot } from '../../Backend/NetworkUplink/Source/Objects/LiveNetworkData';
+import NetworkPilot from '../../Backend/NetworkUplink/Source/Objects/NetworkPilot';
 
 function getPilotRating(pilot: Pilot) {
     if (pilot.military_rating > 0) {

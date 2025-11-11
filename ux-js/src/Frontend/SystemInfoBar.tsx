@@ -4,8 +4,8 @@ import ErrorIcon from '@mui/icons-material/Error';
 import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
 import WifiTetheringOffIcon from '@mui/icons-material/WifiTetheringOff';
 import LanguageIcon from '@mui/icons-material/Language';
-import { SimulatorStatus } from '../Backend/Host/HostState';
-import { NetworkStatus } from '../Backend/Network/VATSIM';
+import { SimulatorStatus } from '../Backend/HostApp/HostState';
+import { NetworkStatus } from '../Backend/NetworkUplink/Source/VATSIM';
 
 function SystemInfoBar() {
     const [status, setStatus] = useState(hostState.getHostStatus());

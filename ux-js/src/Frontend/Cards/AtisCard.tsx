@@ -1,10 +1,11 @@
-import { NetworkAtis, NetworkField } from '../../Backend/Network/ControlRadar';
 import { createControlRadarUpdate, getTimeOnline } from './Shared';
 import { useEffect, useState } from 'react';
 import { UserName } from './Elements/UserName';
 import { StationCard } from './Elements/StationCard';
 import { DataTable } from './Elements/DataTable';
 import { TextBox } from './Elements/TextBox';
+import NetworkAtis from '../../Backend/NetworkUplink/Source/Objects/NetworkAtis';
+import NetworkField from '../../Backend/NetworkUplink/Source/Objects/NetworkField';
 
 function AtisCard() {
     const [object, setObject] = useState<NetworkAtis>();

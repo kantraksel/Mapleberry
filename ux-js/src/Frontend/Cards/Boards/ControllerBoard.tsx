@@ -1,9 +1,10 @@
 import { Typography } from "@mui/material";
-import { NetworkAtis, NetworkController } from "../../../Backend/Network/ControlRadar";
 import { Column } from "./Elements/DynamicBoard";
 import NetworkBoard from "./Elements/NetworkBoard";
 import OpenButton from "./OpenButton";
 import { compareIgnoreCase } from "../Shared";
+import NetworkController from "../../../Backend/NetworkUplink/Source/Objects/NetworkController";
+import NetworkAtis from "../../../Backend/NetworkUplink/Source/Objects/NetworkAtis";
 
 export const controllerColumns: Column<NetworkController | NetworkAtis>[] = [
     {

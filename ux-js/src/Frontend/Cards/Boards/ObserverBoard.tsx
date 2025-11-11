@@ -1,5 +1,5 @@
-import { NetworkController } from "../../../Backend/Network/ControlRadar";
-import { Controller } from "../../../Backend/Network/NetworkWorld";
+import { Controller } from "../../../Backend/NetworkUplink/Source/Objects/LiveNetworkData";
+import NetworkController from "../../../Backend/NetworkUplink/Source/Objects/NetworkController";
 import { compareIgnoreCase } from "../Shared";
 import { Column } from "./Elements/DynamicBoard";
 import NetworkBoard from "./Elements/NetworkBoard";
