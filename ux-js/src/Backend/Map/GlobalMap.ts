@@ -69,16 +69,19 @@ class GlobalMap {
         const view = new View({
             center: fromLonLat([pos.longitude, pos.latitude]),
             resolution: pos.resolution,
-            // maplibre desync bug
-            /*
             minResolution: 0.5,
             maxResolution: 15105,
-            */
         });
+        const defaultView = new View();
         this.mapLibre = new MapLibreLayer({
             opacity: 1.0,
             mapLibreOptions: {
                 style: 'https://americanamap.org/style.json',
+            },
+            translateZoom: zoom => {
+                const res = view.getResolutionForZoom(zoom);
+                const retZoom = defaultView.getZoomForResolution(res);
+                return retZoom!;
             },
         });
         this.map = new Map({
@@ -88,7 +91,6 @@ class GlobalMap {
                     source: new OsmSource(),
                 }),
                 */
-                // todo: localize names to en
                 this.mapLibre,
             ],
             view: view,
@@ -172,7 +174,11 @@ class GlobalMap {
         this.map.setTarget(node);
 
         let styleUpdated = false;
-        this.mapLibre.mapLibreMap?.on('styledata', ev => {
+        const mapLibre = this.mapLibre.mapLibreMap;
+        mapLibre?.on('styleimagemissing', ev => {
+            //todo: shieldlib
+        });
+        mapLibre?.on('styledata', ev => {
             if (styleUpdated) {
                 return;
             }
