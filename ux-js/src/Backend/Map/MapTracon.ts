@@ -4,8 +4,7 @@ import { MultiPolygon, Point, Polygon } from 'ol/geom';
 import { fromLonLat, toLonLat } from 'ol/proj';
 import polylabel from 'polylabel';
 import Style from 'ol/style/Style';
-import { Tracon } from '../NetworkUplink/Source/ControlStations';
-import { Airport_ext } from '../NetworkUplink/Source/Objects/NetDataExt';
+import { AirportSpec, TraconSpec } from '../NetworkUplink/Source/Objects/StationSpecs';
 import NetworkTracon from '../NetworkUplink/Source/Objects/NetworkTracon';
 
 function round(n: number) {
@@ -28,9 +27,9 @@ function createCircle(center: number[]) {
 class MapTracon {
     public readonly area: Feature;
     public readonly label?: Feature;
-    public readonly substation: Tracon;
+    public readonly substation: TraconSpec;
 
-    private constructor(area: Feature, substation: Tracon, tracon?: Feature) {
+    private constructor(area: Feature, substation: TraconSpec, tracon?: Feature) {
         this.area = area;
         this.substation = substation;
         this.label = tracon;
@@ -38,7 +37,7 @@ class MapTracon {
         this.area.set('cards_ignore', true, true);
     }
 
-    public static create(substation: Tracon, station: Airport_ext) {
+    public static create(substation: TraconSpec, station: AirportSpec) {
         let shape;
         if (substation.geometry.length > 0) {
             shape = new MultiPolygon(substation.geometry);
@@ -50,7 +49,7 @@ class MapTracon {
         return new MapTracon(area, substation);
     }
 
-    public static createStandalone(substation: Tracon, sid: string) {
+    public static createStandalone(substation: TraconSpec, sid: string) {
         const label_pos = polylabel(substation.geometry[0]);
 
         const shape = new MultiPolygon(substation.geometry);

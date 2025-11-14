@@ -1,5 +1,5 @@
 import MapField from './../../../Map/MapField';
-import { Airport_ext } from './NetDataExt';
+import { AirportSpec } from './StationSpecs';
 import NetworkAtis from './NetworkAtis';
 import NetworkController from './NetworkController';
 import NetworkTracon from './NetworkTracon';
@@ -11,10 +11,10 @@ class NetworkField extends RefObject {
     tracons: NetworkTracon[];
     controllers: NetworkController[];
     atis: NetworkAtis[];
-    readonly station: Airport_ext;
+    readonly station: AirportSpec;
     isOutlined: boolean;
 
-    constructor(station: Airport_ext) {
+    constructor(station: AirportSpec) {
         super();
         this.field = new MapField(station);
         this.controllers = [];

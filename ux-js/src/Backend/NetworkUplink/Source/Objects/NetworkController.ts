@@ -1,6 +1,6 @@
-import { Tracon } from '../ControlStations';
 import MapTracon from './../../../Map/MapTracon';
 import { Controller } from './LiveNetworkData';
+import { TraconSpec } from './StationSpecs';
 import NetworkControl from './NetworkControl';
 import NetworkField from './NetworkField';
 import NetworkTracon from './NetworkTracon';
@@ -17,7 +17,7 @@ class NetworkController extends RefObject {
         this.station = station;
     }
 
-    addTracon(tracon: Tracon, sid: string) {
+    addTracon(tracon: TraconSpec, sid: string) {
         if (this.station instanceof NetworkField) {
             this.substation = new NetworkTracon(MapTracon.create(tracon, this.station.station));
         } else {

@@ -2,7 +2,7 @@ import { Feature } from 'ol';
 import { FeatureLike } from 'ol/Feature';
 import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
-import { Airport_ext } from '../NetworkUplink/Source/Objects/NetDataExt';
+import { AirportSpec } from '../NetworkUplink/Source/Objects/StationSpecs';
 import NetworkField from '../NetworkUplink/Source/Objects/NetworkField';
 
 class MapField {
@@ -10,7 +10,7 @@ class MapField {
     public readonly point: Feature;
     public readonly label: Feature;
 
-    public constructor(station: Airport_ext) {
+    public constructor(station: AirportSpec) {
         this.pos = new Point(fromLonLat([ station.longitude, station.latitude ]));
         this.point = new Feature(this.pos);
         this.label = new Feature(this.pos);
@@ -20,7 +20,7 @@ class MapField {
         this.setFilled();
     }
 
-    public static getStation(feature: FeatureLike): Airport_ext | null {
+    public static getStation(feature: FeatureLike): AirportSpec | null {
         const value = feature.get('station');
         if (typeof value !== 'object') {
             return null;

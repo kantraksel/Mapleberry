@@ -4,21 +4,9 @@ import polylabel from 'polylabel';
 import DefinitionLoader from './DefinitionLoader';
 import Event from './../../Event';
 import { Tracon as TraconDef, TraconFeature } from './Parsers/TraconParser';
-import { StationList } from './Parsers/MainParser';
+import { Country, StationList } from './Parsers/MainParser';
 import { Boundaries, BoundaryFeature } from './Parsers/BoundaryParser';
-import Country from './../Objects/Country';
-import { Airport_ext, FIR_ext, RegionType, UIR_ext } from './Objects/NetDataExt';
-
-export interface Tracon {
-    prefix: string[],
-    suffix: string,
-    name: string,
-    geometry: number[][][][],
-
-    airport: Airport_ext | undefined,
-}
-
-type Region = FIR_ext | UIR_ext;
+import { AirportSpec, FirSpec, InfoRegion, InfoRegionSpec, TraconSpec } from './Objects/StationSpecs';
 
 function checkCountryCode(code: string) {
     if (code.length > 2) {
@@ -101,7 +89,7 @@ function addToObjectMap<Obj>(id: string, obj: Obj, objMap: Map<string, Obj | Map
     }
 }
 
-function addToTraconMap(id: string, obj: Tracon, objMap: Map<string, Tracon>) {
+function addToTraconMap(id: string, obj: TraconSpec, objMap: Map<string, TraconSpec>) {
     const parts = id.split(/[-_]/);
     const suffix = parts.pop();
     const partTwo = parts[1];
@@ -143,9 +131,9 @@ export function splitCallsign(callsign: string) {
 }
 
 class ControlStations {
-    readonly airports: Map<string, Airport_ext | Map<string, Airport_ext>>;
-    readonly regions: Map<string, Region | Map<string, Region>>;
-    readonly tracons: Map<string, Tracon>;
+    readonly airports: Map<string, AirportSpec | Map<string, AirportSpec>>;
+    readonly regions: Map<string, InfoRegionSpec | Map<string, InfoRegionSpec>>;
+    readonly tracons: Map<string, TraconSpec>;
     Ready: Event<() => void>;
 
     constructor() {
@@ -187,9 +175,9 @@ class ControlStations {
             country_map.set(country.icao, country);
         });
 
-        const firs = new Map<string, FIR_ext>();
+        const firs = new Map<string, FirSpec>();
         const regions = this.regions;
-        const fir_prefixes = new Map<string, Region>();
+        const fir_prefixes = new Map<string, InfoRegionSpec>();
 
         list.firs.forEach(value => {
             checkFIR_ICAO(value.icao);
@@ -221,13 +209,13 @@ class ControlStations {
 
                 const props = boundary.properties;
                 region = {
-                    type: RegionType.FIR,
+                    type: InfoRegion.FIR,
                     icao: value.icao,
                     name,
                     region: props.region ?? '',
                     division: props.division ?? '',
 
-                    stations: [],
+                    callsigns: [],
                     label_pos: [
                         typeof props.label_lon === 'number' ? props.label_lon : parseFloat(props.label_lon),
                         typeof props.label_lat === 'number' ? props.label_lat : parseFloat(props.label_lat),
@@ -236,11 +224,11 @@ class ControlStations {
                 };
 
                 firs.set(value.icao, region);
-                addToObjectMap<Region>(value.icao, region, regions);
+                addToObjectMap(value.icao, region, regions);
             }
 
             let callsign_prefix = value.callsign_prefix;
-            region.stations.push({
+            region.callsigns.push({
                 prefix: callsign_prefix,
                 name,
             });
@@ -254,7 +242,7 @@ class ControlStations {
             }
         });
         fir_prefixes.forEach((value, key) => {
-            addToObjectMap<Region>(key, value, regions, true);
+            addToObjectMap(key, value, regions, true);
         });
         fir_prefixes.clear();
 
@@ -265,7 +253,7 @@ class ControlStations {
         list.uirs.forEach(value => {
             checkUIR_ICAO(value.icao);
 
-            const fir_list: FIR_ext[] = [];
+            const fir_list: FirSpec[] = [];
             const fir_geometries: number[][][][][] = [];
             value.firs.forEach(name => {
                 const fir = firs.get(name);
@@ -300,14 +288,14 @@ class ControlStations {
             geometry = geometry.map(coords => coords.map(coords => coords.map(coords => fromLonLat(coords))));
 
             const uir = {
-                type: RegionType.UIR,
+                type: InfoRegion.UIR,
                 icao: value.icao,
                 name: value.name,
                 firs: fir_list,
                 labels_pos: labels,
                 geometry,
             };
-            addToObjectMap<Region>(uir.icao, uir, regions);
+            addToObjectMap(uir.icao, uir, regions);
         });
 
         // prebake geometry
@@ -340,17 +328,17 @@ class ControlStations {
                     longitude: value.longitude,
                     latitude: value.latitude,
                     fir,
-                    stations: [],
+                    aliases: [],
                 };
                 airports.set(value.icao, airport);
             }
 
             if (value.iata_lid.length > 0) {
-                airport.stations.push({
+                airport.aliases.push({
                     iata_lid: value.iata_lid,
                     name: value.name,
                 });
-                addToObjectMap<Airport_ext>(value.iata_lid, airport, airports);
+                addToObjectMap(value.iata_lid, airport, airports);
             }
         });
 
@@ -402,7 +390,7 @@ class ControlStations {
                     console.warn(`Cannot find airport for TRACON ${props.id}/${prefix}/${props.name}`);
                 }
             } else {
-                const newPrefix = airport.stations[0]?.iata_lid ?? airport.icao;
+                const newPrefix = airport.aliases[0]?.iata_lid ?? airport.icao;
                 console.info(`Replacing invalid prefix for TRACON ${props.id}/${prefix}/${props.name}: ${prefix} -> ${newPrefix}`);
                 prefix = newPrefix;
             }
@@ -410,7 +398,7 @@ class ControlStations {
         return airport;
     }
 
-    private createTraconObject(feature: TraconFeature): Tracon {
+    private createTraconObject(feature: TraconFeature): TraconSpec {
         let coordinates;
         const geometry = feature.geometry;
         if (geometry.type == 'Polygon') {
@@ -432,7 +420,7 @@ class ControlStations {
         };
     }
 
-    public getRegion(callsign: string): Region | undefined {
+    public getRegion(callsign: string): InfoRegionSpec | undefined {
         const id_parts = splitCallsign(callsign);
 
         const obj = this.regions.get(id_parts[0]);
@@ -451,7 +439,7 @@ class ControlStations {
         return obj;
     }
 
-    public getAirport(callsign: string): Airport_ext | undefined {
+    public getAirport(callsign: string): AirportSpec | undefined {
         const id_parts = splitCallsign(callsign);
 
         const obj = this.airports.get(id_parts[0]);
@@ -468,7 +456,7 @@ class ControlStations {
         return obj;
     }
 
-    public getAirportByIcao(icao: string): Airport_ext | undefined {
+    public getAirportByIcao(icao: string): AirportSpec | undefined {
         const obj = this.airports.get(icao);
         if (obj instanceof Map) {
             return obj.get('');
@@ -476,7 +464,7 @@ class ControlStations {
         return obj;
     }
 
-    public getTracon(callsign: string) : [ string, Tracon | undefined ] {
+    public getTracon(callsign: string) : [ string, TraconSpec | undefined ] {
         const id_parts = splitCallsign(callsign);
         const suffix = id_parts.pop();
         const partTwo = id_parts[1];

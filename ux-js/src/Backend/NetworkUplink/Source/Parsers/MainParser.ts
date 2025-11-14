@@ -1,7 +1,31 @@
-import Airport from "./../../Objects/Airport";
-import Country from "./../../Objects/Country";
-import FIR from "./../../Objects/FIR";
-import UIR from "./../../Objects/UIR";
+interface Airport {
+    icao: string,
+    name: string,
+    latitude: number,
+    longitude: number,
+    iata_lid: string,
+    fir: string,
+    is_pseudo: number,
+}
+
+export interface Country {
+    name: string,
+    icao: string,
+    fir_suffix: string,
+}
+
+interface FIR {
+    icao: string,
+    name: string,
+    callsign_prefix: string,
+    fir_boundary: string,
+}
+
+interface UIR {
+    icao: string,
+    name: string,
+    firs: string[],
+}
 
 export interface StationList {
     countries: Country[],
