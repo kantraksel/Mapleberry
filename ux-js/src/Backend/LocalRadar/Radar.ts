@@ -1,4 +1,4 @@
-import { PhysicParams } from "../Map/MapPlane";
+import MotionState from "../Map/MotionState";
 import RadarPlane, { RadarPlaneData } from "./RadarPlane";
 import RadarAnimator from "./RadarAnimator";
 import Event from "../Event";
@@ -65,7 +65,7 @@ class Radar {
         this.animator.stop();
     }
 
-    public update(id: number, data: PhysicParams) {
+    public update(id: number, data: MotionState) {
         const plane = this.planes.get(id);
         if (!plane) {
             return;

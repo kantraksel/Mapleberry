@@ -1,4 +1,4 @@
-import { PhysicParams, validatePhysicParams } from "../../Map/MapPlane";
+import MotionState, { validateMotionState } from "../../Map/MotionState";
 import { SimulatorStatus } from "../../HostApp/HostState";
 import RadarPlane from "../RadarPlane";
 import { MsgId } from "../../HostApp/MsgId";
@@ -27,7 +27,7 @@ interface UserAddEventArgs extends UserUpdateEventArgs {
     model: string;
 }
 
-interface UserUpdateEventArgs extends PhysicParams {
+interface UserUpdateEventArgs extends MotionState {
     realAltitude: number;
     realHeading: number;
 }
@@ -93,7 +93,7 @@ class UserTracker {
             callsign: args[11],
         };
         if (typeof obj.callsign !== 'string' || typeof obj.model !== 'string' ||
-            !validatePhysicParams(obj) ||
+            !validateMotionState(obj) ||
             typeof obj.realAltitude !== 'number' || !Number.isFinite(obj.realAltitude) ||
             typeof obj.realHeading !== 'number' || !Number.isFinite(obj.realHeading)
         )
@@ -134,7 +134,7 @@ class UserTracker {
     }
 
     private applyUpdate(obj: UserUpdateEventArgs) {
-        if (!validatePhysicParams(obj) ||
+        if (!validateMotionState(obj) ||
             typeof obj.realAltitude !== 'number' || !Number.isFinite(obj.realAltitude) ||
             typeof obj.realHeading !== 'number' || !Number.isFinite(obj.realHeading))
             return;

@@ -1,6 +1,6 @@
 import { SimulatorStatus } from '../../HostApp/HostState';
 import { MsgId } from '../../HostApp/MsgId';
-import { PhysicParams, validatePhysicParams } from '../../Map/MapPlane';
+import MotionState, { validateMotionState } from '../../Map/MotionState';
 
 class LocalTraffic {
     public constructor() {
@@ -58,7 +58,7 @@ class LocalTraffic {
         };
         if (typeof obj.id !== 'number' || !Number.isFinite(obj.id) ||
             typeof obj.callsign !== 'string' || typeof obj.model !== 'string' ||
-            !validatePhysicParams(obj))
+            !validateMotionState(obj))
             return;
 
         if (obj.callsign.length > 16)
@@ -108,10 +108,10 @@ class LocalTraffic {
             verticalSpeed: args[8],
         };
         if (typeof obj.id !== 'number' || !Number.isFinite(obj.id) ||
-            !validatePhysicParams(obj))
+            !validateMotionState(obj))
             return;
 
-        radar.update(obj.id, obj as PhysicParams);
+        radar.update(obj.id, obj as MotionState);
     }
 }
 

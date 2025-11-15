@@ -51,7 +51,7 @@ class TrafficRadar {
                 return;
             }
 
-            pilot.blip.physicParams = plane.blip.getPhysicParams();
+            pilot.blip.motionState = plane.blip.motionState;
             this.disconnectPlane(pilot, plane);
 
             if (pilot.local) {
@@ -173,7 +173,7 @@ class TrafficRadar {
                     groundSpeed: pilot.groundspeed,
                     verticalSpeed: 0,
                 };
-                plane.blip.physicParams = params;
+                plane.blip.motionState = params;
             } catch (e: unknown) {
                 console.error(e);
                 console.error(`^ was thrown while processing pilot ${pilot.callsign ?? 'INVALID'}/${pilot.cid ?? 'INVALID'}`);
@@ -299,7 +299,7 @@ class TrafficRadar {
             return;
         }
         const user = tracker.getUser();
-        if (!user || user.blip.getPhysicParams().groundSpeed >= 10) {
+        if (!user || user.blip.motionState.groundSpeed >= 10) {
             return;
         }
         const nearPlanes: { dist: number, pilot: NetworkPilot }[] = [];

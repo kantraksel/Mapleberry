@@ -1,15 +1,16 @@
-import MapPlane, { copyPhysicParams, PhysicParams } from "../Map/MapPlane";
+import MapPlane from "../Map/MapPlane";
+import MotionState, { copyMotionState } from "../Map/MotionState";
 
 interface AnimatorState {
-    first: PhysicParams;
-    second: PhysicParams;
+    first: MotionState;
+    second: MotionState;
     start: number | null;
 
-    stepLog: PhysicParams[];
-    lastStep: PhysicParams;
+    stepLog: MotionState[];
+    lastStep: MotionState;
 }
 
-export interface RadarPlaneData extends PhysicParams {
+export interface RadarPlaneData extends MotionState {
     model: string;
     callsign: string;
 }
@@ -31,7 +32,7 @@ class RadarPlane {
         this.inMap = false;
         this.main = false;
 
-        const params = copyPhysicParams(data);
+        const params = copyMotionState(data);
         this.animator = radar.animator.createAnimator(params);
 
         this.blip = new MapPlane(data.callsign, params);
@@ -44,17 +45,17 @@ class RadarPlane {
         this.blip.callsign = data.callsign;
     }
 
-    update(data: PhysicParams) {
-        const params = copyPhysicParams(data);
+    update(data: MotionState) {
+        const state = copyMotionState(data);
         const stepLog = this.animator.stepLog;
-        stepLog.push(params);
+        stepLog.push(state);
         if (stepLog.length > 10) {
             stepLog.shift();
         }
     }
 
-    updateAnimation(params: PhysicParams) {
-        this.blip.physicParams = params;
+    updateAnimation(state: MotionState) {
+        this.blip.motionState = state;
     }
 
     tagMain() {

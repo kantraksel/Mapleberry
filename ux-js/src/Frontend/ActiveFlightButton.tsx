@@ -63,7 +63,7 @@ function ActiveFlightButton() {
                 if (pilot.external) {
                     radar.animator.followPlane(pilot.external);
                 } else {
-                    const params = pilot.blip.getPhysicParams();
+                    const params = pilot.blip.motionState;
                     radar.animator.unfollowPlane();
                     map.setCenterZoom(params.longitude, params.latitude);
                 }

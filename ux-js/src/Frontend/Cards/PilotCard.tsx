@@ -89,7 +89,7 @@ function PilotCard() {
             radar.animator.followPlane(object.external);
             return;
         }
-        const params = object.blip.getPhysicParams();
+        const params = object.blip.motionState;
         radar.animator.unfollowPlane();
         map.setCenterZoom(params.longitude, params.latitude);
     };

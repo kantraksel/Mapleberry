@@ -1,6 +1,7 @@
 import { FeatureLike } from "ol/Feature";
-import MapPlane, { PhysicParams } from "../Map/MapPlane";
+import MapPlane from "../Map/MapPlane";
 import RadarPlane from "./RadarPlane";
+import MotionState from "../Map/MotionState";
 
 function roundTime(n: number) {
     return Math.round(n * 10) / 10;
@@ -99,7 +100,7 @@ class RadarAnimator {
                 }
 
                 const n = MathClamp(roundTime(time / 1000), 0, 2);
-                const params = lerpParams(data.first, data.second, n);
+                const params = lerpMotion(data.first, data.second, n);
                 if (this.mapEnabled) {
                     blip.updateAnimation(params);
                 }
@@ -128,7 +129,7 @@ class RadarAnimator {
         this.animatorId = requestAnimationFrame(fn);
     }
 
-    private moveMapWithPlane(info: PhysicParams) {
+    private moveMapWithPlane(info: MotionState) {
         const altitude = info.groundAltitude;
         const absAlt = info.altitude;
         const speed = info.groundSpeed;
@@ -228,7 +229,7 @@ class RadarAnimator {
         }
     }
 
-    public createAnimator(params: PhysicParams) {
+    public createAnimator(params: MotionState) {
         return {
             first: params,
             second: params,
@@ -265,7 +266,7 @@ function lerpHeading(first: number, second: number, fraction: number) {
     return Math.round(heading * 1000) / 1000;
 }
 
-function lerpParams(first: PhysicParams, second: PhysicParams, fraction: number): PhysicParams {
+function lerpMotion(first: MotionState, second: MotionState, fraction: number): MotionState {
     return {
         longitude: MathLerp(first.longitude, second.longitude, fraction),
         latitude: MathLerp(first.latitude, second.latitude, fraction),
