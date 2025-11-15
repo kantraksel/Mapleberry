@@ -6,6 +6,7 @@ import polylabel from 'polylabel';
 import Style from 'ol/style/Style';
 import { AirportSpec, TraconSpec } from '../NetworkUplink/Source/Objects/StationSpecs';
 import NetworkTracon from '../NetworkUplink/Source/Objects/NetworkTracon';
+import TraconLayers from './Layers/TraconLayers';
 
 function round(n: number) {
     return Math.round(n * 100) / 100;
@@ -58,7 +59,7 @@ class MapTracon {
         const label = new Feature(pos);
 
         label.setStyle((feature: FeatureLike, resolution: number) => {
-            const obj = controlLayers.areaLabelStyle!(feature, resolution) as Style;
+            const obj = TraconLayers.areaLabelStyle!(feature, resolution) as Style;
             obj.setZIndex(1);
             return obj;
         });
