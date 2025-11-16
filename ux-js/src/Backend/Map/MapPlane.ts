@@ -5,6 +5,7 @@ import { fromLonLat } from 'ol/proj';
 import RadarPlane from '../LocalRadar/RadarPlane';
 import NetworkPilot from '../NetworkUplink/Source/Objects/NetworkPilot';
 import MotionState from './MotionState';
+import LocalPlaneLayers from './Layers/LocalPlaneLayers';
 
 class MapPlane {
     private pos: Point;
@@ -58,15 +59,15 @@ class MapPlane {
     }
 
     public setMainStyle() {
-        this.point.setStyle(planeLayers.mainPointStyle);
-        this.label.setStyle(planeLayers.mainLabelStyle);
+        this.point.setStyle(LocalPlaneLayers.mainPointStyle);
+        this.label.setStyle(LocalPlaneLayers.mainLabelStyle);
         this.point.set('ol_z-index', 1, true);
         this.label.set('ol_z-index', 1, true);
     }
 
     public setSelectedStyle() {
-        this.point.setStyle(planeLayers.selectedPointStyle);
-        this.label.setStyle(planeLayers.selectedLabelStyle);
+        this.point.setStyle(LocalPlaneLayers.selectedPointStyle);
+        this.label.setStyle(LocalPlaneLayers.selectedLabelStyle);
         this.point.set('ol_z-index', 2, true);
         this.label.set('ol_z-index', 2, true);
     }
