@@ -23,6 +23,8 @@ class TraconLayers {
         return new VectorLayer({
             style: shapeStyleObj,
             source,
+            updateWhileAnimating: true,
+            updateWhileInteracting: true,
         });
     }
 

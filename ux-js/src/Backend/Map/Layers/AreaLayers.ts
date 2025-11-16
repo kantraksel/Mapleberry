@@ -30,6 +30,8 @@ class AreaLayers {
         return new VectorLayer({
             style: areaStyle,
             source,
+            updateWhileAnimating: true,
+            updateWhileInteracting: true,
         });
     }
 
