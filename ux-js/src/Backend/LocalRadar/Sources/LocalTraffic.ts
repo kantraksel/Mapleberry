@@ -50,9 +50,7 @@ class LocalTraffic {
             heading: args[3],
             altitude: args[4],
             groundAltitude: args[5],
-            indicatedSpeed: args[6],
             groundSpeed: args[7],
-            verticalSpeed: args[8],
             model: args[9],
             callsign: args[10],
         };
@@ -103,9 +101,7 @@ class LocalTraffic {
             heading: args[3],
             altitude: args[4],
             groundAltitude: args[5],
-            indicatedSpeed: args[6],
             groundSpeed: args[7],
-            verticalSpeed: args[8],
         };
         if (typeof obj.id !== 'number' || !Number.isFinite(obj.id) ||
             !validateMotionState(obj))

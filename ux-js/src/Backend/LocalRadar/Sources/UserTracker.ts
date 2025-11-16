@@ -6,19 +6,12 @@ import { MsgId } from "../../HostApp/MsgId";
 class LocalPlaneInfo {
     info: RadarPlane | null;
 
-    realAltitude: number;
-    realHeading: number;
-
     public constructor() {
         this.info = null;
-        this.realAltitude = 0;
-        this.realHeading = 0;
     }
 
     public reset() {
         this.info = null;
-        this.realAltitude = 0;
-        this.realHeading = 0;
     }
 }
 
@@ -28,12 +21,6 @@ interface UserAddEventArgs extends UserUpdateEventArgs {
 }
 
 interface UserUpdateEventArgs extends MotionState {
-    realAltitude: number;
-    realHeading: number;
-}
-
-function MathClamp(value: number, min: number, max: number) : number {
-    return Math.min(max, Math.max(min, value));
 }
 
 class UserTracker {
@@ -84,18 +71,12 @@ class UserTracker {
             heading: args[2],
             altitude: args[3],
             groundAltitude: args[4],
-            indicatedSpeed: args[5],
             groundSpeed: args[6],
-            verticalSpeed: args[7],
-            realAltitude: args[8],
-            realHeading: args[9],
             model: args[10],
             callsign: args[11],
         };
         if (typeof obj.callsign !== 'string' || typeof obj.model !== 'string' ||
-            !validateMotionState(obj) ||
-            typeof obj.realAltitude !== 'number' || !Number.isFinite(obj.realAltitude) ||
-            typeof obj.realHeading !== 'number' || !Number.isFinite(obj.realHeading)
+            !validateMotionState(obj)
         )
             return;
 
@@ -103,8 +84,6 @@ class UserTracker {
             obj.callsign = obj.callsign.substring(0, 16);
         if (obj.model.length > 16)
             obj.model = obj.model.substring(0, 16);
-        obj.realAltitude = MathClamp(obj.realAltitude, -10000, 100000);
-        obj.realHeading = MathClamp(obj.realHeading, 0, 360);
             
         this.addUser(obj);
     }
@@ -124,23 +103,14 @@ class UserTracker {
             heading: args[2],
             altitude: args[3],
             groundAltitude: args[4],
-            indicatedSpeed: args[5],
             groundSpeed: args[6],
-            verticalSpeed: args[7],
-            realAltitude: args[8],
-            realHeading: args[9],
         };
         this.applyUpdate(obj);
     }
 
     private applyUpdate(obj: UserUpdateEventArgs) {
-        if (!validateMotionState(obj) ||
-            typeof obj.realAltitude !== 'number' || !Number.isFinite(obj.realAltitude) ||
-            typeof obj.realHeading !== 'number' || !Number.isFinite(obj.realHeading))
+        if (!validateMotionState(obj))
             return;
-
-        obj.realAltitude = MathClamp(obj.realAltitude, -10000, 100000);
-        obj.realHeading = MathClamp(obj.realHeading, 0, 360);
 
         this.updateUser(obj);
     }
@@ -178,8 +148,6 @@ class UserTracker {
             return;
         }
 
-        user.realAltitude = data.realAltitude;
-        
         if (!info.inMap) {
             radar.followPlane(info);
         }

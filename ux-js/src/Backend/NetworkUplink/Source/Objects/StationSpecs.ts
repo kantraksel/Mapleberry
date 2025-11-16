@@ -14,9 +14,6 @@ interface BaseInfoRegion extends BaseStation {
 }
 
 export interface FirSpec extends BaseInfoRegion {
-    region: string,
-    division: string,
-
     callsigns: RegionCallsigns[],
     label_pos: number[],
 }

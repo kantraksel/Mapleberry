@@ -22,9 +22,7 @@ class NetworkPilot extends RefObject {
             heading: pilot.heading,
             altitude: pilot.altitude,
             groundAltitude: 0,
-            indicatedSpeed: 0,
             groundSpeed: pilot.groundspeed,
-            verticalSpeed: 0,
         };
         this.blip = new MapPlane(pilot.callsign, params);
         this.blip.netState = this;

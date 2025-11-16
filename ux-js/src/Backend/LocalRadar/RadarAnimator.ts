@@ -274,8 +274,6 @@ function lerpMotion(first: MotionState, second: MotionState, fraction: number): 
         altitude: MathLerp(first.altitude, second.altitude, fraction),
         groundSpeed: MathLerp(first.groundSpeed, second.groundSpeed, fraction),
         groundAltitude: MathLerp(first.groundAltitude, second.groundAltitude, fraction),
-        indicatedSpeed: MathLerp(first.indicatedSpeed, second.indicatedSpeed, fraction),
-        verticalSpeed: MathLerp(first.verticalSpeed, second.verticalSpeed, fraction),
     };
 }
 

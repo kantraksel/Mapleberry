@@ -169,9 +169,7 @@ class TrafficRadar {
                     heading: pilot.heading,
                     altitude: pilot.altitude,
                     groundAltitude: 0,
-                    indicatedSpeed: 0,
                     groundSpeed: pilot.groundspeed,
-                    verticalSpeed: 0,
                 };
                 plane.blip.motionState = params;
             } catch (e: unknown) {

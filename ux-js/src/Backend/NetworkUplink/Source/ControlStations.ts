@@ -212,8 +212,6 @@ class ControlStations {
                     type: InfoRegion.FIR,
                     icao: value.icao,
                     name,
-                    region: props.region ?? '',
-                    division: props.division ?? '',
 
                     callsigns: [],
                     label_pos: [
