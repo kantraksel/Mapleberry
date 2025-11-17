@@ -18,6 +18,7 @@ import MainDrawer, { MainDrawerEntry } from './MainDrawer';
 import MapCanvas from './MapCanvas';
 import StationBoard from '../Cards/StationBoard';
 import FacilityView from '../Cards/FacilityView';
+import { appReady } from '../../main';
 
 function App() {
 	const [drawerOpen, setDrawerOpen] = useState(false);
@@ -27,7 +28,7 @@ function App() {
 	
 	useEffect(() => {
 		cards.stationsRef = setStationBoardVisible;
-		hostState.notifyAppReady();
+		appReady();
 
 		return () => {
 			cards.stationsRef = undefined;

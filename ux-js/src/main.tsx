@@ -27,6 +27,9 @@ import NetworkWorld from './Backend/NetworkUplink/Source/NetworkWorld.ts';
 import Metar from './Backend/NetworkUplink/Metar.ts';
 import Replay from './Backend/Replay.ts';
 import Notifications from './Backend/Notifications.ts';
+import { handleGlobalError, installGlobalErrorHandler, removeGlobalErrorHandler } from './error-handler.ts';
+
+installGlobalErrorHandler();
 
 declare global {
 	var hostBridge: HostBridge;
@@ -77,7 +80,16 @@ const theme = createTheme({
 	},
 });
 
-createRoot(document.getElementById('root')!).render(
+const options = {
+	onUncaughtError: (error: unknown) => {
+		if (error instanceof Error)
+			handleGlobalError(error as Error);
+		else
+			handleGlobalError(new Error('Unknown type of error'));
+	},
+};
+const root = createRoot(document.getElementById('root')!, options);
+root.render(
 	<StrictMode>
 		<ThemeProvider theme={theme}>
 			<CssBaseline />
@@ -85,3 +97,14 @@ createRoot(document.getElementById('root')!).render(
 		</ThemeProvider>
 	</StrictMode>
 );
+removeGlobalErrorHandler();
+
+let ready = false;
+export function appReady() {
+	if (ready) {
+		return;
+	}
+	ready = true;
+
+	hostState.notifyAppReady();
+}
