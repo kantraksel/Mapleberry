@@ -25,9 +25,12 @@ interface UserUpdateEventArgs extends MotionState {
 
 class UserTracker {
     private user: LocalPlaneInfo;
+    private customCallsign_: string;
 
     public constructor() {
         this.user = new LocalPlaneInfo();
+
+        this.customCallsign_ = options.get<string>('user_custom_callsign', '');
 
         hostBridge.registerHandler(MsgId.LocalAddAircraft, data => {
             this.handleAdd(data);
@@ -157,6 +160,7 @@ class UserTracker {
     }
 
     public set customCallsign(name: string) {
+        this.customCallsign_ = name;
         options.set('user_custom_callsign', name);
 
         const info = this.user.info;
@@ -170,7 +174,7 @@ class UserTracker {
     }
 
     public get customCallsign() {
-        return options.get<string>('user_custom_callsign', '');
+        return this.customCallsign_;
     }
 
     public getUser() {

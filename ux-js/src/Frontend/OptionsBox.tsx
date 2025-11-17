@@ -3,6 +3,7 @@ import { Box, createTheme, Divider, IconButton, Stack } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import StyledBox from './Styles/StyledBox';
 import ViewCanvas, { View, ViewList } from './Options/ViewCanvas';
+import useRev from './useRev';
 
 function InfoBox(props: { children?: ReactNode, width: number | string, height: number | string }) {
     const theme = createTheme();
@@ -35,11 +36,11 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
 
 function OptionsBox(props: { open: boolean, onClose: () => void }) {
     const [state, setState] = useState<View>('network');
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
         options.refreshHook = () => {
-            setRev(rev + 1);
+            addRev();
         };
     }, [rev]);
 

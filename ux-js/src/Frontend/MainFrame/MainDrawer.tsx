@@ -6,15 +6,13 @@ const MainDrawerContext = createContext(true);
 function MainDrawer(props: { children: ReactNode, open: boolean }) {
     const drawer = useRef<HTMLDivElement>(null);
     const [width, setWidth] = useState('auto');
-    const firstRender = useRef(true);
 
     useEffect(() => {
-        firstRender.current = false;
         setWidth(`${drawer.current!.firstElementChild!.getBoundingClientRect().width}px`);
     }, []);
 
     let open = props.open;
-    if (firstRender.current) {
+    if (width === 'auto') {
         open = true;
     }
     const theme = createTheme();

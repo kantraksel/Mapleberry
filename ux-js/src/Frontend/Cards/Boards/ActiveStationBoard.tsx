@@ -6,26 +6,24 @@ import { CardRightToolbar } from "../Elements/CardRightToolbar";
 import PilotBoard from "./PilotBoard";
 import ControllerBoard from "./ControllerBoard";
 import LocalPlaneBoard from "./LocalPlaneBoard";
+import useRev from "../../useRev";
 
 function ActiveStationBoard(props: { open: boolean, toolsRight: ReactNode, toolsLeft: ReactNode }) {
     const [tab, setTab] = useState(0);
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
         if (!props.open) {
             return;
         }
-        const onUpdate = () => {
-            setRev(rev + 1);
-        };
 
-        radar.planeAdded.add(onUpdate);
-        radar.planeRemoved.add(onUpdate);
-        network.Update.add(onUpdate);
+        radar.planeAdded.add(addRev);
+        radar.planeRemoved.add(addRev);
+        network.Update.add(addRev);
         return () => {
-            radar.planeAdded.delete(onUpdate);
-            radar.planeRemoved.delete(onUpdate);
-            network.Update.delete(onUpdate);
+            radar.planeAdded.delete(addRev);
+            radar.planeRemoved.delete(addRev);
+            network.Update.delete(addRev);
         };
     }, [rev, props.open]);
 

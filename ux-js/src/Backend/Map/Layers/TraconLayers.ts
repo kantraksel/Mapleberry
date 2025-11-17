@@ -11,18 +11,18 @@ class TraconLayers {
 
     public constructor(areaLayers: AreaLayers) {
         this.traconSource = new VectorSource();
-        this.traconLayer = this.createAreaLayer(this.traconSource);
+        this.traconLayer = this.createAreaLayer();
         this.areaLayers = areaLayers;
     }
 
-    private createAreaLayer(source: VectorSource) {
+    private createAreaLayer() {
         const shapeStyleObj = new OlStyle({
             fill: new OlFill({ color: [255, 0, 255, 0.2] }),
             stroke: new OlStroke({ color: [255, 0, 255] }),
         });
         return new VectorLayer({
             style: shapeStyleObj,
-            source,
+            source: this.traconSource,
             updateWhileAnimating: true,
             updateWhileInteracting: true,
         });

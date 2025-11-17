@@ -6,17 +6,18 @@ import { DataTable } from './Elements/DataTable';
 import { TextBox } from './Elements/TextBox';
 import NetworkAtis from '../../Backend/NetworkUplink/Source/Objects/NetworkAtis';
 import NetworkField from '../../Backend/NetworkUplink/Source/Objects/NetworkField';
+import useRev from '../useRev';
 
 function AtisCard() {
     const [object, setObject] = useState<NetworkAtis>();
     const [absent, setAbsent] = useState(false);
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
         cards.atisRef = data => {
             setObject(data);
             setAbsent(false);
-            setRev(rev + 1);
+            addRev();
         };
 
         return () => {
@@ -31,13 +32,13 @@ function AtisCard() {
 
         return createControlRadarUpdate(() => {
             if (!object.expired()) {
-                setRev(rev + 1);
+                addRev();
             } else {
                 const controller = controlRadar.findAtis(object);
                 if (controller) {
                     setObject(controller);
                     setAbsent(false);
-                    setRev(rev + 1);
+                    addRev();
                 } else {
                     setAbsent(true);
                 }

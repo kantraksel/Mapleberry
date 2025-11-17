@@ -10,9 +10,10 @@ import NetworkController from "../../Backend/NetworkUplink/Source/Objects/Networ
 import NetworkAtis from "../../Backend/NetworkUplink/Source/Objects/NetworkAtis";
 import NetworkArea from "../../Backend/NetworkUplink/Source/Objects/NetworkArea";
 import NetworkField from "../../Backend/NetworkUplink/Source/Objects/NetworkField";
+import useRev from "../useRev";
 
 function FacilityView() {
-    const [refresh, setRefresh] = useState(0);
+    const [rev, addRev] = useRev();
     const [facility, setFacility] = useState<NetworkControl>();
     const hasFacility = facility != undefined;
 
@@ -29,14 +30,14 @@ function FacilityView() {
         }
         const icao = facility.icao;
         const onUpdate = () => {
-            setRefresh(refresh + 1);
+            addRev();
             setFacility(controlRadar.getStation(icao));
         };
         controlRadar.Update.add(onUpdate);
         return () => {
             controlRadar.Update.delete(onUpdate);
         };
-    }, [facility, refresh]);
+    }, [facility, rev]);
 
     let list: (NetworkController | NetworkAtis)[] | undefined;
     let stationName = '';

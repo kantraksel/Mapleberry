@@ -1,12 +1,13 @@
 import { Alert, AlertColor, Box, Button, Stack } from "@mui/material";
 import { Severity } from "../Backend/Notifications";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import useRev from "./useRev";
 
 function NotificationBox() {
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
     useEffect(() => {
         const onMessage = () => {
-            setRev(rev + 1);
+            addRev();
         };
         notifications.Update.add(onMessage);
         return () => {

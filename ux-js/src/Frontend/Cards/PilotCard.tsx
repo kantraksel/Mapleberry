@@ -7,6 +7,7 @@ import { RouteBox } from './Elements/RouteBox';
 import { UserName } from './Elements/UserName';
 import { Pilot } from '../../Backend/NetworkUplink/Source/Objects/LiveNetworkData';
 import NetworkPilot from '../../Backend/NetworkUplink/Source/Objects/NetworkPilot';
+import useRev from '../useRev';
 
 function getPilotRating(pilot: Pilot) {
     if (pilot.military_rating > 0) {
@@ -29,13 +30,13 @@ function getPilotRating(pilot: Pilot) {
 function PilotCard() {
     const [object, setObject] = useState<NetworkPilot>();
     const [absent, setAbsent] = useState(false);
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
         cards.pilotRef = value => {
             setObject(value);
             setAbsent(false);
-            setRev(rev + 1);
+            addRev();
         };
 
         return () => {
@@ -50,13 +51,13 @@ function PilotCard() {
         
         return createControlRadarUpdate(() => {
             if (!object.expired()) {
-                setRev(rev + 1);
+                addRev();
             } else {
                 const pilot = trafficRadar.findPilot(object);
                 if (pilot) {
                     setObject(pilot);
                     setAbsent(false);
-                    setRev(rev + 1);
+                    addRev();
                 } else {
                     setAbsent(true);
                 }

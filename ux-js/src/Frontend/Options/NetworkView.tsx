@@ -1,29 +1,29 @@
 import { Box, Stack, Switch, Typography } from "@mui/material";
-import { useState } from "react";
 import Header from "./Elements/Header";
 import NumberField from "./Elements/NumberField";
 import VATSIM from "../../Backend/NetworkUplink/Source/VATSIM";
+import useRev from "../useRev";
 
 export default function NetworkView() {
-    const [vatsimOnline, setVatsimOnline] = useState(vatsim.enabled);
-    const [refreshRate, setRefreshRate] = useState(vatsim.refreshRate);
-    const [rev, setRev] = useState(0);
+    const [_, addRev] = useRev();
 
     const onOnlineChange = (_event: unknown, checked: boolean) => {
         vatsim.enabled = checked;
-        setVatsimOnline(checked);
+        addRev();
     };
 
     const onRefreshRateChange = (value: number | undefined) => {
         vatsim.refreshRate = value ?? -1;
-        setRefreshRate(vatsim.refreshRate);
+        addRev();
     };
 
     const onIdChange = (value: number | undefined) => {
         trafficRadar.userId = value;
-        setRev(rev + 1);
+        addRev();
     };
 
+    const vatsimOnline = vatsim.enabled;
+    const refreshRate = vatsim.refreshRate;
     const uid = trafficRadar.userId;
 
     return (

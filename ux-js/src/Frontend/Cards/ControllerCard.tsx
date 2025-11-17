@@ -9,6 +9,7 @@ import { MetarButton } from '../Styles/MetarButton';
 import NetworkController from '../../Backend/NetworkUplink/Source/Objects/NetworkController';
 import NetworkField from '../../Backend/NetworkUplink/Source/Objects/NetworkField';
 import NetworkArea from '../../Backend/NetworkUplink/Source/Objects/NetworkArea';
+import useRev from '../useRev';
 
 function getControllerRating(controller: Controller) {
     const ratings = network.getControllerRatings();
@@ -23,13 +24,13 @@ function getControllerRating(controller: Controller) {
 function ControllerCard() {
     const [object, setObject] = useState<NetworkController>();
     const [absent, setAbsent] = useState(false);
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
         cards.controllerRef = data => {
             setObject(data);
             setAbsent(false);
-            setRev(rev + 1);
+            addRev();
         };
 
         return () => {
@@ -44,13 +45,13 @@ function ControllerCard() {
 
         return createControlRadarUpdate(() => {
             if (!object.expired()) {
-                setRev(rev + 1);
+                addRev();
             } else {
                 const controller = controlRadar.findController(object);
                 if (controller) {
                     setObject(controller);
                     setAbsent(false);
-                    setRev(rev + 1);
+                    addRev();
                 } else {
                     setAbsent(true);
                 }

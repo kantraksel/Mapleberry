@@ -25,6 +25,7 @@ class GlobalMap {
     private isPointerDragging: boolean;
     private isInteracting: boolean;
     private cursorInteractIcon: boolean;
+    private isVisible: boolean;
     public readonly clickEvent: Event<ClickEvent>;
     public readonly moveStartEvent: Event<GenericEvent>;
     public readonly changeResEvent: Event<ResEvent>;
@@ -39,6 +40,7 @@ class GlobalMap {
         this.isPointerDragging = false;
         this.isInteracting = false;
         this.cursorInteractIcon = false;
+        this.isVisible = options.get('map_visible', true);
         this.clickEvent = new Event();
         this.moveStartEvent = new Event();
         this.changeResEvent = new Event();
@@ -155,15 +157,16 @@ class GlobalMap {
     }
 
     public set visible(value: boolean) {
+        this.isVisible = value;
         options.set('map_visible', value);
         this.visibilityEvent.invoke(value);
     }
 
     public get visible() {
-        return options.get('map_visible', true);
+        return this.isVisible;
     }
 
-    public set saveLastPosition(value: boolean) {
+    public set lastPosition(value: boolean) {
         if (value) {
             this.lastPosUpdate = 0;
         } else {
@@ -172,7 +175,7 @@ class GlobalMap {
         }
     }
 
-    public get saveLastPosition() {
+    public get lastPosition() {
         return !Number.isNaN(this.lastPosUpdate);
     }
 

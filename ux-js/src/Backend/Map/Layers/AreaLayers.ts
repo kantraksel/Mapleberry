@@ -17,11 +17,11 @@ class AreaLayers {
         this.areaSource = new VectorSource();
         this.areaLabelSource = new VectorSource();
 
-        this.areaLayer = this.createAreaLayer(this.areaSource);
-        this.areaLabelLayer = this.createLabelLayer(this.areaLabelSource);
+        this.areaLayer = this.createAreaLayer();
+        this.areaLabelLayer = this.createLabelLayer();
     }
 
-    private createAreaLayer(source: VectorSource) {
+    private createAreaLayer() {
         const areaStyle = new OlStyle({
             fill: new OlFill({ color: [255, 0, 0, 0.2] }),
             stroke: new OlStroke({ color: [255, 0, 0] }),
@@ -29,13 +29,13 @@ class AreaLayers {
 
         return new VectorLayer({
             style: areaStyle,
-            source,
+            source: this.areaSource,
             updateWhileAnimating: true,
             updateWhileInteracting: true,
         });
     }
 
-    private createLabelLayer(source: VectorSource) {
+    private createLabelLayer() {
         const labelStyleObj = new OlStyle({
             text: new OlText({
                 font: '18px "Cascadia Code"',
@@ -64,7 +64,7 @@ class AreaLayers {
 
         return new VectorLayer({
             style: labelStyle,
-            source,
+            source: this.areaLabelSource,
             updateWhileAnimating: true,
         });
     }

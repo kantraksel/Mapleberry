@@ -6,6 +6,7 @@ import { CardCloseButton } from "../Elements/CardCloseButton";
 import DynamicBoard, { Column } from "./Elements/DynamicBoard";
 import OpenButton from "./OpenButton";
 import NetworkController from "../../../Backend/NetworkUplink/Source/Objects/NetworkController";
+import useRev from "../../useRev";
 
 const searchColumns: Column<SearchResult>[] = [
     {
@@ -60,7 +61,7 @@ interface SearchResult {
 }
 
 export default function SearchBoard(props: { open: boolean, toolsLeft: ReactNode }) {
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
     const [value, setValue] = useState('');
 
     useEffect(() => {
@@ -68,7 +69,7 @@ export default function SearchBoard(props: { open: boolean, toolsLeft: ReactNode
             return;
         }
         return createNetUpdate(() => {
-            setRev(rev + 1);
+            addRev();
         });
     }, [rev, props.open]);
 

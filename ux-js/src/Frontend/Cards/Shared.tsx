@@ -77,13 +77,10 @@ export function createNetUpdate(onUpdate: (state: NetworkState) => void) {
 }
 
 export function createControlRadarUpdate(onUpdate: () => void) {
-    const handler = () => {
-        onUpdate();
-    };
-    controlRadar.Update.add(handler);
+    controlRadar.Update.add(onUpdate);
 
     return () => {
-        controlRadar.Update.delete(handler);
+        controlRadar.Update.delete(onUpdate);
     };
 }
 

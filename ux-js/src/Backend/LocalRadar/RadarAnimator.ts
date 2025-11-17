@@ -14,6 +14,7 @@ class RadarAnimator {
     private minimumDeltaTime: number;
     private lastAnimationTimestamp: number;
     private mapEnabled: boolean;
+    private mapScalingEnabled: boolean;
 
     public constructor() {
         this.animatorId = null;
@@ -22,6 +23,8 @@ class RadarAnimator {
         this.minimumDeltaTime = 100;
         this.lastAnimationTimestamp = 0;
         this.mapEnabled = map.visible;
+
+        this.mapScalingEnabled = options.get<boolean>('radar_follow_scale_map', true);
 
         this.adjustUpdateRate();
 
@@ -217,10 +220,11 @@ class RadarAnimator {
     }
 
     public get enableMapScaling() {
-        return options.get<boolean>('radar_follow_scale_map', true);
+        return this.mapScalingEnabled;
     }
 
     public set enableMapScaling(value: boolean) {
+        this.mapScalingEnabled = value;
         options.set('radar_follow_scale_map', value);
         if (!value) {
             this.lastAutoRes = NaN;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Stack, Tooltip } from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
 import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
@@ -6,22 +6,24 @@ import WifiTetheringOffIcon from '@mui/icons-material/WifiTetheringOff';
 import LanguageIcon from '@mui/icons-material/Language';
 import { SimulatorStatus } from '../Backend/HostApp/HostState';
 import { NetworkStatus } from '../Backend/NetworkUplink/Source/VATSIM';
+import useRev from './useRev';
 
 function SystemInfoBar() {
-    const [status, setStatus] = useState(hostState.getHostStatus());
-    const [netStatus, setNetStatus] = useState(NetworkStatus.Disabled);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
-        hostState.statusEvent.add(setStatus);
-        vatsim.StatusUpdate.add(setNetStatus);
+        hostState.statusEvent.add(addRev);
+        vatsim.StatusUpdate.add(addRev);
 
         return () => {
-            hostState.statusEvent.delete(setStatus);
-            vatsim.StatusUpdate.delete(setNetStatus);
+            hostState.statusEvent.delete(addRev);
+            vatsim.StatusUpdate.delete(addRev);
         }
-    }, []);
+    }, [rev]);
 
     const disabled = !hostBridge.enabled;
+    const status = hostState.getHostStatus();
+    const netStatus = vatsim.status;
 
     return (
         <Stack direction='row-reverse' spacing={1.5}>
@@ -46,7 +48,7 @@ function SimulatorStatusElement(props: { status: SimulatorStatus, disabled: bool
         }
         case SimulatorStatus.Connected: {
             icon = <WifiTetheringIcon color='success' sx={ iconSize } />;
-            label = hostState.getSimName() || 'Simulator';
+            label = hostState.getHostStatus().simName ?? 'Simulator';
             break;
         }
         default: {

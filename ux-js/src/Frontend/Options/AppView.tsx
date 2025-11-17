@@ -1,32 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { SimulatorStatus, StatusCmd } from "../../Backend/HostApp/HostState";
 import { Box, Button, ButtonGroup, Stack, Switch, Typography } from "@mui/material";
 import Header from "./Elements/Header";
 import NumberField from "./Elements/NumberField";
+import useRev from "../useRev";
 
 export default function AppView() {
-    const [rev, setRev] = useState(0);
-    const [status, setStatus] = useState(hostState.getHostStatus());
-    const [simcomReconnect, setSimcomReconnect] = useState(hostState.getAllowSimComReconnect());
-
-    const changeRev = () => setRev(rev + 1);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
-        hostState.statusEvent.add(setStatus);
+        hostState.statusEvent.add(addRev);
 
         return () => {
-            hostState.statusEvent.delete(setStatus);
+            hostState.statusEvent.delete(addRev);
         }
-    }, []);
+    }, [rev]);
 
     const onEnableApp = () => {
         hostBridge.enabled = true;
-        changeRev();
+        addRev();
     };
 
     const onDisableApp = () => {
         hostBridge.enabled = false;
-        changeRev();
+        addRev();
     };
 
     const onAppPortChange = (value: number | undefined) => {
@@ -49,15 +46,17 @@ export default function AppView() {
     };
 
     const onSimcomReconnectChange = (_event: unknown, checked: boolean) => {
-        hostState.setAllowSimComReconnect(checked);
-        setSimcomReconnect(checked);
+        hostState.allowSimComReconnect = checked;
+        addRev();
     };
 
     const appEnabled = hostBridge.enabled;
     const appConnected = hostBridge.open;
     const appReconnectSpan = hostBridge.reconnectSpan;
     const appPort = hostBridge.port;
+    const status = hostState.getHostStatus();
     const simConnected = status.simStatus != SimulatorStatus.Disconnected;
+    const simcomReconnect = hostState.allowSimComReconnect;
 
     return (
         <Stack flex='1 1' spacing={2}>

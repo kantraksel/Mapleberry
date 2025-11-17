@@ -17,11 +17,11 @@ class FieldLayers {
         this.fieldSource = new VectorSource();
         this.fieldLabelSource = new VectorSource();
 
-        this.fieldLayer = this.createPointLayer(this.fieldSource);
-        this.fieldLabelLayer = this.createLabelLayer(this.fieldLabelSource);
+        this.fieldLayer = this.createPointLayer();
+        this.fieldLabelLayer = this.createLabelLayer();
     }
 
-    private createPointLayer(source: VectorSource) {
+    private createPointLayer() {
         const filledPointStyle = new OlStyle({
             image: new OlCircle({
                 radius: 5,
@@ -40,11 +40,11 @@ class FieldLayers {
 
         return new VectorLayer({
             style: filledPointStyle,
-            source,
+            source: this.fieldSource,
         });
     }
 
-    private createLabelLayer(source: VectorSource) {
+    private createLabelLayer() {
         const labelStyleObj = new OlStyle({
             text: new OlText({
                 padding: [ 3, 1, 1, 4 ],
@@ -74,7 +74,7 @@ class FieldLayers {
 
         return new VectorLayer({
             style: labelStyle,
-            source,
+            source: this.fieldLabelSource,
         });
     }
 

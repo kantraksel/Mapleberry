@@ -7,17 +7,18 @@ import { CardRightToolbar } from "../Elements/CardRightToolbar";
 import PrefileBoard from "./PrefileBoard";
 import ObserverBoard from "./ObserverBoard";
 import AtisBoard from "./AtisBoard";
+import useRev from "../../useRev";
 
 function PassiveStationBoard(props: { open: boolean, toolsRight: ReactNode, toolsLeft: ReactNode }) {
     const [tab, setTab] = useState(0);
-    const [rev, setRev] = useState(0);
+    const [rev, addRev] = useRev();
 
     useEffect(() => {
         if (!props.open) {
             return;
         }
         return createNetUpdate(() => {
-            setRev(rev + 1);
+            addRev();
         });
     }, [rev, props.open]);
 
