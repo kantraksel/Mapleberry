@@ -34,7 +34,8 @@ class MapArea {
             this.labels.push(label);
         });
 
-        this.area.set('cards_ignore', true, true);
+        const ignore = !controlRadar.enableAreaInteractions;
+        this.area.set('cards_ignore', ignore, true);
     }
 
     public static getStationDesc(feature: FeatureLike) {
@@ -49,6 +50,7 @@ class MapArea {
         this.labels.forEach(label => {
             label.set('control_area_net_state', obj, true);
         });
+        this.area.set('control_area_net_state', obj, true);
     }
 
     public static getNetState(feature: FeatureLike): NetworkArea | null {
@@ -57,6 +59,10 @@ class MapArea {
             return null;
         }
         return value as NetworkArea;
+    }
+
+    public setCardsIgnore(value: boolean) {
+        this.area.set('cards_ignore', value, true);
     }
 }
 

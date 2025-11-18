@@ -1,7 +1,7 @@
 import MapPlane from "../Map/MapPlane";
 import MotionState, { copyMotionState } from "../Map/MotionState";
 
-interface AnimatorState {
+export interface AnimatorState {
     first: MotionState;
     second: MotionState;
     start: number | null;

@@ -35,7 +35,8 @@ class MapTracon {
         this.substation = substation;
         this.label = tracon;
 
-        this.area.set('cards_ignore', true, true);
+        const ignore = !controlRadar.enableAreaInteractions;
+        this.area.set('cards_ignore', ignore, true);
     }
 
     public static create(substation: TraconSpec, station: AirportSpec) {
@@ -70,6 +71,7 @@ class MapTracon {
 
     public set netState(obj: NetworkTracon) {
         this.label?.set('control_tracon_net_state', obj, true);
+        this.area.set('control_tracon_net_state', obj, true);
     }
 
     public static getNetState(feature: FeatureLike): NetworkTracon | null {
@@ -86,6 +88,10 @@ class MapTracon {
             return null;
         }
         return toLonLat(point.getCoordinates());
+    }
+
+    public setCardsIgnore(value: boolean) {
+        this.area.set('cards_ignore', value, true);
     }
 }
 

@@ -6,9 +6,13 @@ class PlaneLayers {
     private localLayers: LocalPlaneLayers;
     private networkLayers: NetworkPlaneLayers;
 
-    public static extendedLabels: boolean = false;
+    private extendedLabels_: boolean;
+    private visible_: boolean;
 
     public constructor() {
+        this.extendedLabels_ = false;
+        this.visible_ = true;
+
         this.localLayers = new LocalPlaneLayers();
         this.networkLayers = new NetworkPlaneLayers();
     }
@@ -37,10 +41,26 @@ class PlaneLayers {
         this.networkLayers.removePlane(plane);
     }
 
-    public setExtendedLabels(value: boolean) {
-        PlaneLayers.extendedLabels = value;
+    public set extendedLabels(value: boolean) {
+        this.extendedLabels_ = value;
         this.networkLayers.labelLayer.changed();
         this.localLayers.labelLayer.changed();
+    }
+
+    public get extendedLabels() {
+        return this.extendedLabels_;
+    }
+
+    public set visible(value: boolean) {
+        this.visible_ = value;
+        this.networkLayers.labelLayer.changed();
+        this.networkLayers.pointLayer.changed();
+        this.localLayers.labelLayer.changed();
+        this.localLayers.pointLayer.changed();
+    }
+
+    public get visible() {
+        return this.visible_;
     }
 }
 export default PlaneLayers;

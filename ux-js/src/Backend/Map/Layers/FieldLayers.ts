@@ -3,15 +3,12 @@ import VectorSource from "ol/source/Vector";
 import MapField from "../MapField";
 import { FeatureLike } from "ol/Feature";
 import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Circle as OlCircle } from 'ol/style';
-import { StyleLike } from "ol/style/Style";
 
 class FieldLayers {
     public pointLayer: VectorLayer;
     private pointSource: VectorSource;
     public labelLayer: VectorLayer;
     private labelSource: VectorSource;
-
-    public static outlinedPointStyle?: StyleLike;
 
     public constructor() {
         this.pointSource = new VectorSource();
@@ -29,7 +26,7 @@ class FieldLayers {
             }),
             zIndex: 0,
         });
-        FieldLayers.outlinedPointStyle = new OlStyle({
+        const outlinedPointStyle = new OlStyle({
             image: new OlCircle({
                 radius: 5,
                 fill: new OlFill({ color: [1, 1, 1, 0.01] }),
@@ -37,9 +34,19 @@ class FieldLayers {
             }),
             zIndex: -1,
         });
+        const styleFunction = (feature: FeatureLike) => {
+            if (MapField.getOutlined(feature)) {
+                if (!controlLayers.atisFields) {
+                    return undefined;
+                }
+                return outlinedPointStyle;
+            } else {
+                return filledPointStyle;
+            }
+        };
 
         return new VectorLayer({
-            style: filledPointStyle,
+            style: styleFunction,
             source: this.pointSource,
         });
     }
@@ -58,11 +65,26 @@ class FieldLayers {
             if (resolution >= 4791) {
                 return undefined;
             }
+            const outlined = MapField.getOutlined(feature);
+            if (outlined && !controlLayers.atisFields) {
+                return undefined;
+            }
 
-            const callsign = MapField.getStation(feature)?.icao ?? 'unknown';
+            const station = MapField.getStation(feature);
+            let callsign;
+            if (station) {
+                if (controlLayers.useLID && station.aliases.length > 0) {
+                    callsign = station.aliases[0].iata_lid;
+                } else {
+                    callsign = station.icao;
+                }
+            } else {
+                callsign = 'unknown';
+            }
+            
             const text = labelStyleObj.getText()!;
             text.setText(callsign);
-            if (MapField.getOutlined(feature)) {
+            if (outlined) {
                 text.setFont('italic 14px "Cascadia Code"');
                 labelStyleObj.setZIndex(-1);
             } else {

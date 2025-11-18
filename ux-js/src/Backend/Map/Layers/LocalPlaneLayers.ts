@@ -4,7 +4,6 @@ import { StyleFunction, StyleLike } from "ol/style/Style";
 import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Icon as OlIcon } from 'ol/style';
 import { FeatureLike } from "ol/Feature";
 import MapPlane from "../MapPlane";
-import PlaneLayers from "../PlaneLayers";
 
 class LocalPlaneLayers {
     public pointLayer: VectorLayer;
@@ -68,14 +67,14 @@ class LocalPlaneLayers {
             }),
         });
         const labelStyle = (feature: FeatureLike, resolution: number) => {
-            if (resolution >= 1523) {
+            if (resolution >= 1523 || !planeLayers.visible) {
                 return undefined;
             }
 
             const textPart = labelStyleObj.getText()!;
             const callsign = MapPlane.getCallsign(feature) ?? '???';
 
-            if (PlaneLayers.extendedLabels) {
+            if (planeLayers.extendedLabels) {
                 const params = MapPlane.getMotionState(feature);
                 let altitude: unknown = '-';
                 let speed: unknown = '-';
@@ -117,6 +116,9 @@ class LocalPlaneLayers {
     public static planeStyle(style: OlStyle) {
         const rotFactor = Math.PI / 180;
         return (feature: FeatureLike) => {
+            if (!planeLayers.visible) {
+                return undefined;
+            }
             const params = MapPlane.getMotionState(feature);
 
             const rot = params ? params.heading * rotFactor : 0;

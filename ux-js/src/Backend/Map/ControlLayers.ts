@@ -10,7 +10,13 @@ class ControlLayer {
     private fieldLayers: FieldLayers;
     private traconLayers: TraconLayers;
 
+    private atisFields_: boolean;
+    private useLID_: boolean;
+
     public constructor() {
+        this.atisFields_ = true;
+        this.useLID_ = false;
+
         this.areaLayers = new AreaLayers();
         this.fieldLayers = new FieldLayers();
         this.traconLayers = new TraconLayers(this.areaLayers);
@@ -51,6 +57,25 @@ class ControlLayer {
 
     public removeTracon(tracon: MapTracon) {
         this.traconLayers.removeTracon(tracon);
+    }
+
+    public set atisFields(value: boolean) {
+        this.atisFields_ = value;
+        this.fieldLayers.pointLayer.changed();
+        this.fieldLayers.labelLayer.changed();
+    }
+
+    public get atisFields() {
+        return this.atisFields_;
+    }
+
+    public set useLID(value: boolean) {
+        this.useLID_ = value;
+        this.fieldLayers.labelLayer.changed();
+    }
+
+    public get useLID() {
+        return this.useLID_;
     }
 }
 export default ControlLayer;

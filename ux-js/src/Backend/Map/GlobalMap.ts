@@ -6,6 +6,11 @@ import { FeatureLike } from 'ol/Feature';
 import { ObjectEvent } from 'ol/Object';
 import Event from '../Event';
 import VectorLayer from 'ol/layer/Vector';
+import { defaults as defaultControls } from 'ol/control/defaults';
+import AirplaneLabelControl from './Controls/AirplaneLabelControl';
+import AtisFieldsControl from './Controls/ToggleAtisFieldsControl';
+import AirportLabelControl from './Controls/AirportLabelControl';
+import VisibilityControl from './Controls/ToggleAirplaneControl';
 
 type ClickEvent = (e: FeatureLike[]) => void;
 type ResEvent = (value: number) => void;
@@ -70,6 +75,12 @@ class GlobalMap {
                 }),
             ],
             view: view,
+            controls: defaultControls().extend([
+                new AirplaneLabelControl(),
+                new AtisFieldsControl(),
+                new AirportLabelControl(),
+                new VisibilityControl(),
+            ]),
         });
 
         this.map.on('movestart', () => {

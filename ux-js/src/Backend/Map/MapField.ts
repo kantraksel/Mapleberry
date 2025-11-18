@@ -4,7 +4,6 @@ import { Point } from 'ol/geom';
 import { fromLonLat } from 'ol/proj';
 import { AirportSpec } from '../NetworkUplink/Source/Objects/StationSpecs';
 import NetworkField from '../NetworkUplink/Source/Objects/NetworkField';
-import FieldLayers from './Layers/FieldLayers';
 
 class MapField {
     private pos: Point;
@@ -43,14 +42,14 @@ class MapField {
     }
 
     public setFilled() {
-        this.point.setStyle(undefined);
-        this.label.set('control_field_outlined', undefined);
+        this.point.set('control_field_outlined', false);
+        this.label.set('control_field_outlined', false);
         this.point.set('ol_z-index', 0, true);
         this.label.set('ol_z-index', 0, true);
     }
 
     public setOutlined() {
-        this.point.setStyle(FieldLayers.outlinedPointStyle);
+        this.point.set('control_field_outlined', true);
         this.label.set('control_field_outlined', true);
         this.point.set('ol_z-index', -1, true);
         this.label.set('ol_z-index', -1, true);

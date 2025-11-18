@@ -25,6 +25,7 @@ class ControlRadar {
     private controllerCache: Map<string, NetworkController>;
     private atisCache: Map<string, NetworkAtis>;
     public readonly Update: Event<() => void>;
+    private areaInteractionsEnabled: boolean;
 
     constructor() {
         this.fields = new Map();
@@ -34,6 +35,8 @@ class ControlRadar {
         this.controllerCache = new Map();
         this.atisCache = new Map();
         this.Update = new Event();
+
+        this.areaInteractionsEnabled = options.get<boolean>('radar_interactable_areas', false);
 
         controlStations.Ready.add(() => {
             this.onNetUpdate(network.getState());
@@ -513,6 +516,27 @@ class ControlRadar {
 
     public findAtis(atis: NetworkAtis) {
         return this.atisCache.get(createUID(atis.data));
+    }
+
+    public set enableAreaInteractions(value: boolean) {
+        this.areaInteractionsEnabled = value;
+        options.set('radar_interactable_areas', value);
+
+        this.areas.forEach(area => {
+            area.area.setCardsIgnore(!value);
+        });
+        this.fields.forEach(field => {
+            field.tracons.forEach(tracon => {
+                tracon.substation.setCardsIgnore(!value);
+            });
+        });
+        this.standaloneTracons.forEach(controller => { 
+            controller.substation?.substation.setCardsIgnore(!value);
+        });
+    }
+
+    public get enableAreaInteractions() {
+        return this.areaInteractionsEnabled;
     }
 }
 

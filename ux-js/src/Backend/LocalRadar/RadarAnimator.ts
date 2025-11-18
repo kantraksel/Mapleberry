@@ -1,6 +1,6 @@
 import { FeatureLike } from "ol/Feature";
 import MapPlane from "../Map/MapPlane";
-import RadarPlane from "./RadarPlane";
+import RadarPlane, { AnimatorState } from "./RadarPlane";
 import MotionState from "../Map/MotionState";
 
 function roundTime(n: number) {
@@ -15,6 +15,7 @@ class RadarAnimator {
     private lastAnimationTimestamp: number;
     private mapEnabled: boolean;
     private mapScalingEnabled: boolean;
+    private interpolationEnabled: boolean;
 
     public constructor() {
         this.animatorId = null;
@@ -25,6 +26,7 @@ class RadarAnimator {
         this.mapEnabled = map.visible;
 
         this.mapScalingEnabled = options.get<boolean>('radar_follow_scale_map', true);
+        this.interpolationEnabled = options.get<boolean>('radar_interpolate', true);
 
         this.adjustUpdateRate();
 
@@ -87,23 +89,13 @@ class RadarAnimator {
                     data.start = timestamp;
                 }
 
-                let time = roundTime(timestamp - data.start);
-                if (time >= 1000) {
-                    const stepLog = data.stepLog;
-                    if (stepLog.length >= 2) {
-                        time = roundTime(time % 1000);
-
-                        const i = stepLog.length - 2;
-                        data.first = stepLog[i];
-                        data.second = stepLog[i + 1];
-                        data.start = roundTime(timestamp - time);
-
-                        data.stepLog = [ data.second ];
-                    }
+                let params;
+                if (this.interpolationEnabled) {
+                    params = this.processInterpolated(timestamp, data);
+                } else {
+                    params = this.processRealtime(timestamp, data);
                 }
 
-                const n = MathClamp(roundTime(time / 1000), 0, 2);
-                const params = lerpMotion(data.first, data.second, n);
                 if (this.mapEnabled) {
                     blip.updateAnimation(params);
                 }
@@ -130,6 +122,40 @@ class RadarAnimator {
             }
         };
         this.animatorId = requestAnimationFrame(fn);
+    }
+
+    private processInterpolated(timestamp: number, data: AnimatorState) {
+        let time = roundTime(timestamp - data.start!);
+        if (time >= 1000) {
+            const stepLog = data.stepLog;
+            if (stepLog.length >= 2) {
+                time = roundTime(time % 1000);
+
+                const i = stepLog.length - 2;
+                data.first = stepLog[i];
+                data.second = stepLog[i + 1];
+                data.start = roundTime(timestamp - time);
+
+                data.stepLog = [ data.second ];
+            }
+        }
+
+        const n = MathClamp(roundTime(time / 1000), 0, 2);
+        return lerpMotion(data.first, data.second, n);
+    }
+
+    private processRealtime(timestamp: number, data: AnimatorState) {
+        const stepLog = data.stepLog;
+        if (stepLog.length >= 2) {
+            const i = stepLog.length - 1;
+            const step = stepLog[i];
+
+            data.first = step;
+            data.second = step;
+            data.stepLog = [ step ];
+            data.start = timestamp;
+        }
+        return data.second;
     }
 
     private moveMapWithPlane(info: MotionState) {
@@ -231,6 +257,15 @@ class RadarAnimator {
         } else if (this.trackedId != -1) {
             this.lastAutoRes = 0;
         }
+    }
+
+    public get enableInterpolation() {
+        return this.interpolationEnabled;
+    }
+
+    public set enableInterpolation(value: boolean) {
+        this.interpolationEnabled = value;
+        options.set('radar_interpolate', value);
     }
 
     public createAnimator(params: MotionState) {

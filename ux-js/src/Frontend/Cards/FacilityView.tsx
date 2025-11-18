@@ -34,8 +34,10 @@ function FacilityView() {
             setFacility(controlRadar.getStation(icao));
         };
         controlRadar.Update.add(onUpdate);
+        cards.facilityRefresh = addRev;
         return () => {
             controlRadar.Update.delete(onUpdate);
+            cards.facilityRefresh = undefined;
         };
     }, [facility, rev]);
 
@@ -46,7 +48,13 @@ function FacilityView() {
             list = facility.controllers;
             stationName = facility.station.name;
         } else if (facility instanceof NetworkField) {
-            list = [...facility.controllers, ...facility.atis];
+            
+            if (cards.showAtisInFacilityView) {
+                list = [...facility.controllers, ...facility.atis];
+            } else {
+                list = [...facility.controllers];
+            }
+            
             stationName = facility.station.name;
         }
     }

@@ -11,6 +11,9 @@ type OptionKeys =
     'app_port' |
     'app_reconnect_span' |
     'vatsim_user_id' |
+    'radar_interpolate' |
+    'radar_interactable_areas' |
+    'cards_show_atis_facility_view' |
     '_unused_';
 
 class Options {

@@ -23,15 +23,20 @@ class Cards {
     prefileRef?: (data: Prefile | undefined) => void;
     atisRef?: (data: NetworkAtis | undefined) => void;
     stationsRef?: (show: boolean) => void;
+    facilityRefresh?: () => void;
 
     private backList: (() => void)[];
     private activeType: CardType;
     public Change: Event<(from: CardType, to: CardType) => void>;
 
+    private showAtisInFacilityView_: boolean;
+
     constructor() {
         this.backList = [];
         this.activeType = CardType.None;
         this.Change = new Event();
+
+        this.showAtisInFacilityView_ = options.get<boolean>('cards_show_atis_facility_view', true);
 
         map.clickEvent.add(e => {
             for (let i = 0; i < e.length; ++i) {
@@ -208,6 +213,19 @@ class Cards {
             default:
                 throw new Error('CardType not implemented');
         }
+    }
+
+    public set showAtisInFacilityView(value: boolean) {
+        this.showAtisInFacilityView_ = value;
+        options.set('cards_show_atis_facility_view', value);
+
+        if (this.activeType == CardType.Facility) {
+            this.facilityRefresh?.call(null);
+        }
+    }
+
+    public get showAtisInFacilityView() {
+        return this.showAtisInFacilityView_;
     }
 }
 export default Cards;
