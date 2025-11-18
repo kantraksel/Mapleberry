@@ -6,19 +6,19 @@ import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, C
 import { StyleLike } from "ol/style/Style";
 
 class FieldLayers {
-    public fieldLayer: VectorLayer;
-    private fieldSource: VectorSource;
-    public fieldLabelLayer: VectorLayer;
-    private fieldLabelSource: VectorSource;
+    public pointLayer: VectorLayer;
+    private pointSource: VectorSource;
+    public labelLayer: VectorLayer;
+    private labelSource: VectorSource;
 
     public static outlinedPointStyle?: StyleLike;
 
     public constructor() {
-        this.fieldSource = new VectorSource();
-        this.fieldLabelSource = new VectorSource();
+        this.pointSource = new VectorSource();
+        this.labelSource = new VectorSource();
 
-        this.fieldLayer = this.createPointLayer();
-        this.fieldLabelLayer = this.createLabelLayer();
+        this.pointLayer = this.createPointLayer();
+        this.labelLayer = this.createLabelLayer();
     }
 
     private createPointLayer() {
@@ -40,7 +40,7 @@ class FieldLayers {
 
         return new VectorLayer({
             style: filledPointStyle,
-            source: this.fieldSource,
+            source: this.pointSource,
         });
     }
 
@@ -74,20 +74,20 @@ class FieldLayers {
 
         return new VectorLayer({
             style: labelStyle,
-            source: this.fieldLabelSource,
+            source: this.labelSource,
         });
     }
 
     public addField(field: MapField) {
-        field.point.set('ol_layer', this.fieldLayer);
-        field.label.set('ol_layer', this.fieldLabelLayer);
-        this.fieldSource.addFeature(field.point);
-        this.fieldLabelSource.addFeature(field.label);
+        field.point.set('ol_layer', this.pointLayer);
+        field.label.set('ol_layer', this.labelLayer);
+        this.pointSource.addFeature(field.point);
+        this.labelSource.addFeature(field.label);
     }
 
     public removeField(field: MapField) {
-        this.fieldSource.removeFeature(field.point);
-        this.fieldLabelSource.removeFeature(field.label);
+        this.pointSource.removeFeature(field.point);
+        this.labelSource.removeFeature(field.label);
     }
 }
 export default FieldLayers;

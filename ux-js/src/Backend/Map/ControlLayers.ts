@@ -20,13 +20,13 @@ class ControlLayer {
         const map = window.map.map;
         map.addLayer(this.areaLayers.areaLayer);
         map.addLayer(this.traconLayers.traconLayer);
-        map.addLayer(this.fieldLayers.fieldLayer);
+        map.addLayer(this.fieldLayers.pointLayer);
     }
 
     public setupLabelLayers() {
         const map = window.map.map;
-        map.addLayer(this.areaLayers.areaLabelLayer);
-        map.addLayer(this.fieldLayers.fieldLabelLayer);
+        map.addLayer(this.areaLayers.labelLayer);
+        map.addLayer(this.fieldLayers.labelLayer);
     }
 
     public addField(field: MapField) {

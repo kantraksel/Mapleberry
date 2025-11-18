@@ -8,17 +8,17 @@ import { StyleFunction } from "ol/style/Style";
 class AreaLayers {
     public areaLayer: VectorLayer;
     private areaSource: VectorSource;
-    public areaLabelLayer: VectorLayer;
-    private areaLabelSource: VectorSource;
+    public labelLayer: VectorLayer;
+    private labelSource: VectorSource;
 
     public static areaLabelStyle?: StyleFunction;
 
     public constructor() {
         this.areaSource = new VectorSource();
-        this.areaLabelSource = new VectorSource();
+        this.labelSource = new VectorSource();
 
         this.areaLayer = this.createAreaLayer();
-        this.areaLabelLayer = this.createLabelLayer();
+        this.labelLayer = this.createLabelLayer();
     }
 
     private createAreaLayer() {
@@ -64,7 +64,7 @@ class AreaLayers {
 
         return new VectorLayer({
             style: labelStyle,
-            source: this.areaLabelSource,
+            source: this.labelSource,
             updateWhileAnimating: true,
         });
     }
@@ -73,25 +73,25 @@ class AreaLayers {
         area.area.set('ol_layer', this.areaLayer);
         this.areaSource.addFeature(area.area);
         area.labels.forEach(label => {
-            label.set('ol_layer', this.areaLabelLayer);
-            this.areaLabelSource.addFeature(label);
+            label.set('ol_layer', this.labelLayer);
+            this.labelSource.addFeature(label);
         });
     }
 
     public removeArea(area: MapArea) {
         this.areaSource.removeFeature(area.area);
         area.labels.forEach(label => {
-            this.areaLabelSource.removeFeature(label);
+            this.labelSource.removeFeature(label);
         });
     }
 
     public addLabel(label: Feature) {
-        label.set('ol_layer', this.areaLabelLayer);
-        this.areaLabelSource.addFeature(label);
+        label.set('ol_layer', this.labelLayer);
+        this.labelSource.addFeature(label);
     }
 
     public removeLabel(label: Feature) {
-        this.areaLabelSource.removeFeature(label);
+        this.labelSource.removeFeature(label);
     }
 }
 export default AreaLayers;
