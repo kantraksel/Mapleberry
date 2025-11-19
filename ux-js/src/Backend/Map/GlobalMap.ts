@@ -77,8 +77,8 @@ class GlobalMap {
             view: view,
             controls: defaultControls().extend([
                 new AirplaneLabelControl(),
-                new AtisFieldsControl(),
                 new AirportLabelControl(),
+                new AtisFieldsControl(),
                 new VisibilityControl(),
             ]),
         });

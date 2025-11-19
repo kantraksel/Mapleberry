@@ -97,7 +97,7 @@ function createTableHeader<Value>(sortBy: string, setSortBy: Dispatch<SetStateAc
                 const dir = sortBy == column.id ? sorter.dir : 'asc';
 
                 label = (
-                    <TableSortLabel active={sortBy == column.id} direction={dir} onClick={onClick}>
+                    <TableSortLabel active={sortBy == column.id} direction={dir} onClick={onClick} sx={{ marginRight: '-18px' }}>
                         {column.label}
                     </TableSortLabel>
                 );

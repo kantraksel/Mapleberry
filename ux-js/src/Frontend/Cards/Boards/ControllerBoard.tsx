@@ -8,7 +8,7 @@ import NetworkAtis from "../../../Backend/NetworkUplink/Source/Objects/NetworkAt
 
 export const controllerColumns: Column<NetworkController | NetworkAtis>[] = [
     {
-        width: 120,
+        width: 135,
         id: 'callsign',
         label: 'Callsign',
         data: data => {
@@ -33,7 +33,7 @@ export const controllerColumns: Column<NetworkController | NetworkAtis>[] = [
         alignData: 'center',
     },
     {
-        width: 180,
+        width: 219,
         id: 'name',
         label: 'Name',
         data: data => data.data.name,
@@ -42,7 +42,7 @@ export const controllerColumns: Column<NetworkController | NetworkAtis>[] = [
         },
     },
     {
-        width: 50,
+        width: 60,
         id: 'buttons',
         label: '',
         data: data => {

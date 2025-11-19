@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Stack, Tooltip } from '@mui/material';
 import ErrorIcon from '@mui/icons-material/Error';
 import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
-import WifiTetheringOffIcon from '@mui/icons-material/WifiTetheringOff';
 import LanguageIcon from '@mui/icons-material/Language';
 import { SimulatorStatus } from '../Backend/HostApp/HostState';
 import { NetworkStatus } from '../Backend/NetworkUplink/Source/VATSIM';
@@ -21,7 +20,7 @@ function SystemInfoBar() {
         }
     }, [rev]);
 
-    const disabled = !hostBridge.enabled;
+    const disabled = !hostBridge.open;
     const status = hostState.getHostStatus();
     const netStatus = vatsim.status;
 
@@ -33,7 +32,7 @@ function SystemInfoBar() {
     );
 }
 
-const iconSize = { width: '1.8rem', height: '1.8rem' };
+const iconSize = { width: '1.8rem', height: '1.8rem', transition: 'color 0.2s' };
 
 function SimulatorStatusElement(props: { status: SimulatorStatus, disabled: boolean }) {
     let icon;
@@ -42,7 +41,7 @@ function SimulatorStatusElement(props: { status: SimulatorStatus, disabled: bool
     switch (props.status) {
         case SimulatorStatus.Disconnected: {
             const color = props.disabled ? 'disabled' : 'error';
-            icon = <WifiTetheringOffIcon color={color} sx={ iconSize } />;
+            icon = <WifiTetheringIcon color={color} sx={ iconSize } />;
             label = 'Simulator Offline';
             break;
         }

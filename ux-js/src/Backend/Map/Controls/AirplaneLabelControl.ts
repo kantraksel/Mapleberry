@@ -4,7 +4,7 @@ class AirplaneLabelControl extends Control {
     constructor() {
         const button = document.createElement('button');
         button.innerHTML = 'P';
-        button.title = 'Plane Label: Simple or Extended';
+        button.title = 'Switch Plane Label: Simple or Extended';
 
         // Position:
         // - 0.5em spacing

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { compareIgnoreCase, createNetUpdate } from "../Shared";
 import { Atis, Controller, Pilot, Prefile } from "../../../Backend/NetworkUplink/Source/Objects/LiveNetworkData";
 import { Box, Stack, TextField, Typography } from "@mui/material";
@@ -63,10 +63,17 @@ interface SearchResult {
 export default function SearchBoard(props: { open: boolean, toolsLeft: ReactNode }) {
     const [rev, addRev] = useRev();
     const [value, setValue] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+    const wasOpen = useRef(false);
 
     useEffect(() => {
         if (!props.open) {
+            wasOpen.current = false;
             return;
+        }
+        if (!wasOpen.current && props.open) {
+            wasOpen.current = true;
+            inputRef.current?.focus();
         }
         return createNetUpdate(() => {
             addRev();
@@ -180,7 +187,7 @@ export default function SearchBoard(props: { open: boolean, toolsLeft: ReactNode
                     {props.toolsLeft}
                 </Stack>
                 <Box sx={{ flex: '1 1 auto', display: 'flex', alignItems: 'center' }}>
-                    <TextField variant='outlined' size='small' sx={{ flex: '1 1 auto' }} onChange={onChange} />
+                    <TextField variant='outlined' size='small' sx={{ flex: '1 1 auto' }} onChange={onChange} inputRef={inputRef} />
                 </Box>
                 <Stack direction='row-reverse' sx={{ alignItems: 'center', paddingLeft: '4px', paddingRight: '2px', paddingBottom: '3px' }}>
                     <CardCloseButton />

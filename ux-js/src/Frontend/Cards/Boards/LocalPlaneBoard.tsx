@@ -6,7 +6,7 @@ import OpenButton from "./OpenButton";
 
 const planeColumns: Column<RadarPlane>[] = [
     {
-        width: 80,
+        width: 135,
         id: 'callsign',
         label: 'Callsign',
         data: data => data.callsign,
@@ -15,7 +15,7 @@ const planeColumns: Column<RadarPlane>[] = [
         },
     },
     {
-        width: 50,
+        width: 100,
         id: 'type',
         label: 'Type',
         data: data => {
@@ -27,7 +27,7 @@ const planeColumns: Column<RadarPlane>[] = [
         alignData: 'center',
     },
     {
-        width: 200,
+        width: 219,
         id: 'name',
         label: 'Name',
         data: data => data.blip.netState?.pilot.name ?? '- Network feed not available -',
@@ -48,7 +48,7 @@ const planeColumns: Column<RadarPlane>[] = [
         },
     },
     {
-        width: 50,
+        width: 60,
         id: 'buttons',
         label: '',
         data: data => {

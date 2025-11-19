@@ -6,7 +6,7 @@ import OpenButton from "./OpenButton";
 
 const pilotColumns: Column<NetworkPilot>[] = [
     {
-        width: 65,
+        width: 135,
         id: 'callsign',
         label: 'Callsign',
         data: data => data.pilot.callsign,
@@ -15,7 +15,7 @@ const pilotColumns: Column<NetworkPilot>[] = [
         },
     },
     {
-        width: 50,
+        width: 100,
         id: 'type',
         label: 'Type',
         data: (pilot) => {
@@ -42,7 +42,7 @@ const pilotColumns: Column<NetworkPilot>[] = [
         alignData: 'center',
     },
     {
-        width: 200,
+        width: 219,
         id: 'name',
         label: 'Name',
         data: data => data.pilot.name,
@@ -51,7 +51,7 @@ const pilotColumns: Column<NetworkPilot>[] = [
         },
     },
     {
-        width: 50,
+        width: 60,
         id: 'buttons',
         label: '',
         data: (data) => {

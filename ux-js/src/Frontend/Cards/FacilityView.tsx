@@ -48,14 +48,26 @@ function FacilityView() {
             list = facility.controllers;
             stationName = facility.station.name;
         } else if (facility instanceof NetworkField) {
-            
             if (cards.showAtisInFacilityView) {
                 list = [...facility.controllers, ...facility.atis];
             } else {
-                list = [...facility.controllers];
+                list = facility.controllers;
             }
-            
             stationName = facility.station.name;
+
+            list.sort((a, b) => {
+                if (a instanceof NetworkAtis) {
+                    if (b instanceof NetworkAtis) {
+                        return 0;
+                    } else {
+                        return 1;
+                    }
+                } else if (b instanceof NetworkAtis) {
+                    return -1;
+                } else {
+                    return a.data.facility - b.data.facility;
+                }
+            });
         }
     }
 

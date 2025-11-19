@@ -6,7 +6,7 @@ import OpenButton from "./OpenButton";
 
 const prefileColumns: Column<Prefile>[] = [
     {
-        width: 65,
+        width: 135,
         id: 'callsign',
         label: 'Callsign',
         data: 'callsign',
@@ -15,7 +15,7 @@ const prefileColumns: Column<Prefile>[] = [
         },
     },
     {
-        width: 50,
+        width: 100,
         id: 'type',
         label: 'Type',
         data: (pilot) => {
@@ -42,7 +42,7 @@ const prefileColumns: Column<Prefile>[] = [
         alignData: 'center',
     },
     {
-        width: 200,
+        width: 219,
         id: 'cid',
         label: 'CID',
         data: 'cid',
@@ -51,7 +51,7 @@ const prefileColumns: Column<Prefile>[] = [
         },
     },
     {
-        width: 50,
+        width: 60,
         id: 'buttons',
         label: '',
         data: data => {

@@ -7,7 +7,7 @@ import OpenButton from "./OpenButton";
 
 const observerColumns: Column<Controller>[] = [
     {
-        width: 120,
+        width: 135,
         id: 'callsign',
         label: 'Callsign',
         data: 'callsign',
@@ -22,14 +22,14 @@ const observerColumns: Column<Controller>[] = [
         alignData: 'center',
     },
     {
-        width: 180,
+        width: 219,
         id: 'name',
         label: 'Name',
         data: 'name',
         compare: (a, b) => compareIgnoreCase(a.name, b.name),
     },
     {
-        width: 50,
+        width: 60,
         id: 'buttons',
         label: '',
         data: data => {

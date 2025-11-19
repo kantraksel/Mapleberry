@@ -4,14 +4,14 @@ class AirportLabelControl extends Control {
     constructor() {
         const button = document.createElement('button');
         button.innerHTML = 'I';
-        button.title = 'Airport Label: ICAO or IATA';
+        button.title = 'Switch Airport Label: ICAO or IATA';
 
         // Position:
         // - 0.5em spacing
         // - 1.375em button
         const container = document.createElement('div');
         container.className = 'ol-unselectable ol-control';
-        container.style = 'top: 7.5em; left: 0.5em;';
+        container.style = 'top: 5.625em; left: 0.5em;';
         container.appendChild(button);
 
         super({ element: container });
