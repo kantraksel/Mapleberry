@@ -19,15 +19,15 @@ class NetworkPlaneLayers {
     }
 
     private createPointLayer() {
-        const pointStyle = LocalPlaneLayers.planeStyle(new OlStyle({
+        const style = new OlStyle({
             image: new OlIcon({
                 src: '/flight_24dp_FFFFFF.svg',
                 color: [0, 0, 170],
             }),
-        }));
+        });
 
         return new VectorLayer({
-            style: pointStyle,
+            style: feature => LocalPlaneLayers.pointStyle(style, feature),
             source: this.pointSource,
         });
     }
@@ -41,14 +41,13 @@ class NetworkPlaneLayers {
 
     public addPlane(plane: MapPlane) {
         plane.point.set('ol_layer', this.pointLayer);
-        plane.label.set('ol_layer', this.labelLayer);
         this.pointSource.addFeature(plane.point);
-        this.labelSource.addFeature(plane.label);
+        this.labelSource.addFeature(plane.point);
     }
 
     public removePlane(plane: MapPlane) {
         this.pointSource.removeFeature(plane.point);
-        this.labelSource.removeFeature(plane.label);
+        this.labelSource.removeFeature(plane.point);
     }
 }
 export default NetworkPlaneLayers;

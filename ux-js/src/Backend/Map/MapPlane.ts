@@ -5,26 +5,28 @@ import { fromLonLat } from 'ol/proj';
 import RadarPlane from '../LocalRadar/RadarPlane';
 import NetworkPilot from '../NetworkUplink/Source/Objects/NetworkPilot';
 import MotionState from './MotionState';
-import LocalPlaneLayers from './Layers/LocalPlaneLayers';
+
+export enum ActiveStyle {
+    Default,
+    MainPoint,
+    SelectedPoint,
+}
 
 class MapPlane {
     private pos: Point;
     public readonly point: Feature;
-    public readonly label: Feature;
 
     public constructor(callsign: string, state: MotionState) {
         this.pos = new Point(fromLonLat([ state.longitude, state.latitude ]));
         this.point = new Feature(this.pos);
-        this.label = new Feature(this.pos);
         this.setDefaultStyle();
 
-        this.label.set('callsign', callsign);
+        this.point.set('callsign', callsign);
         this.point.set('motion', state);
-        this.label.set('motion', state);
     }
 
     public set callsign(callsign: string) {
-        this.label.set('callsign', callsign);
+        this.point.set('callsign', callsign);
     }
 
     public static getCallsign(feature: FeatureLike): string | null {
@@ -39,7 +41,6 @@ class MapPlane {
         this.pos.setCoordinates(fromLonLat([ state.longitude, state.latitude ]));
 
         this.point.set('motion', state);
-        this.label.set('motion', state);
     }
 
     public get motionState(): MotionState {
@@ -59,29 +60,22 @@ class MapPlane {
     }
 
     public setMainStyle() {
-        this.point.setStyle(LocalPlaneLayers.mainPointStyle);
-        this.label.setStyle(LocalPlaneLayers.mainLabelStyle);
+        this.point.set('render_style', ActiveStyle.MainPoint);
         this.point.set('ol_z-index', 1, true);
-        this.label.set('ol_z-index', 1, true);
     }
 
     public setSelectedStyle() {
-        this.point.setStyle(LocalPlaneLayers.selectedPointStyle);
-        this.label.setStyle(LocalPlaneLayers.selectedLabelStyle);
+        this.point.set('render_style', ActiveStyle.SelectedPoint);
         this.point.set('ol_z-index', 2, true);
-        this.label.set('ol_z-index', 2, true);
     }
 
     public setDefaultStyle() {
-        this.point.setStyle(undefined);
-        this.label.setStyle(undefined);
+        this.point.set('render_style', ActiveStyle.Default);
         this.point.set('ol_z-index', 0, true);
-        this.label.set('ol_z-index', 0, true);
     }
 
     public set radarState(object: RadarPlane) {
         this.point.set('radar_state', object, true);
-        this.label.set('radar_state', object, true);
     }
 
     public static getRadarState(feature: FeatureLike): RadarPlane | null {
@@ -93,7 +87,6 @@ class MapPlane {
     }
 
     public set netState(obj: NetworkPilot | null) {
-        this.label.set('pilot_net_state', obj, true);
         this.point.set('pilot_net_state', obj, true);
     }
 
@@ -107,6 +100,10 @@ class MapPlane {
             return value;
         }
         return null;
+    }
+
+    public static getRenderStyle(feature: FeatureLike) {
+        return feature.get('render_style') as ActiveStyle | undefined;
     }
 }
 export default MapPlane;

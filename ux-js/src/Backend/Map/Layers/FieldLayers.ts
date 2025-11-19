@@ -102,14 +102,13 @@ class FieldLayers {
 
     public addField(field: MapField) {
         field.point.set('ol_layer', this.pointLayer);
-        field.label.set('ol_layer', this.labelLayer);
         this.pointSource.addFeature(field.point);
-        this.labelSource.addFeature(field.label);
+        this.labelSource.addFeature(field.point);
     }
 
     public removeField(field: MapField) {
         this.pointSource.removeFeature(field.point);
-        this.labelSource.removeFeature(field.label);
+        this.labelSource.removeFeature(field.point);
     }
 }
 export default FieldLayers;

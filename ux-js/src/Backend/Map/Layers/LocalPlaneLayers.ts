@@ -1,9 +1,8 @@
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
-import { StyleFunction, StyleLike } from "ol/style/Style";
 import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Icon as OlIcon } from 'ol/style';
 import { FeatureLike } from "ol/Feature";
-import MapPlane from "../MapPlane";
+import MapPlane, { ActiveStyle } from "../MapPlane";
 
 class LocalPlaneLayers {
     public pointLayer: VectorLayer;
@@ -11,11 +10,8 @@ class LocalPlaneLayers {
     public labelLayer: VectorLayer;
     private labelSource: VectorSource;
 
-    public static labelStyle?: StyleFunction;
-    public static mainPointStyle?: StyleLike;
-    public static mainLabelStyle?: StyleLike;
-    public static selectedPointStyle?: StyleLike;
-    public static selectedLabelStyle?: StyleLike;
+    public static pointStyle = this.createPointStyle();
+    public static labelStyle = this.createLabelStyle();
 
     public constructor() {
         this.pointSource = new VectorSource();
@@ -27,37 +23,54 @@ class LocalPlaneLayers {
 
     private createPointLayer() {
         const iconSrc = '/flight_24dp_FFFFFF.svg';
-        const pointStyle = LocalPlaneLayers.planeStyle(new OlStyle({
+        const pointStyle = new OlStyle({
             image: new OlIcon({
                 src: iconSrc,
                 color: [0, 138, 214],
             }),
             zIndex: 0,
-        }));
-        LocalPlaneLayers.mainPointStyle = LocalPlaneLayers.planeStyle(new OlStyle({
+        });
+        const mainPointStyle = new OlStyle({
             image: new OlIcon({
                 src: iconSrc,
                 color: [200, 0, 0],
             }),
             zIndex: 1,
-        }));
-        LocalPlaneLayers.selectedPointStyle = LocalPlaneLayers.planeStyle(new OlStyle({
+        });
+        const selectedPointStyle = new OlStyle({
             image: new OlIcon({
                 src: iconSrc,
                 color: [168, 50, 255],
             }),
             zIndex: 2,
-        }));
+        });
+        const styleFunction = (feature: FeatureLike) => {
+            let style;
+            switch (MapPlane.getRenderStyle(feature)) {
+                case ActiveStyle.MainPoint: {
+                    style = mainPointStyle;
+                    break;
+                }
+                case ActiveStyle.SelectedPoint: {
+                    style = selectedPointStyle;
+                    break;
+                }
+                default: {
+                    style = pointStyle;
+                }
+            }
+            return LocalPlaneLayers.pointStyle(style, feature);
+        };
 
         return new VectorLayer({
-            style: pointStyle,
+            style: styleFunction,
             source: this.pointSource,
             updateWhileAnimating: true,
             updateWhileInteracting: true,
         });
     }
 
-    private createLabelLayer() {
+    private static createLabelStyle() {
         const labelStyleObj = new OlStyle({
             text: new OlText({
                 padding: [ 3, 1, 1, 5 ],
@@ -66,7 +79,7 @@ class LocalPlaneLayers {
                 backgroundStroke: new OlStroke({ color: 'black', width: 1 }),
             }),
         });
-        const labelStyle = (feature: FeatureLike, resolution: number) => {
+        return (feature: FeatureLike, resolution: number) => {
             if (resolution >= 1523 || !planeLayers.visible) {
                 return undefined;
             }
@@ -93,29 +106,38 @@ class LocalPlaneLayers {
             labelStyleObj.setZIndex(0);
             return labelStyleObj;
         };
-        LocalPlaneLayers.labelStyle = labelStyle;
-        LocalPlaneLayers.mainLabelStyle = (feature: FeatureLike, resolution: number) => {
-            const style = labelStyle(feature, resolution);
-            style?.setZIndex(1);
-            return style;
-        };
-        LocalPlaneLayers.selectedLabelStyle = (feature: FeatureLike, resolution: number) => {
-            const style = labelStyle(feature, resolution);
-            style?.setZIndex(2);
-            return style;
+    }
+
+    private createLabelLayer() {
+        const style = (feature: FeatureLike, resolution: number) => {
+            const styleObj = LocalPlaneLayers.labelStyle(feature, resolution);
+            if (!styleObj) {
+                return styleObj;
+            }
+            switch (MapPlane.getRenderStyle(feature)) {
+                case ActiveStyle.MainPoint: {
+                    styleObj.setZIndex(1);
+                    break;
+                }
+                case ActiveStyle.SelectedPoint: {
+                    styleObj.setZIndex(2);
+                    break;
+                }
+            }
+            return styleObj;
         };
 
         return new VectorLayer({
-            style: labelStyle,
+            style: style,
             source: this.labelSource,
             updateWhileAnimating: true,
             updateWhileInteracting: true,
         });
     }
 
-    public static planeStyle(style: OlStyle) {
+    private static createPointStyle() {
         const rotFactor = Math.PI / 180;
-        return (feature: FeatureLike) => {
+        return (style: OlStyle, feature: FeatureLike) => {
             if (!planeLayers.visible) {
                 return undefined;
             }
@@ -129,14 +151,13 @@ class LocalPlaneLayers {
 
     public addPlane(plane: MapPlane) {
         plane.point.set('ol_layer', this.pointLayer);
-        plane.label.set('ol_layer', this.labelLayer);
         this.pointSource.addFeature(plane.point);
-        this.labelSource.addFeature(plane.label);
+        this.labelSource.addFeature(plane.point);
     }
 
     public removePlane(plane: MapPlane) {
         this.pointSource.removeFeature(plane.point);
-        this.labelSource.removeFeature(plane.label);
+        this.labelSource.removeFeature(plane.point);
     }
 }
 export default LocalPlaneLayers;
