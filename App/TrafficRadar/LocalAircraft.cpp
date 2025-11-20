@@ -26,15 +26,10 @@ const DataModel::VarDef AircraftTrack_Model::vars[] =
 	{ VarType::FLOAT64, "PLANE LONGITUDE", "degrees" },
 	{ VarType::FLOAT64, "PLANE LATITUDE", "degrees" },
 	{ VarType::FLOAT64, "PLANE HEADING DEGREES GYRO", "degrees" },
-	{ VarType::FLOAT64, "PLANE HEADING DEGREES TRUE", "degrees" },
 
 	{ VarType::INT32, "INDICATED ALTITUDE", "feet" },
-	{ VarType::INT32, "PLANE ALTITUDE", "feet" },
 	{ VarType::INT32, "PLANE ALT ABOVE GROUND", "feet" },
-
-	{ VarType::INT32, "AIRSPEED INDICATED", "knots" },
 	{ VarType::INT32, "GROUND VELOCITY", "knots" },
-	{ VarType::INT32, "VERTICAL SPEED", "feet/second" },
 };
 
 struct AircraftIdent_Model : DataModel
@@ -167,13 +162,7 @@ void LocalAircraft::Track()
 
 					e.altitude = info.altitude;
 					e.groundAltitude = info.groundAltitude;
-
-					e.indicatedSpeed = info.indicatedSpeed;
 					e.groundSpeed = info.groundSpeed;
-					e.verticalSpeed = info.verticalSpeed;
-
-					e.realAltitude = info.realAltitude;
-					e.realHeading = info.realHeading;
 					OnAdd(e);
 				}
 				return;
@@ -188,13 +177,7 @@ void LocalAircraft::Track()
 
 				e.altitude = info.altitude;
 				e.groundAltitude = info.groundAltitude;
-
-				e.indicatedSpeed = info.indicatedSpeed;
 				e.groundSpeed = info.groundSpeed;
-				e.verticalSpeed = info.verticalSpeed;
-
-				e.realAltitude = info.realAltitude;
-				e.realHeading = info.realHeading;
 				OnUpdate(e);
 			}
 		}, RequestPeriod::SECOND);
@@ -235,12 +218,6 @@ std::optional<LocalAircraft::PlaneAddArgs> LocalAircraft::CreateSnapshot()
 
 	e.altitude = trackInfo.altitude;
 	e.groundAltitude = trackInfo.groundAltitude;
-
-	e.indicatedSpeed = trackInfo.indicatedSpeed;
 	e.groundSpeed = trackInfo.groundSpeed;
-	e.verticalSpeed = trackInfo.verticalSpeed;
-
-	e.realAltitude = trackInfo.realAltitude;
-	e.realHeading = trackInfo.realHeading;
 	return e;
 }

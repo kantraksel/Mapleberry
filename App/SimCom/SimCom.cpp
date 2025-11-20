@@ -6,7 +6,7 @@
 static constexpr long long ConnectTimeout = 5 * 60 * 1000;
 static constexpr long long ReconnectCooldown = 60 * 1000;
 
-SimCom::SimCom() : nextReconnect(INT64_MAX), isConnected(false), allowReconnect(false)
+SimCom::SimCom() : nextReconnect(INT64_MAX), isConnected(false), allowReconnect(true)
 {
 }
 
@@ -38,7 +38,7 @@ bool SimCom::Initialize()
 
 	simconnect.SetDisconnectCallback([&]()
 		{
-			OnDisconnected();
+			OnDisconnected(true);
 		});
 
 	simconnect.SetExceptionCallback([](const SimConnect::EventException& event)
@@ -51,7 +51,7 @@ bool SimCom::Initialize()
 void SimCom::Shutdown()
 {
 	simconnect.Shutdown();
-	OnDisconnected();
+	OnDisconnected(false);
 }
 
 void SimCom::RunCallbacks()
@@ -62,9 +62,9 @@ void SimCom::RunCallbacks()
 	while (simconnect.RunCallbacks());
 }
 
-void SimCom::OnDisconnected()
+void SimCom::OnDisconnected(bool reconnect)
 {
-	if (allowReconnect)
+	if (reconnect && allowReconnect)
 		nextReconnect = Time::SteadyNowInt() + ReconnectCooldown;
 	else
 		nextReconnect = INT64_MAX;

@@ -43,8 +43,6 @@ public:
 		int altitude;
 		int groundSpeed;
 		int groundAltitude;
-		int indicatedSpeed;
-		int verticalSpeed;
 	};
 
 	struct PlaneAddArgs : PlaneUpdateArgs

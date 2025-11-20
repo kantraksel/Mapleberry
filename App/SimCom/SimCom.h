@@ -12,7 +12,7 @@ private:
 	bool isConnected;
 	bool allowReconnect;
 
-	void OnDisconnected();
+	void OnDisconnected(bool);
 
 public:
 	FunctionS<void()> OnConnect;

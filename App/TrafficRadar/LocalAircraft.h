@@ -19,15 +19,10 @@ public:
 		double longitude;
 		double latitude;
 		double heading;
-		double realHeading;
 
 		int altitude;
-		int realAltitude;
 		int groundAltitude;
-
-		int indicatedSpeed;
 		int groundSpeed;
-		int verticalSpeed;
 	};
 
 private:
@@ -51,13 +46,7 @@ public:
 
 		int altitude;
 		int groundAltitude;
-
-		int indicatedSpeed;
 		int groundSpeed;
-		int verticalSpeed;
-
-		int realAltitude;
-		double realHeading;
 	};
 
 	struct PlaneAddArgs : PlaneUpdateArgs

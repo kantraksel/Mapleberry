@@ -84,14 +84,12 @@ static void PackPartialRadarUpdate(MsgPacker& packer, const AirplaneRadar::Plane
 	packer.pack(3, e.heading);
 	packer.pack(4, e.altitude);
 	packer.pack(5, e.groundAltitude);
-	packer.pack(6, e.indicatedSpeed);
 	packer.pack(7, e.groundSpeed);
-	packer.pack(8, e.verticalSpeed);
 }
 
 static void PackRadarAdd(MsgPacker& packer, const AirplaneRadar::PlaneAddArgs& e)
 {
-	packer.pack_map(11);
+	packer.pack_map(9);
 	PackPartialRadarUpdate(packer, e);
 	packer.pack(9, e.model);
 	packer.pack(10, e.callsign);
@@ -99,7 +97,7 @@ static void PackRadarAdd(MsgPacker& packer, const AirplaneRadar::PlaneAddArgs& e
 
 static void PackRadarUpdate(MsgPacker& packer, const AirplaneRadar::PlaneUpdateArgs& e)
 {
-	packer.pack_map(9);
+	packer.pack_map(7);
 	PackPartialRadarUpdate(packer, e);
 }
 
@@ -110,16 +108,12 @@ static void PackPartialLocalUpdate(MsgPacker& packer, const LocalAircraft::Plane
 	packer.pack(2, e.heading);
 	packer.pack(3, e.altitude);
 	packer.pack(4, e.groundAltitude);
-	packer.pack(5, e.indicatedSpeed);
 	packer.pack(6, e.groundSpeed);
-	packer.pack(7, e.verticalSpeed);
-	packer.pack(8, e.realAltitude);
-	packer.pack(9, e.realHeading);
 }
 
 static void PackLocalAdd(MsgPacker& packer, const LocalAircraft::PlaneAddArgs& e)
 {
-	packer.pack_map(12);
+	packer.pack_map(8);
 	PackPartialLocalUpdate(packer, e);
 	packer.pack(10, e.model);
 	packer.pack(11, e.callsign);
@@ -127,7 +121,7 @@ static void PackLocalAdd(MsgPacker& packer, const LocalAircraft::PlaneAddArgs& e
 
 static void PackLocalUpdate(MsgPacker& packer, const LocalAircraft::PlaneUpdateArgs& e)
 {
-	packer.pack_map(10);
+	packer.pack_map(6);
 	PackPartialLocalUpdate(packer, e);
 }
 
@@ -256,6 +250,7 @@ void WebDriver::OnRequestModifySystemState(const FixedArrayCharS& buffer)
 
 void WebDriver::OnRequestModifySystemProperties(const FixedArrayCharS& buffer)
 {
+	/*
 	auto handle = msgpack::unpack(buffer, buffer.size());
 	auto& obj = handle.get();
 	if (obj.type != msgpack::type::MAP)
@@ -281,4 +276,5 @@ void WebDriver::OnRequestModifySystemProperties(const FixedArrayCharS& buffer)
 			}
 		}
 	}
+	*/
 }

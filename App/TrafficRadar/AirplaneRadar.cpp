@@ -47,10 +47,7 @@ struct RadarInfo_Model : DataModel
 
 		int altitude;
 		int groundAltitude;
-
-		int indicatedSpeed;
 		int groundSpeed;
-		int verticalSpeed;
 	};
 	static const VarDef vars[8];
 
@@ -73,10 +70,7 @@ const DataModel::VarDef RadarInfo_Model::vars[] =
 
 	{ VarType::INT32, "PLANE ALTITUDE", "feet" },
 	{ VarType::INT32, "PLANE ALT ABOVE GROUND", "feet" },
-
-	{ VarType::INT32, "AIRSPEED INDICATED", "knots" },
 	{ VarType::INT32, "GROUND VELOCITY", "knots" },
-	{ VarType::INT32, "VERTICAL SPEED", "feet/second" },
 };
 static RadarInfo_Model infoModel;
 
@@ -290,10 +284,7 @@ void AirplaneRadar::Track(Airplane& airplane)
 
 							e.altitude = info.altitude;
 							e.groundAltitude = info.groundAltitude;
-
-							e.indicatedSpeed = info.indicatedSpeed;
 							e.groundSpeed = info.groundSpeed;
-							e.verticalSpeed = info.verticalSpeed;
 							OnPlaneAdd(e);
 						}
 						return;
@@ -310,9 +301,7 @@ void AirplaneRadar::Track(Airplane& airplane)
 						e.altitude = info.altitude;
 						e.groundAltitude = info.groundAltitude;
 
-						e.indicatedSpeed = info.indicatedSpeed;
 						e.groundSpeed = info.groundSpeed;
-						e.verticalSpeed = info.verticalSpeed;
 						OnPlaneUpdate(e);
 					}
 					return;
@@ -356,10 +345,7 @@ std::vector<AirplaneRadar::PlaneAddArgs> AirplaneRadar::CreateSnapshot()
 
 		e.altitude = info.altitude;
 		e.groundAltitude = info.groundAltitude;
-
-		e.indicatedSpeed = info.indicatedSpeed;
 		e.groundSpeed = info.groundSpeed;
-		e.verticalSpeed = info.verticalSpeed;
 	}
 	return list;
 }
