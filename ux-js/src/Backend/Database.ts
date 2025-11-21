@@ -34,33 +34,33 @@ interface TraconDefsObject {
 
 class Database {
     private db?: IDBPDatabase<AppDB>;
-    private initTasks: { resolve: (value: unknown) => void, reject: (error: unknown) => void }[];
+    private initTask: Promise<void> | undefined;
 
     constructor() {
-        this.initTasks = [];
         this.open();
     }
 
     async open() {
-        this.db = await openDB<AppDB>('app', 1, {
-            async upgrade(database, oldVersion, newVersion, transaction, event) {
-                database.createObjectStore('stations', { keyPath: 'type' });
-            },
-            blocked(currentVersion, blockedVersion, event) {
-                
-            },
-            blocking(currentVersion, blockedVersion, event) {
-                
-            },
-            terminated() {
-                
-            },
-        });
+        this.initTask = this.openInternal();
+        await this.initTask;
+        this.initTask = undefined;
+    }
 
-        this.initTasks.forEach(value => {
-            value.resolve(null);
+    async openInternal() {
+        this.db = await openDB<AppDB>('app', 1, {
+            upgrade: (database, _oldVersion, newVersion) => {
+                if (newVersion ?? 0 <= 1) {
+                    database.createObjectStore('stations', { keyPath: 'type' });
+                }
+            },
+            blocked: () => {
+                alert('Please close all other tabs with this site open!');
+            },
+            blocking: () => {
+                this.db?.close();
+                prompt('A new version of this page is ready. Please reload/close this tab!');
+            },
         });
-        this.initTasks = [];
     }
 
     async updateMainDefs(data: StationList, updateTimestamp: number) {
@@ -142,15 +142,15 @@ class Database {
         return await this.db.get('stations', 'meta') as MetaObject | undefined;
     }
 
-    async getDefinitions(): Promise<[StationList | undefined, Boundaries | undefined, Tracon | undefined] | undefined> {
+    async getDefinitions() {
         if (!this.db) {
-            await new Promise((resolve, reject) => this.initTasks.push({resolve, reject}));
+            await this.initTask;
         }
         const store = this.db!.transaction('stations').objectStore('stations');
         const main = await store.get('vatspy-main') as MainDefsObject | undefined;
         const boundary = await store.get('vatspy-boundary') as BoundaryDefsObject | undefined;
         const tracons = await store.get('simaware-tracon') as TraconDefsObject | undefined;
-        return [main?.data, boundary?.data, tracons?.data];
+        return { main: main?.data, boundaries: boundary?.data, tracons: tracons?.data };
     }
 }
 export default Database;

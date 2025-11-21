@@ -131,12 +131,14 @@ export function splitCallsign(callsign: string) {
 }
 
 class ControlStations {
+    readonly loader: DefinitionLoader;
     readonly airports: Map<string, AirportSpec | Map<string, AirportSpec>>;
     readonly regions: Map<string, InfoRegionSpec | Map<string, InfoRegionSpec>>;
     readonly tracons: Map<string, TraconSpec>;
     Ready: Event<() => void>;
 
     constructor() {
+        this.loader = new DefinitionLoader();
         this.airports = new Map();
         this.regions = new Map();
         this.tracons = new Map();
@@ -146,7 +148,7 @@ class ControlStations {
     }
 
     private async loadDefs() {
-        const [list, boundaries, tracons] = await DefinitionLoader.loadDefinitions();
+        const [list, boundaries, tracons] = await this.loader.loadDefinitions();
 
         const boundary_map = new Map<string, BoundaryFeature>();
         boundaries.features.forEach(value => {
