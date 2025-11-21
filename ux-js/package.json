@@ -16,6 +16,7 @@
     "@fontsource/roboto": "^5.2.5",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
+    "idb": "^8.0.3",
     "msgpackr": "^1.11.5",
     "ol": "^10.4.0",
     "polygon-clipping": "^0.15.7",

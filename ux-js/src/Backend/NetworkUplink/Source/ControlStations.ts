@@ -3,9 +3,9 @@ import polygonClipping from 'polygon-clipping';
 import polylabel from 'polylabel';
 import DefinitionLoader from './DefinitionLoader';
 import Event from './../../Event';
-import { Tracon as TraconDef, TraconFeature } from './Parsers/TraconParser';
-import { Country, StationList } from './Parsers/MainParser';
-import { Boundaries, BoundaryFeature } from './Parsers/BoundaryParser';
+import { TraconFeature } from './Parsers/TraconParser';
+import { Country } from './Parsers/MainParser';
+import { BoundaryFeature } from './Parsers/BoundaryParser';
 import { AirportSpec, FirSpec, InfoRegion, InfoRegionSpec, TraconSpec } from './Objects/StationSpecs';
 
 function checkCountryCode(code: string) {
@@ -146,14 +146,7 @@ class ControlStations {
     }
 
     private async loadDefs() {
-        const results = await Promise.all([
-            DefinitionLoader.loadMainDefs(),
-            DefinitionLoader.loadBoundaries(),
-            DefinitionLoader.loadTracons(),
-        ]);
-        const list = results[0] as StationList;
-        const boundaries = results[1] as Boundaries;
-        const tracons = results[2] as TraconDef;
+        const [list, boundaries, tracons] = await DefinitionLoader.loadDefinitions();
 
         const boundary_map = new Map<string, BoundaryFeature>();
         boundaries.features.forEach(value => {

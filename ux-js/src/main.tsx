@@ -28,6 +28,7 @@ import Metar from './Backend/NetworkUplink/Metar.ts';
 import Replay from './Backend/Replay.ts';
 import Notifications from './Backend/Notifications.ts';
 import { handleGlobalError, installGlobalErrorHandler, removeGlobalErrorHandler } from './error-handler.ts';
+import Database from './Backend/Database.ts';
 
 installGlobalErrorHandler();
 
@@ -50,7 +51,9 @@ declare global {
 	var metar: Metar;
 	var replay: Replay;
 	var notifications: Notifications;
+	var db: Database;
 }
+window.db = new Database();
 window.options = new Options();
 window.notifications = new Notifications();
 window.hostBridge = new HostBridge();
