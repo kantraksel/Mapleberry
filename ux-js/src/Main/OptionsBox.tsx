@@ -1,9 +1,10 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Box, Button, ButtonGroup, createTheme, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Box, Button, ButtonGroup, createTheme, Divider, IconButton, Link, List, ListItem, ListItemButton, ListItemText, MenuItem, Select, SelectChangeEvent, Stack, Switch, TextField, Typography, useTheme } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import VATSIM from '../Network/VATSIM';
 import { SimulatorStatus, StatusCmd } from '../Host/HostState';
 import StyledBox from './StyledBox';
+import { MapType } from '../Map/GlobalMap';
 
 type View = 'map' | 'network' | 'app' | 'about' | 'dev_preview';
 
@@ -81,6 +82,10 @@ function MapView() {
     const [userCallsign, setUserCallsign] = useState(tracker.customCallsign);
     const [mapScaling, setMapScaling] = useState(radar.animator.enableMapScaling);
     const [savePosition, setSavePosition] = useState(map.saveLastPosition);
+    const [useLocalLang, setUseLocalLang] = useState(map.useLocale);
+    const [selectedEngine, setSelectedEngine] = useState(map.mapType);
+
+    const theme = useTheme();
 
     const onCallsignChange = (event: unknown) => {
         const e = event as { target: {value: string} };
@@ -100,6 +105,17 @@ function MapView() {
         setSavePosition(checked);
     };
 
+    const onUseLocalLangChange = (_event: unknown, checked: boolean) => {
+        map.useLocale = checked;
+        setUseLocalLang(checked);
+    };
+
+    const onSelectEngine = (event: SelectChangeEvent<MapType>) => {
+        const value = event.target.value;
+        map.mapType = value;
+        setSelectedEngine(value);
+    };
+
     return (
         <Stack flex='1 1' spacing={3}>
             <Stack flex='1 1' spacing={1}>
@@ -115,6 +131,17 @@ function MapView() {
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
                     <Typography>Save map position</Typography>
                     <Switch checked={savePosition} onChange={onSavePosChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Use local language on map</Typography>
+                    <Switch checked={useLocalLang} onChange={onUseLocalLangChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Map engine</Typography>
+                    <Select id='select-map-engine' value={selectedEngine} onChange={onSelectEngine} MenuProps={{ sx: {zIndex: theme.zIndex.drawer + 300} }}>
+                        <MenuItem value={MapType.OsmRaster}>OSM Low Quality</MenuItem>
+                        <MenuItem value={MapType.OsmVector}>OSM High Quality</MenuItem>
+                    </Select>
                 </Box>
             </Stack>
         </Stack>

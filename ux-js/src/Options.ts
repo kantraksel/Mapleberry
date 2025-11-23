@@ -11,6 +11,8 @@ type OptionKeys =
     'app_port' |
     'app_reconnect_span' |
     'vatsim_user_id' |
+    'map_type' |
+    'map_use_locale' |
     '_unused_';
 
 class Options {
