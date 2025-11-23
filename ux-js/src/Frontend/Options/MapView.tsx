@@ -1,9 +1,15 @@
-import { Box, Stack, Switch, TextField, Typography } from "@mui/material";
+import { Box, MenuItem, Select, SelectChangeEvent, Stack, Switch, TextField, Typography, useTheme } from "@mui/material";
 import Header from "./Elements/Header";
 import useRev from "../useRev";
+import { MapType } from "../../Backend/Map/GlobalMap";
+import { useState } from "react";
 
 export default function MapView() {
     const [_, addRev] = useRev();
+    const [useLocalLang, setUseLocalLang] = useState(map.useLocale);
+    const [selectedEngine, setSelectedEngine] = useState(map.mapType);
+
+    const theme = useTheme();
 
     const onCallsignChange = (event: unknown) => {
         const e = event as { target: {value: string} };
@@ -36,6 +42,17 @@ export default function MapView() {
     const onShowAtisChange = (_event: unknown, checked: boolean) => {
         cards.showAtisInFacilityView = checked;
         addRev();
+    };
+
+    const onUseLocalLangChange = (_event: unknown, checked: boolean) => {
+        map.useLocale = checked;
+        setUseLocalLang(checked);
+    };
+
+    const onSelectEngine = (event: SelectChangeEvent<MapType>) => {
+        const value = event.target.value;
+        map.mapType = value;
+        setSelectedEngine(value);
     };
 
     const lastPosition = map.lastPosition;
@@ -72,6 +89,17 @@ export default function MapView() {
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
                     <Typography>Show ATIS in airport's controller list</Typography>
                     <Switch checked={showAtis} onChange={onShowAtisChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Use local language on map</Typography>
+                    <Switch checked={useLocalLang} onChange={onUseLocalLangChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Map engine</Typography>
+                    <Select id='select-map-engine' value={selectedEngine} onChange={onSelectEngine} MenuProps={{ sx: {zIndex: theme.zIndex.drawer + 300} }}>
+                        <MenuItem value={MapType.OsmRaster}>OSM Low Quality</MenuItem>
+                        <MenuItem value={MapType.OsmVector}>OSM High Quality</MenuItem>
+                    </Select>
                 </Box>
             </Stack>
         </Stack>

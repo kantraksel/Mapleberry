@@ -14,6 +14,8 @@ type OptionKeys =
     'radar_interpolate' |
     'radar_interactable_areas' |
     'cards_show_atis_facility_view' |
+    'map_type' |
+    'map_use_locale' |
     '_unused_';
 
 class Options {

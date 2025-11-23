@@ -27,8 +27,14 @@ interface SavedPos {
     resolution: number,
 }
 
+export enum MapType {
+    OsmRaster,
+    OsmVector,
+}
+
 class GlobalMap {
     public readonly map: Map;
+    private osm: TileLayer;
     private mapLibre: MapLibreLayer;
     
     private isPointerDragging: boolean;
@@ -44,6 +50,8 @@ class GlobalMap {
 
     private lastPos: SavedPos;
     private lastPosUpdate: number;
+    private type: MapType;
+    private useLocale_: boolean;
 
     public constructor() {
         this.isPointerDragging = false;
@@ -58,6 +66,8 @@ class GlobalMap {
         this.cursorEvent = new Event();
         this.lastPos = { longitude: 12, latitude: 50, resolution: 4892 };
         this.lastPosUpdate = Number.POSITIVE_INFINITY;
+        this.type = options.get<MapType>('map_type', MapType.OsmVector);
+        this.useLocale_ = options.get<boolean>('map_use_locale', false);
 
         let pos = options.get<SavedPos | null>('map_last_position', this.lastPos);
         if (!pos) {
@@ -73,6 +83,10 @@ class GlobalMap {
             maxResolution: 15105,
         });
         const defaultView = new View();
+        this.osm = new TileLayer({
+            source: new OsmSource(),
+            visible: this.type == MapType.OsmRaster,
+        });
         this.mapLibre = new MapLibreLayer({
             opacity: 1.0,
             mapLibreOptions: {
@@ -83,14 +97,11 @@ class GlobalMap {
                 const retZoom = defaultView.getZoomForResolution(res);
                 return retZoom!;
             },
+            visible: this.type == MapType.OsmVector,
         });
         this.map = new Map({
             layers: [
-                /*
-                new TileLayer({
-                    source: new OsmSource(),
-                }),
-                */
+                this.osm,
                 this.mapLibre,
             ],
             view: view,
@@ -184,12 +195,15 @@ class GlobalMap {
             }
             styleUpdated = true;
 
-            //todo: option
-            const locales = false ? getLocales() : ['en'];
             const e = ev as unknown as { style: { stylesheet: StyleSpecification } };
-            localizeLayers(e.style.stylesheet.layers as any, locales);
+            this.updateStyleLocalization(e.style.stylesheet);
             ev.target.setStyle(e.style.stylesheet);
         });
+    }
+
+    private updateStyleLocalization(style: StyleSpecification) {
+        const locales = this.useLocale_ ? getLocales() : ['en'];
+        localizeLayers(style.layers as any, locales);
     }
 
     public setCenterZoom(longitude: number, latitude: number, resolution?: number) {
@@ -238,6 +252,42 @@ class GlobalMap {
         }
         this.cursorInteractIcon = interact;
         root.style.cursor = interact ? 'pointer' : 'auto';
+    }
+
+    public set mapType(type: MapType) {
+        this.type = type;
+        options.set('map_type', type);
+
+        if (type == MapType.OsmVector) {
+            this.osm.setVisible(false);
+            this.mapLibre.setVisible(true);
+        } else {
+            if (type != MapType.OsmRaster) {
+                console.warn(`Unknown map type ${type}. Falling back to OsmRaster`);
+            }
+            this.osm.setVisible(true);
+            this.mapLibre.setVisible(false);
+        }
+    }
+
+    public get mapType() {
+        return this.type;
+    }
+
+    public set useLocale(value: boolean) {
+        this.useLocale_ = value;
+        options.set('map_use_locale', value);
+
+        const map = this.mapLibre.mapLibreMap;
+        if (map) {
+            const style = map.getStyle();
+            this.updateStyleLocalization(style);
+            map.setStyle(style);
+        }
+    }
+
+    public get useLocale() {
+        return this.useLocale_;
     }
 }
 
