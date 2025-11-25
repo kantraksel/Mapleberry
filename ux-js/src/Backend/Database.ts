@@ -15,6 +15,7 @@ interface MetaObject {
     mainDefsUpdate: number,
     boundaryDefsUpdate: number,
     traconDefsUpdate: number,
+    lastUpdateCheck: number,
 }
 
 interface MainDefsObject {
@@ -61,12 +62,7 @@ class Database {
                 prompt('A new version of this page is ready. Please reload/close this tab!');
             },
         });
-    }
 
-    async updateMainDefs(data: StationList, updateTimestamp: number) {
-        if (!this.db) {
-            return;
-        }
         const store = this.db.transaction('stations', 'readwrite').objectStore('stations');
         let meta = await store.get('meta') as MetaObject | undefined;
         if (!meta) {
@@ -75,7 +71,30 @@ class Database {
                 mainDefsUpdate: 0,
                 boundaryDefsUpdate: 0,
                 traconDefsUpdate: 0,
+                lastUpdateCheck: 0,
             };
+            await store.put(meta);
+        }
+    }
+
+    private async waitForDb() {
+        if (this.db) {
+            return;
+        }
+        try {
+            await this.initTask;
+        } catch {
+            throw new Error('Database not initialized');
+        }
+    }
+
+    async updateMainDefs(data: StationList, updateTimestamp: number) {
+        await this.waitForDb();
+
+        const store = this.db!.transaction('stations', 'readwrite').objectStore('stations');
+        let meta = await store.get('meta') as MetaObject | undefined;
+        if (!meta) {
+            throw new Error('Definition meta is undefined');
         }
         meta.mainDefsUpdate = updateTimestamp;
 
@@ -88,18 +107,12 @@ class Database {
     }
 
     async updateBoundaryDefs(data: Boundaries, updateTimestamp: number) {
-        if (!this.db) {
-            return;
-        }
-        const store = this.db.transaction('stations', 'readwrite').objectStore('stations');
+        await this.waitForDb();
+
+        const store = this.db!.transaction('stations', 'readwrite').objectStore('stations');
         let meta = await store.get('meta') as MetaObject | undefined;
         if (!meta) {
-            meta = {
-                type: 'meta' as const,
-                mainDefsUpdate: 0,
-                boundaryDefsUpdate: 0,
-                traconDefsUpdate: 0,
-            };
+            throw new Error('Definition meta is undefined');
         }
         meta.boundaryDefsUpdate = updateTimestamp;
 
@@ -112,18 +125,12 @@ class Database {
     }
 
     async updateTraconDefs(data: Tracon, updateTimestamp: number) {
-        if (!this.db) {
-            return;
-        }
-        const store = this.db.transaction('stations', 'readwrite').objectStore('stations');
+        await this.waitForDb();
+
+        const store = this.db!.transaction('stations', 'readwrite').objectStore('stations');
         let meta = await store.get('meta') as MetaObject | undefined;
         if (!meta) {
-            meta = {
-                type: 'meta' as const,
-                mainDefsUpdate: 0,
-                boundaryDefsUpdate: 0,
-                traconDefsUpdate: 0,
-            };
+            throw new Error('Definition meta is undefined');
         }
         meta.traconDefsUpdate = updateTimestamp;
 
@@ -135,17 +142,29 @@ class Database {
         await store.put(meta);
     }
 
-    async getUpdateMeta() {
-        if (!this.db) {
-            return;
+    async getDefinitionMeta() {
+        await this.waitForDb();
+        const meta = await this.db!.get('stations', 'meta') as MetaObject | undefined;
+        if (!meta) {
+            throw new Error('Definition meta is undefined');
         }
-        return await this.db.get('stations', 'meta') as MetaObject | undefined;
+        return meta;
+    }
+
+    async updateLastUpdateCheck(timestamp: number) {
+        await this.waitForDb();
+        const store = this.db!.transaction('stations', 'readwrite').objectStore('stations');
+        const meta = await store.get('meta') as MetaObject | undefined;
+        if (!meta) {
+            throw new Error('Definition meta is undefined');
+        }
+        meta.lastUpdateCheck = timestamp;
+        store.put(meta);
     }
 
     async getDefinitions() {
-        if (!this.db) {
-            await this.initTask;
-        }
+        await this.waitForDb();
+
         const store = this.db!.transaction('stations').objectStore('stations');
         const main = await store.get('vatspy-main') as MainDefsObject | undefined;
         const boundary = await store.get('vatspy-boundary') as BoundaryDefsObject | undefined;

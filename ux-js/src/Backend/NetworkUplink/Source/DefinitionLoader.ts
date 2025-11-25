@@ -23,71 +23,186 @@ class DefinitionLoader {
     private localMetaPromise: Promise<LocalMeta> | undefined;
     private octokit = new Octokit();
 
-    public async loadDefinitions() {
+    public async loadDefinitions(): Promise<[StationList, Boundaries, Tracon]> {
+        console.info('Loading definition files');
+        const meta = await db.getDefinitionMeta();
+        const nextUpdate = meta.lastUpdateCheck + 24 * 3600 * 1000;
+        const checkUpdate = nextUpdate <= Date.now();
+        console.info(`Next definition update on ${new Date(nextUpdate)}`);
+
         const defs = await db.getDefinitions();
-        return await Promise.all([
-            this.processMainDefs(defs.main),
-            this.processBoundaryDefs(defs.boundaries),
-            this.processTraconDefs(defs.tracons),
-        ]);
+        let result;
+        if (!checkUpdate) {
+            if (defs.main && defs.boundaries && defs.tracons) {
+                console.info('Loaded definition files from db');
+                return [defs.main, defs.boundaries, defs.tracons];
+            }
+            console.info('Fetching missing definition files');
+            result = await Promise.all([
+                this.processMainDefs(defs.main),
+                this.processBoundaryDefs(defs.boundaries),
+                this.processTraconDefs(defs.tracons),
+            ]);
+        } else {
+            console.info('Fetching definition files');
+            result = await Promise.all([
+                this.processMainDefs(defs.main, meta.mainDefsUpdate),
+                this.processBoundaryDefs(defs.boundaries, meta.boundaryDefsUpdate),
+                this.processTraconDefs(defs.tracons, meta.traconDefsUpdate),
+            ]);
+        }
+        db.updateLastUpdateCheck(Date.now());
+        console.info('Updated definition files');
+
+        this.vatspyMeta = undefined;
+        this.vatspyMetaPromise = undefined;
+        this.localMeta = undefined;
+        this.localMetaPromise = undefined;
+        return result;
     }
 
-    private async processMainDefs(main: StationList | undefined) {
-        if (main) {
-            return main;
+    private async processMainDefs(defs?: StationList, timestamp?: number) {
+        if (timestamp === undefined && defs) {
+            return defs;
         }
-        const meta = await this.getVatspyMeta();
-        const localMeta = await this.getLocalMeta();
+        const result = await this.fetchMainDefs(timestamp ?? 0);
+        if (!result) {
+            if (timestamp && defs) {
+                return defs;
+            }
+            throw new Error('Failed to get VATSpy.dat');
+        }
+        return result;
+    }
 
+    private async fetchMainDefs(timestamp: number) {
         let data;
-        let updateTimestamp;
-        if (meta.timestamp > localMeta.timestamp && meta.main_sha) {
-            data = await this.fetchGithubFile('vatsimnetwork', 'vatspy-data-project', meta.main_sha);
-            updateTimestamp = meta.timestamp;
-        } else {
-            const response = await fetch(localMeta.main_file, { cache: 'default' });
-            data = await response.text();
-            updateTimestamp = localMeta.timestamp;
+        try {
+            const originMeta = await this.getVatspyMeta();
+            const localMeta = await this.getLocalMeta();
+
+            if (timestamp >= originMeta.timestamp && timestamp >= localMeta.timestamp) {
+                console.info('VATSpy.dat is up to date');
+                return;
+            }
+
+            if (originMeta.timestamp > localMeta.timestamp && originMeta.main_sha) {
+                timestamp = originMeta.timestamp;
+                try {
+                    data = await this.fetchGithubFile('vatsimnetwork', 'vatspy-data-project', originMeta.main_sha);
+                    console.info(`Downloaded VATSpy.dat from GitHub - last updated on ${new Date(originMeta.timestamp)}`);
+                } catch (e: unknown) {
+                    console.error('Failed to fetch VATSpy.dat from GitHub:');
+                    console.error(e);
+                }
+            }
+            if (!data) {
+                const response = await fetch(localMeta.main_file, { cache: 'default' });
+                data = await response.text();
+                timestamp = localMeta.timestamp;
+                console.info(`Downloaded VATSpy.dat from cache site - last updated on ${new Date(localMeta.timestamp)}`);
+            }
+        } catch (e: unknown) {
+            console.error('Failed to fetch VATSpy.dat:');
+            console.error(e);
+            return;
         }
+        
         const obj = parseMainDefs(data);
-        await db.updateMainDefs(obj, updateTimestamp);
+        await db.updateMainDefs(obj, timestamp);
         return obj;
     }
 
-    private async processBoundaryDefs(boundaries: Boundaries | undefined) {
-        if (boundaries) {
-            return boundaries;
+    private async processBoundaryDefs(defs?: Boundaries, timestamp?: number) {
+        if (timestamp === undefined && defs) {
+            return defs;
         }
-        const meta = await this.getVatspyMeta();
-        const localMeta = await this.getLocalMeta();
+        const result = await this.fetchBoundaryDefs(timestamp ?? 0);
+        if (!result) {
+            if (timestamp && defs) {
+                return defs;
+            }
+            throw new Error('Failed to get Boundaries.geojson');
+        }
+        return result;
+    }
 
+    private async fetchBoundaryDefs(timestamp: number) {
         let data;
-        let updateTimestamp;
-        if (meta.timestamp > localMeta.timestamp && meta.boundary_sha) {
-            const response = await this.fetchGithubFile('vatsimnetwork', 'vatspy-data-project', meta.boundary_sha);
-            data = JSON.parse(response) as Boundaries;
-            updateTimestamp = meta.timestamp;
-        } else {
-            const response = await fetch(localMeta.boundary_file, { cache: 'default' });
-            data = await response.json() as Boundaries;
-            updateTimestamp = localMeta.timestamp;
+        try {
+            const originMeta = await this.getVatspyMeta();
+            const localMeta = await this.getLocalMeta();
+
+            if (timestamp >= originMeta.timestamp && timestamp >= localMeta.timestamp) {
+                console.info('Boundaries.geojson is up to date');
+                return;
+            }
+
+            if (originMeta.timestamp > localMeta.timestamp && originMeta.boundary_sha) {
+                timestamp = originMeta.timestamp;
+                try {
+                    const response = await this.fetchGithubFile('vatsimnetwork', 'vatspy-data-project', originMeta.boundary_sha);
+                    data = JSON.parse(response) as Boundaries;
+                    console.info(`Downloaded Boundaries.geojson from GitHub - last updated on ${new Date(originMeta.timestamp)}`);
+                } catch (e: unknown) {
+                    console.error('Failed to fetch Boundaries.geojson from GitHub:');
+                    console.error(e);
+                }
+            }
+            if (!data) {
+                const response = await fetch(localMeta.boundary_file, { cache: 'default' });
+                data = await response.json() as Boundaries;
+                timestamp = localMeta.timestamp;
+                console.info(`Downloaded Boundaries.geojson from cache site - last updated on ${new Date(localMeta.timestamp)}`);
+            }
+        } catch (e: unknown) {
+            console.error('Failed to fetch Boundaries.geojson:');
+            console.error(e);
+            return;
         }
+        
         validateBoundaries(data);
-        await db.updateBoundaryDefs(data, updateTimestamp);
+        await db.updateBoundaryDefs(data, timestamp);
         return data;
     }
 
-    private async processTraconDefs(tracons: Tracon | undefined) {
-        if (tracons) {
-            return tracons;
+    private async processTraconDefs(defs?: Tracon, timestamp?: number) {
+        if (timestamp === undefined && defs) {
+            return defs;
         }
-        const localMeta = await this.getLocalMeta();
+        const result = await this.fetchTraconDefs(timestamp ?? 0);
+        if (!result) {
+            if (timestamp && defs) {
+                return defs;
+            }
+            throw new Error('Failed to get TRACONBoundaries.geojson');
+        }
+        return result;
+    }
 
-        const response = await fetch(localMeta.tracon_file, { cache: 'default' });
-        const data = await response.json() as Tracon;
+    private async fetchTraconDefs(timestamp: number) {
+        let data;
+        try {
+            console.warn('TRACONBoundaries.geojson download is not available on GitHub due to API limitations');
+            const localMeta = await this.getLocalMeta();
+
+            if (timestamp >= localMeta.timestamp) {
+                console.info('TRACONBoundaries.geojson is up to date');
+                return;
+            }
+
+            const response = await fetch(localMeta.tracon_file, { cache: 'default' });
+            data = await response.json() as Tracon;
+            timestamp = localMeta.timestamp;
+            console.info(`Downloaded TRACONBoundaries.geojson from cache site - last updated on ${new Date(localMeta.timestamp)}`);
+        } catch (e: unknown) {
+            console.error('Failed to fetch TRACONBoundaries.geojson:');
+            console.error(e);
+            return;
+        }
+        
         validateTracon(data);
-
-        await db.updateTraconDefs(data, localMeta.timestamp);
+        await db.updateTraconDefs(data, timestamp);
         return data;
     }
 
