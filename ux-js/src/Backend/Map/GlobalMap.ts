@@ -13,7 +13,7 @@ import AirportLabelControl from './Controls/AirportLabelControl';
 import VisibilityControl from './Controls/ToggleAirplaneControl';
 import { MapLibreLayer } from '@geoblocks/ol-maplibre-layer';
 import { StyleSpecification } from "@maplibre/maplibre-gl-style-spec";
-import { getLocales, localizeLayers } from './LabelLocalisation';
+import { getLocales, localizeLayers } from '@americana/diplomat';
 
 type ClickEvent = (e: FeatureLike[]) => void;
 type ResEvent = (value: number) => void;
@@ -186,7 +186,7 @@ class GlobalMap {
 
         let styleUpdated = false;
         const mapLibre = this.mapLibre.mapLibreMap;
-        mapLibre?.on('styleimagemissing', ev => {
+        mapLibre?.on('styleimagemissing', _ev => {
             //todo: shieldlib
         });
         mapLibre?.on('styledata', ev => {
