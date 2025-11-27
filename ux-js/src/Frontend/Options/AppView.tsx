@@ -45,10 +45,10 @@ export default function AppView() {
 
     return (
         <Stack flex='1 1' spacing={2}>
-            <Header>Host App</Header>
+            <Header>Local Host App</Header>
             <Stack flex='1 1' spacing={1}>
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
-                    <Typography>Host App Connection</Typography>
+                    <Typography>Local App Connection</Typography>
                     <ButtonGroup variant='outlined'>
                         <Button color='primary' disabled={appEnabled} onClick={onEnableApp}>Enable</Button>
                         <Button color='error' disabled={!appEnabled} onClick={onDisableApp}>Disable</Button>

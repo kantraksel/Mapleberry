@@ -29,7 +29,7 @@ export default function NetworkView() {
     return (
         <Stack flex='1 1' spacing={3}>
             <Stack flex='1 1' spacing={1}>
-                <Header>VATSIM Network</Header>
+                <Header>Network Uplink</Header>
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
                     <Typography>Online Mode</Typography>
                     <Switch checked={vatsimOnline} onChange={onOnlineChange} />

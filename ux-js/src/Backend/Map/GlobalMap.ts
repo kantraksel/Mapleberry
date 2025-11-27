@@ -40,6 +40,7 @@ class GlobalMap {
     private isPointerDragging: boolean;
     private isInteracting: boolean;
     private cursorInteractIcon: boolean;
+    private isPointerActive: boolean;
     private isVisible: boolean;
     public readonly clickEvent: Event<ClickEvent>;
     public readonly moveStartEvent: Event<GenericEvent>;
@@ -57,6 +58,7 @@ class GlobalMap {
         this.isPointerDragging = false;
         this.isInteracting = false;
         this.cursorInteractIcon = false;
+        this.isPointerActive = false;
         this.isVisible = options.get('map_visible', true);
         this.clickEvent = new Event();
         this.moveStartEvent = new Event();
@@ -131,6 +133,16 @@ class GlobalMap {
         });
 
         this.map.on('pointermove', (e: MapBrowserEvent<PointerEvent>) => {
+            if (this.isPointerActive || this.isPointerDragging) {
+                if (this.cursorInteractIcon) {
+                    this.cursorInteractIcon = false;
+                    const root = this.map.getTargetElement();
+                    if (root) {
+                        root.style.cursor = 'auto';
+                    }
+                }
+                return;
+            }
             const features = this.map.getFeaturesAtPixel(e.pixel);
             this.cursorEvent.invoke(sortFeatures(features));
         });
@@ -183,6 +195,16 @@ class GlobalMap {
 
         node.focus();
         this.map.setTarget(node);
+
+        node.addEventListener('pointerdown', () => {
+            this.isPointerActive = true;
+        });
+        node.addEventListener('pointerup', () => {
+            this.isPointerActive = false;
+        });
+        node.addEventListener('pointercancel', () => {
+            this.isPointerActive = false;
+        });
 
         let styleUpdated = false;
         const mapLibre = this.mapLibre.mapLibreMap;

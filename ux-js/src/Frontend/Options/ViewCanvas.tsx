@@ -4,8 +4,9 @@ import AppView from "./AppView";
 import AboutView from "./AboutView";
 import DevToolsView from "./DevToolsView";
 import NetworkView from "./NetworkView";
+import MiscView from "./MiscView";
 
-export type View = 'map' | 'network' | 'app' | 'about' | 'dev_preview';
+export type View = 'map' | 'network' | 'app' | 'about' | 'dev_preview' | 'misc';
 
 interface ViewInfo {
     name: View;
@@ -14,9 +15,10 @@ interface ViewInfo {
 
 export function ViewList(props: { view: View, onSelect: (item: View) => void }) {
     const views: ViewInfo[] = [
-        { name: 'network', display: 'Network' },
-        { name: 'app', display: 'Host App' },
-        { name: 'map', display: 'Local Radar' },
+        { name: 'map', display: 'Map Canvas' },
+        { name: 'network', display: 'Network Uplink' },
+        { name: 'app', display: 'Local Host App' },
+        { name: 'misc', display: 'Miscellaneous' },
         { name: 'about', display: 'About App' },
         { name: 'dev_preview', display: 'Dev Preview' },
     ];
@@ -51,5 +53,7 @@ export default function ViewCanvas(props: { view: View }) {
         return <DevToolsView />;
     } else if (props.view === 'network') {
         return <NetworkView />;
+    } else if (props.view === 'misc') {
+        return <MiscView />;
     }
 }
