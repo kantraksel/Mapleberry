@@ -16,6 +16,8 @@ interface LocalMeta {
     tracon_file: string,
 }
 
+const localBaseUrl = 'https://vatsim-stations.kantraksel.workers.dev/';
+
 class DefinitionLoader {
     private vatspyMeta: VatspyMeta | undefined;
     private vatspyMetaPromise: Promise<VatspyMeta> | undefined;
@@ -97,7 +99,7 @@ class DefinitionLoader {
                 }
             }
             if (!data) {
-                const response = await fetch(localMeta.main_file, { cache: 'default' });
+                const response = await fetch(`${localBaseUrl}${localMeta.main_file}`, { cache: 'default' });
                 data = await response.text();
                 timestamp = localMeta.timestamp;
                 console.info(`Downloaded VATSpy.dat from cache site - last updated on ${new Date(localMeta.timestamp)}`);
@@ -150,7 +152,7 @@ class DefinitionLoader {
                 }
             }
             if (!data) {
-                const response = await fetch(localMeta.boundary_file, { cache: 'default' });
+                const response = await fetch(`${localBaseUrl}${localMeta.boundary_file}`, { cache: 'default' });
                 data = await response.json() as Boundaries;
                 timestamp = localMeta.timestamp;
                 console.info(`Downloaded Boundaries.geojson from cache site - last updated on ${new Date(localMeta.timestamp)}`);
@@ -191,7 +193,7 @@ class DefinitionLoader {
                 return;
             }
 
-            const response = await fetch(localMeta.tracon_file, { cache: 'default' });
+            const response = await fetch(`${localBaseUrl}${localMeta.tracon_file}`, { cache: 'default' });
             data = await response.json() as Tracon;
             timestamp = localMeta.timestamp;
             console.info(`Downloaded TRACONBoundaries.geojson from cache site - last updated on ${new Date(localMeta.timestamp)}`);
@@ -221,7 +223,7 @@ class DefinitionLoader {
     }
 
     private async fetchLocalMeta() {
-        const response = await fetch('/release.json', { cache: 'default' });
+        const response = await fetch(`${localBaseUrl}release.json`, { cache: 'default' });
         const obj = await response.json() as Omit<LocalMeta, 'timestamp'> & { timestamp: string };
         const timestamp = new Date(obj.timestamp).getTime();
         return {
