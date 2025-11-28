@@ -1,0 +1,37 @@
+name: UX Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+  
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  ux-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+    - run: npm install -g pnpm
+    - uses: actions/setup-node@v6
+      with:
+        node-version: latest
+
+    - run: pnpm install
+      working-directory: ux-js
+    - run: pnpm build
+      working-directory: ux-js
+
+    - uses: actions/configure-pages@v5
+    - uses: actions/upload-pages-artifact@v4
+      with:
+        path: ux-js/dist/
+    - uses: actions/deploy-pages@v4
