@@ -3,8 +3,6 @@ name: UX Deploy to GitHub Pages
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   workflow_dispatch:
   
 permissions:
@@ -26,6 +24,9 @@ jobs:
       with:
         node-version: latest
     - run: npm install -g pnpm
+    - uses: actions/setup-node@v6
+      with:
+        cache: pnpm
 
     - run: pnpm install
       working-directory: ux-js
