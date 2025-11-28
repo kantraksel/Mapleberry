@@ -3,6 +3,8 @@ name: UX Deploy to GitHub Pages
 on:
   push:
     branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
   workflow_dispatch:
   
 permissions:
