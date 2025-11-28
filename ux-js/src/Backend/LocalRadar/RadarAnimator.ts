@@ -101,6 +101,9 @@ class RadarAnimator {
                 }
                 
                 if (!blip.inMap) {
+                    if (blip.main) {
+                        this.followPlane(blip);
+                    }
                     radar.establishRadarContact(blip);
                 }
 

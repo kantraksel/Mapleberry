@@ -26,11 +26,13 @@ interface UserUpdateEventArgs extends MotionState {
 class UserTracker {
     private user: LocalPlaneInfo;
     private customCallsign_: string;
+    private useNetCallsign_: boolean;
 
     public constructor() {
         this.user = new LocalPlaneInfo();
 
         this.customCallsign_ = options.get<string>('user_custom_callsign', '');
+        this.useNetCallsign_ = options.get<boolean>('user_network_callsign', true);
 
         hostBridge.registerHandler(MsgId.LocalAddAircraft, data => {
             this.handleAdd(data);
@@ -128,10 +130,7 @@ class UserTracker {
         user.info = info;
         info.tagMain();
 
-        const customCallsign = this.customCallsign;
-        if (customCallsign.length != 0) {
-            info.blip.callsign = customCallsign;
-        }
+        this.setBlipCallsign();
     }
 
     private removeUser() {
@@ -144,41 +143,56 @@ class UserTracker {
         user.reset();
     }
 
-    private updateUser(data: UserUpdateEventArgs & { id?: number }) {
-        const user = this.user;
-        const info = user.info;
+    private updateUser(data: UserUpdateEventArgs) {
+        const info = this.user.info;
         if (!info) {
             return;
         }
 
-        if (!info.inMap) {
-            radar.followPlane(info);
-        }
-
-        data.id = 0;
-        radar.update(info.id, data as Required<typeof data>);
+        radar.update(info.id, data);
     }
 
     public set customCallsign(name: string) {
         this.customCallsign_ = name;
         options.set('user_custom_callsign', name);
-
-        const info = this.user.info;
-        if (!info) {
-            return;
-        }
-        if (name.length == 0) {
-            name = info.callsign;
-        }
-        info.blip.callsign = name;
+        this.setBlipCallsign();
     }
 
     public get customCallsign() {
         return this.customCallsign_;
     }
 
+    public set useNetCallsign(value: boolean) {
+        this.useNetCallsign_ = value;
+        options.set('user_network_callsign', value);
+        this.setBlipCallsign();
+    }
+
+    public get useNetCallsign() {
+        return this.useNetCallsign_;
+    }
+
     public getUser() {
         return this.user.info;
+    }
+
+    private setBlipCallsign() {
+        const info = this.user.info;
+        if (!info) {
+            return;
+        }
+
+        let callsign;
+        if (this.useNetCallsign_) {
+            callsign = info.blip.netState?.pilot.callsign;
+        }
+        if (!callsign) {
+            callsign = this.customCallsign_;
+            if (callsign.length == 0) {
+                callsign = info.callsign;
+            }
+        }
+        info.blip.callsign = callsign;
     }
 }
 

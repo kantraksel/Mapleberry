@@ -35,7 +35,7 @@ function InfoBox(props: { children?: ReactNode, width: number | string, height: 
 }
 
 function OptionsBox(props: { open: boolean, onClose: () => void }) {
-    const [state, setState] = useState<View>('network');
+    const [state, setState] = useState<View>('map');
     const [rev, addRev] = useRev();
 
     useEffect(() => {

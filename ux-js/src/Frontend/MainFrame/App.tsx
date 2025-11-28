@@ -106,47 +106,19 @@ export default App;
 
 /*
 TODO:
-- rewrite system-ui sync, regroup files, make start sequence reliable (systems), split cards shared
-
-- cache VATSpy data + update mechanism (self-host and github)
 - try to eliminate large, thin holes in UIRs
-- option: airport label icao or iata
-- option: airplane label simple or extended
-- option: hide areas, planes, airports
-- option: hide fields with ATIS only
-- option: disable interpolation
-- option: interactable area (region+tracon)
-- option: hide atis in airport (list)
 - better contrast for net planes and area labels (plane color based on altitude)
-- add transition on color changes of sim status
 - notifications: transitions in-out, visible timer
+- map options: visible switch state
 
-- implement OSM Vector Tiles
 - expose stationless controllers on map
 - fallback for FIR/UIR without boundary
 - write FIR/UIR/Aiport benchmarks
-- investigate KZNY & SUEO - determine oceanic flag
+- investigate KZNY & SUEO - determine oceanic flag (possible, but as workaround)
 - integrate VATSIM AIP, accurate station names
 
 - branding, policy, external services and libraries
 
-OSM Vector Tiles:
-https://americanamap.org/
-https://tile.ourmap.us/
-
 network.updateState(JSON.parse(localStorage.getItem('vatsim_list')!));
-https://vatspy-data.kantraksel.workers.dev/release.json
 https://theboostcpplibraries.com/boost.asio-io-services-and-io-objects
-
-Dataset errors:
-[NOT EXPLORED] Boundaries.geojson: some entries (above 700) have numeric properties instead of strings
-VATSpy.dat: 9704 - OAKB is not a FIR (most likely OAKX)
-VATSpy.dat: 13029 - FIR UULL doesn't exist (most likely ULLL)
-VATSpy.dat: 13624 - FIR VMSN doesn't exist (most likely VNSM)
-VATSpy.dat: 14234 - UHPP is not a FIR (most likely UHMM)
-VATSpy.dat: 12903 & 14234 - XHPL defined twice (slightly different names and coords, second entry has invalid FIR)
-
-Warnings:
-VATSpy.dat: 7702 & 7703 - duplicate entry, but only one is pseudo
-VATSpy.dat: 18784 - callsign prefix UMMM seems to be invalid, see next UMMV_X
 */

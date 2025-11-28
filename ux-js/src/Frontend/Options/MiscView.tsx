@@ -28,10 +28,16 @@ export default function MiscView() {
         addRev();
     };
 
+    const onNetCallsignChange = (_event: unknown, checked: boolean) => {
+        tracker.useNetCallsign = checked;
+        addRev();
+    };
+
     const userCallsign = tracker.customCallsign;
     const showAtis = cards.showAtisInFacilityView;
     const mapScaling = radar.animator.enableMapScaling;
     const interpolation = radar.animator.enableInterpolation;
+    const netCallsign = tracker.useNetCallsign;
 
     return (
         <Stack flex='1 1' spacing={3}>
@@ -40,6 +46,10 @@ export default function MiscView() {
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
                     <Typography>Local Plane Callsign</Typography>
                     <TextField variant='outlined' size='small' defaultValue={userCallsign} placeholder='Use Simulator Callsign' onBlur={onCallsignChange} />
+                </Box>
+                <Box display='flex' alignItems='center' justifyContent='space-between'>
+                    <Typography>Use Your Network Callsign Instead</Typography>
+                    <Switch checked={netCallsign} onChange={onNetCallsignChange} />
                 </Box>
                 <Box display='flex' alignItems='center' justifyContent='space-between'>
                     <Typography>Local Plane Feed Interpolation</Typography>

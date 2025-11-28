@@ -16,6 +16,7 @@ type OptionKeys =
     'cards_show_atis_facility_view' |
     'map_type' |
     'map_use_locale' |
+    'user_network_callsign' |
     '_unused_';
 
 class Options {

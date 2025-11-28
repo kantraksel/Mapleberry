@@ -41,6 +41,7 @@ class GlobalMap {
     private isInteracting: boolean;
     private cursorInteractIcon: boolean;
     private isPointerActive: boolean;
+    private curserDraggingIcon: boolean;
     private isVisible: boolean;
     public readonly clickEvent: Event<ClickEvent>;
     public readonly moveStartEvent: Event<GenericEvent>;
@@ -59,6 +60,7 @@ class GlobalMap {
         this.isInteracting = false;
         this.cursorInteractIcon = false;
         this.isPointerActive = false;
+        this.curserDraggingIcon = false;
         this.isVisible = options.get('map_visible', true);
         this.clickEvent = new Event();
         this.moveStartEvent = new Event();
@@ -133,14 +135,11 @@ class GlobalMap {
         });
 
         this.map.on('pointermove', (e: MapBrowserEvent<PointerEvent>) => {
-            if (this.isPointerActive || this.isPointerDragging) {
-                if (this.cursorInteractIcon) {
-                    this.cursorInteractIcon = false;
-                    const root = this.map.getTargetElement();
-                    if (root) {
-                        root.style.cursor = 'auto';
-                    }
-                }
+            if (this.isPointerActive) {
+                this.setCursorDrag(true);
+                return;
+            }
+            if (this.isPointerDragging) {
                 return;
             }
             const features = this.map.getFeaturesAtPixel(e.pixel);
@@ -200,9 +199,11 @@ class GlobalMap {
             this.isPointerActive = true;
         });
         node.addEventListener('pointerup', () => {
+            this.setCursorDrag(false);
             this.isPointerActive = false;
         });
         node.addEventListener('pointercancel', () => {
+            this.setCursorDrag(false);
             this.isPointerActive = false;
         });
 
@@ -220,6 +221,9 @@ class GlobalMap {
             const e = ev as unknown as { style: { stylesheet: StyleSpecification } };
             this.updateStyleLocalization(e.style.stylesheet);
             ev.target.setStyle(e.style.stylesheet);
+        });
+        mapLibre?.on('error', () => {
+            this.mapType = MapType.OsmRaster;
         });
     }
 
@@ -274,6 +278,25 @@ class GlobalMap {
         }
         this.cursorInteractIcon = interact;
         root.style.cursor = interact ? 'pointer' : 'auto';
+    }
+
+    private setCursorDrag(drag: boolean) {
+        const isDrag = this.curserDraggingIcon;
+        if ((drag && isDrag) || (!drag && !isDrag)) {
+            return;
+        }
+        const root = this.map.getTargetElement();
+        if (!root) {
+            return;
+        }
+        this.curserDraggingIcon = drag;
+        if (drag) {
+            root.style.cursor = 'grabbing';
+        } else if (this.cursorInteractIcon) {
+            root.style.cursor = 'pointer';
+        } else {
+            root.style.cursor = 'auto';
+        }
     }
 
     public set mapType(type: MapType) {
