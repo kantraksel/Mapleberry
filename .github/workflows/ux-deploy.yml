@@ -27,13 +27,13 @@ jobs:
         node-version: latest
     - run: npm install -g pnpm
 
-    - run: pushd ux-js
     - run: pnpm install
+      working-directory: ux-js
     - run: pnpm build
+      working-directory: ux-js
 
     - uses: actions/configure-pages@v5
     - uses: actions/upload-pages-artifact@v4
       with:
-        path: 'dist/'
+        path: ux-js/dist/
     - uses: actions/deploy-pages@v4
-
