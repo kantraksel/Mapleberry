@@ -3,6 +3,7 @@ import VectorSource from "ol/source/Vector";
 import { Style as OlStyle, Text as OlText, Fill as OlFill, Stroke as OlStroke, Icon as OlIcon } from 'ol/style';
 import { FeatureLike } from "ol/Feature";
 import MapPlane, { ActiveStyle } from "../MapPlane";
+import FlightIcon from "./flight_24dp_FFFFFF.svg?url";
 
 class LocalPlaneLayers {
     public pointLayer: VectorLayer;
@@ -22,7 +23,7 @@ class LocalPlaneLayers {
     }
 
     private createPointLayer() {
-        const iconSrc = '/flight_24dp_FFFFFF.svg';
+        const iconSrc = FlightIcon;
         const pointStyle = new OlStyle({
             image: new OlIcon({
                 src: iconSrc,
