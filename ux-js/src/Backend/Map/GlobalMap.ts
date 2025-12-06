@@ -36,6 +36,7 @@ class GlobalMap {
     public readonly map: Map;
     private osm: TileLayer;
     private mapLibre: MapLibreLayer;
+    private mapLibreToken: object | undefined;
     
     private isPointerDragging: boolean;
     private isInteracting: boolean;
@@ -207,11 +208,20 @@ class GlobalMap {
             this.isPointerActive = false;
         });
 
-        let styleUpdated = false;
+        this.setupMapLibre();
+    }
+
+    private setupMapLibre() {
         const mapLibre = this.mapLibre.mapLibreMap;
+        if (!mapLibre || mapLibre === this.mapLibreToken) {
+            return;
+        }
+        this.mapLibreToken = mapLibre;
         mapLibre?.on('styleimagemissing', _ev => {
             //todo: shieldlib
         });
+        
+        let styleUpdated = false;
         mapLibre?.on('styledata', ev => {
             if (styleUpdated) {
                 return;
@@ -306,6 +316,7 @@ class GlobalMap {
         if (type == MapType.OsmVector) {
             this.osm.setVisible(false);
             this.mapLibre.setVisible(true);
+            this.setupMapLibre();
         } else {
             if (type != MapType.OsmRaster) {
                 console.warn(`Unknown map type ${type}. Falling back to OsmRaster`);
