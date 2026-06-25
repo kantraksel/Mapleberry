@@ -77,7 +77,7 @@ export function parseMainDefs(data: string): StationList {
         });
     }
 
-    const lines = data.split('\r\n');
+    const lines = data.split(/\r?\n/);
     let parser = (_parts: string[]) => {};
 
     lines.forEach((value) => {
@@ -109,5 +109,12 @@ export function parseMainDefs(data: string): StationList {
         }
     });
 
+    if (countries.length == 0 ||
+        airports.length == 0 ||
+        firs.length == 0 ||
+        uirs.length == 0
+    ) {
+        throw new Error('Failed to parse main definitions');
+    }
     return { countries, airports, firs, uirs };
 }

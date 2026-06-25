@@ -16,6 +16,7 @@ interface LocalMeta {
     tracon_file: string,
 }
 
+// cache site used when GitHub fetching fails
 const localBaseUrl = 'https://vatsim-stations.kantraksel.workers.dev/';
 
 class DefinitionLoader {
@@ -69,7 +70,7 @@ class DefinitionLoader {
         }
         const result = await this.fetchMainDefs(timestamp ?? 0);
         if (!result) {
-            if (timestamp && defs) {
+            if (defs) {
                 return defs;
             }
             throw new Error('Failed to get VATSpy.dat');
@@ -110,9 +111,15 @@ class DefinitionLoader {
             return;
         }
         
-        const obj = parseMainDefs(data);
-        await db.updateMainDefs(obj, timestamp);
-        return obj;
+        try {
+            const obj = parseMainDefs(data);
+            await db.updateMainDefs(obj, timestamp);
+            return obj;
+        } catch (e: unknown) {
+            console.error('Failed to load VATSpy.dat:');
+            console.error(e);
+            return;
+        }
     }
 
     private async processBoundaryDefs(defs?: Boundaries, timestamp?: number) {
@@ -121,7 +128,7 @@ class DefinitionLoader {
         }
         const result = await this.fetchBoundaryDefs(timestamp ?? 0);
         if (!result) {
-            if (timestamp && defs) {
+            if (defs) {
                 return defs;
             }
             throw new Error('Failed to get Boundaries.geojson');
@@ -163,9 +170,15 @@ class DefinitionLoader {
             return;
         }
         
-        validateBoundaries(data);
-        await db.updateBoundaryDefs(data, timestamp);
-        return data;
+        try {
+            validateBoundaries(data);
+            await db.updateBoundaryDefs(data, timestamp);
+            return data;
+        } catch (e: unknown) {
+            console.error('Failed to validate Boundaries.geojson:');
+            console.error(e);
+            return;
+        }
     }
 
     private async processTraconDefs(defs?: Tracon, timestamp?: number) {
@@ -174,7 +187,7 @@ class DefinitionLoader {
         }
         const result = await this.fetchTraconDefs(timestamp ?? 0);
         if (!result) {
-            if (timestamp && defs) {
+            if (defs) {
                 return defs;
             }
             throw new Error('Failed to get TRACONBoundaries.geojson');
@@ -203,9 +216,15 @@ class DefinitionLoader {
             return;
         }
         
-        validateTracon(data);
-        await db.updateTraconDefs(data, timestamp);
-        return data;
+        try {
+            validateTracon(data);
+            await db.updateTraconDefs(data, timestamp);
+            return data;
+        } catch (e: unknown) {
+            console.error('Failed to validate TRACONBoundaries.geojson:');
+            console.error(e);
+            return;
+        }
     }
 
     private async getLocalMeta() {
