@@ -135,7 +135,7 @@ class GlobalMap {
             this.isPointerDragging = true;
         });
 
-        this.map.on('pointermove', (e: MapBrowserEvent<PointerEvent>) => {
+        this.map.on('pointermove', (e: MapBrowserEvent<PointerEvent | KeyboardEvent | WheelEvent>) => {
             if (this.isPointerActive) {
                 this.setCursorDrag(true);
                 return;
@@ -147,7 +147,7 @@ class GlobalMap {
             this.cursorEvent.invoke(sortFeatures(features));
         });
 
-        this.map.on('click', (e: MapBrowserEvent<PointerEvent>) => {
+        this.map.on('click', (e: MapBrowserEvent<PointerEvent | KeyboardEvent | WheelEvent>) => {
             const features = this.map.getFeaturesAtPixel(e.pixel);
             if (features.length == 0) {
                 return;
@@ -232,7 +232,8 @@ class GlobalMap {
             this.updateStyleLocalization(e.style.stylesheet);
             ev.target.setStyle(e.style.stylesheet);
         });
-        mapLibre?.on('error', () => {
+        mapLibre?.on('error', ev => {
+            console.info(new Error('MapLibre failed', { cause: ev.error }));
             this.mapType = MapType.OsmRaster;
         });
     }
